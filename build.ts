@@ -24,7 +24,8 @@ async function build() {
   }
 
   console.log('[build] Compiling to standalone binary...');
-  await $`bun build --compile --minify --bytecode ./src/cli.ts --outfile ./dist/maestro`;
+  // --bytecode omitted: dynamic imports (lazy subcommands) cause CommonJS wrapper errors
+  await $`bun build --compile --minify ./src/cli.ts --outfile ./dist/maestro`;
 
   console.log('[build] Done: ./dist/maestro');
 }
