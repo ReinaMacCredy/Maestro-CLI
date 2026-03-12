@@ -4,7 +4,7 @@ import { $ } from 'bun';
 
 async function build() {
   console.log('[build] Generating skills registry...');
-  // Skills generation will be added in WU8
+  await $`bun src/skills/generate.ts`;
 
   console.log('[build] Compiling...');
   const result = await Bun.build({
