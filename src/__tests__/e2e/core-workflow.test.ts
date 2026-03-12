@@ -98,6 +98,58 @@ describe('core workflow', () => {
     expect(result.exitCode).toBe(0);
   });
 
+  test('context-write and context-read round-trip', async () => {
+    harness = await createTestHarness();
+    await harness.run('init');
+    await harness.run('feature-create', 'test-feature');
+
+    const writeResult = await harness.run('context-write', '--feature', 'test-feature', '--name', 'research.md', '--content', 'Found API at /api/v1');
+    expect(writeResult.exitCode).toBe(0);
+
+    const readResult = await harness.run('context-read', '--feature', 'test-feature', '--name', 'research.md');
+    expect(readResult.exitCode).toBe(0);
+    const parsed = JSON.parse(readResult.stdout);
+    expect(typeof parsed === 'string' ? parsed : parsed.content).toContain('Found API');
+  });
+
+  test('feature-list shows created features', async () => {
+    harness = await createTestHarness();
+    await harness.run('init');
+    await harness.run('feature-create', 'alpha');
+    await harness.run('feature-create', 'beta');
+
+    const result = await harness.run('feature-list');
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.length).toBe(2);
+    const names = parsed.map((f: any) => f.name);
+    expect(names).toContain('alpha');
+    expect(names).toContain('beta');
+  });
+
+  test('plan-read returns plan content', async () => {
+    harness = await createTestHarness();
+    await harness.run('init');
+    await harness.run('feature-create', 'test-feature');
+
+    const planContent = '## Discovery\nWe investigated the codebase thoroughly and found that the current implementation needs significant refactoring to support the new feature requirements.\n\n### 1. Setup\nSetup the project';
+    await harness.run('plan-write', '--feature', 'test-feature', '--content', planContent);
+
+    const result = await harness.run('plan-read', '--feature', 'test-feature');
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.content).toContain('Discovery');
+    expect(parsed.status).toBe('planning');
+  });
+
+  test('skill-list returns available skills', async () => {
+    harness = await createTestHarness();
+    const result = await harness.run('skill-list');
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.length).toBeGreaterThan(0);
+  });
+
   test('status shows feature overview after setup', async () => {
     harness = await createTestHarness();
     await harness.run('init');
