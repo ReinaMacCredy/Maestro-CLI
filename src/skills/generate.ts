@@ -34,7 +34,7 @@ async function main() {
     }
 
     const fm = parseFrontmatter(raw);
-    if (!fm.name || !fm.description) {
+    if (!fm?.name || !fm?.description) {
       console.warn(`[!] Skipping ${slug}: missing name or description in frontmatter`);
       continue;
     }

@@ -284,11 +284,11 @@ export class GitWorktreeAdapter {
 
       for (const feat of features) {
         const featurePath = path.join(worktreesDir, feat);
-        const stat = await fs.stat(featurePath).catch(() => null);
+        const stat = await fs.stat(featurePath).catch((): null => null);
 
         if (!stat?.isDirectory()) continue;
 
-        const steps = await fs.readdir(featurePath).catch(() => []);
+        const steps = await fs.readdir(featurePath).catch((): string[] => []);
 
         for (const step of steps) {
           const info = await this.get(feat, step);
@@ -311,19 +311,19 @@ export class GitWorktreeAdapter {
     } catch { /* intentional */ }
 
     const worktreesDir = this.getWorktreesDir();
-    const features = feature ? [feature] : await fs.readdir(worktreesDir).catch(() => []);
+    const features = feature ? [feature] : await fs.readdir(worktreesDir).catch((): string[] => []);
 
     for (const feat of features) {
       const featurePath = path.join(worktreesDir, feat);
-      const stat = await fs.stat(featurePath).catch(() => null);
+      const stat = await fs.stat(featurePath).catch((): null => null);
 
       if (!stat?.isDirectory()) continue;
 
-      const steps = await fs.readdir(featurePath).catch(() => []);
+      const steps = await fs.readdir(featurePath).catch((): string[] => []);
 
       for (const step of steps) {
         const worktreePath = path.join(featurePath, step);
-        const stepStat = await fs.stat(worktreePath).catch(() => null);
+        const stepStat = await fs.stat(worktreePath).catch((): null => null);
 
         if (!stepStat?.isDirectory()) continue;
 

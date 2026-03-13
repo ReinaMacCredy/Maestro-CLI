@@ -67,7 +67,7 @@ export default defineCommand({
     try {
       const services = getServices();
 
-      let featureName = args.feature;
+      let featureName: string | undefined = args.feature;
       if (!featureName) {
         const active = services.featureAdapter.getActive();
         featureName = active?.name;
