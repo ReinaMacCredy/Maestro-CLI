@@ -5,7 +5,7 @@
  * Builds task spec content from plan sections, context, and dependency info.
  */
 
-import type { ParsedTask } from './plan-parser.ts';
+import type { ParsedTask } from '../plan-parser.ts';
 
 export interface BuildSpecParams {
   featureName: string;

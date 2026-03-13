@@ -125,7 +125,7 @@ describe("DockerSandboxAdapter shell escaping", () => {
 describe("worker prompt sanitization", () => {
   // Import the sanitize function directly since it's not exported
   // Test via buildWorkerPrompt output instead
-  const { buildWorkerPrompt } = require("../../utils/worker-prompt");
+  const { buildWorkerPrompt } = require("../../utils/worker/prompt");
 
   test("escapes double quotes in feature name in bash examples", () => {
     const prompt = buildWorkerPrompt({

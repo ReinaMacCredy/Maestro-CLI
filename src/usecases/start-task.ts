@@ -10,7 +10,7 @@ import type { PlanPort } from '../ports/plans.ts';
 import type { ContextPort } from '../ports/context.ts';
 import { checkDependencies } from '../utils/dependency-check.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { prepareWorkerLaunch, type WorkerLaunchServices, type WorkerLaunchContext } from '../utils/worker-launch.ts';
+import { prepareWorkerLaunch, type WorkerLaunchServices, type WorkerLaunchContext } from '../utils/worker/launch.ts';
 
 export interface StartTaskServices {
   taskPort: TaskPort;

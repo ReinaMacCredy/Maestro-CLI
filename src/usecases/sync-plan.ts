@@ -7,7 +7,7 @@
 import type { TaskPort } from '../ports/tasks.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
-import { buildSpecContent } from '../utils/spec-builder.ts';
+import { buildSpecContent } from '../utils/worker/spec.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { TasksSyncResult } from '../types.ts';
 

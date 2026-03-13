@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { normalizePath } from './paths.ts';
+import { normalizePath } from '../paths.ts';
 
 export interface PromptFileResult {
   content?: string;

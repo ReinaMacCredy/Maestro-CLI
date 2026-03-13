@@ -6,15 +6,15 @@
  */
 
 import * as path from 'path';
-import { buildWorkerPrompt, type WorkerContextFile, type CompletedTask, type ContinueFromBlocked } from './worker-prompt.ts';
-import { applyTaskBudget, applyContextBudget, DEFAULT_BUDGET, type TruncationEvent } from './prompt-budgeting.ts';
-import { writeWorkerPromptFile } from './prompt-file.ts';
-import { normalizePath } from './paths.ts';
-import { buildSpecContent } from './spec-builder.ts';
-import type { TaskPort } from '../ports/tasks.ts';
-import type { PlanPort } from '../ports/plans.ts';
-import type { ContextPort } from '../ports/context.ts';
-import type { WorktreeInfo, TaskInfo } from '../types.ts';
+import { buildWorkerPrompt, type WorkerContextFile, type CompletedTask, type ContinueFromBlocked } from './prompt.ts';
+import { applyTaskBudget, applyContextBudget, DEFAULT_BUDGET, type TruncationEvent } from './budgeting.ts';
+import { writeWorkerPromptFile } from './file.ts';
+import { normalizePath } from '../paths.ts';
+import { buildSpecContent } from './spec.ts';
+import type { TaskPort } from '../../ports/tasks.ts';
+import type { PlanPort } from '../../ports/plans.ts';
+import type { ContextPort } from '../../ports/context.ts';
+import type { WorktreeInfo, TaskInfo } from '../../types.ts';
 
 export interface WorkerLaunchServices {
   taskPort: TaskPort;

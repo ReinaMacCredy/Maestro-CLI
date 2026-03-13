@@ -12,7 +12,7 @@ import * as os from "os";
 import { ensureDir } from "../../utils/fs-io";
 import { GitWorktreeAdapter } from "../../adapters/git-worktree";
 import { findProjectRoot, listFeatures } from "../../utils/detection";
-import { buildWorkerPrompt } from "../../utils/worker-prompt";
+import { buildWorkerPrompt } from "../../utils/worker/prompt";
 
 // ============================================================================
 // Git: Branch Name Validation
