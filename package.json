@@ -1,20 +1,29 @@
 {
-  "name": "maestro-cli",
-  "version": "0.1.0",
+  "name": "maestro-orchestrator",
+  "version": "0.2.0",
   "type": "module",
-  "private": true,
+  "bin": {
+    "maestro": "./dist/cli.js"
+  },
+  "main": "./dist/server.bundle.mjs",
+  "files": [
+    "dist",
+    "skills",
+    ".claude-plugin",
+    "start.mjs"
+  ],
   "scripts": {
     "build": "bun run build.ts",
     "test": "bun test",
     "dev": "bun src/cli.ts"
   },
   "dependencies": {
-    "citty": "^0.1.6",
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@types/bun": "^1.2.0",
+    "citty": "^0.1.6",
     "typescript": "^5.0.0",
     "zod": "^3.24.4"
   }
