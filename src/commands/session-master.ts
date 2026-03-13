@@ -26,7 +26,7 @@ export default defineCommand({
       const feature = resolveFeature(args.feature);
       const { sessionAdapter } = getServices();
       sessionAdapter.setMaster(feature, args.sessionId);
-      output({ feature: args.feature, master: args.sessionId }, () =>
+      output({ feature, master: args.sessionId }, () =>
         `[ok] master session set to '${args.sessionId}'`
       );
     } catch (err) {
