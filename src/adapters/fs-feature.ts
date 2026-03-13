@@ -17,8 +17,9 @@ import { acquireLockSync } from '../utils/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../types.ts';
 import { listFeatures } from '../utils/detection.ts';
 import { MaestroError } from '../lib/errors.ts';
+import type { FeaturePort } from '../ports/features.ts';
 
-export class FsFeatureAdapter {
+export class FsFeatureAdapter implements FeaturePort {
   constructor(private projectRoot: string) {}
 
   create(name: string, ticket?: string): FeatureJson {

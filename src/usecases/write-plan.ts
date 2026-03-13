@@ -1,10 +1,10 @@
-import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
-import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
+import type { PlanPort } from '../ports/plans.ts';
+import type { FeaturePort } from '../ports/features.ts';
 import { MaestroError } from '../lib/errors.ts';
 
 export interface WritePlanServices {
-  planAdapter: FsPlanAdapter;
-  featureAdapter: FsFeatureAdapter;
+  planAdapter: PlanPort;
+  featureAdapter: FeaturePort;
 }
 
 export interface WritePlanResult {

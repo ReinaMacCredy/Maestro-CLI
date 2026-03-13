@@ -12,14 +12,14 @@ import { writeWorkerPromptFile } from './prompt-file.ts';
 import { normalizePath } from './paths.ts';
 import { buildSpecContent } from './spec-builder.ts';
 import type { TaskPort } from '../ports/tasks.ts';
-import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
-import type { FsContextAdapter } from '../adapters/fs-context.ts';
+import type { PlanPort } from '../ports/plans.ts';
+import type { ContextPort } from '../ports/context.ts';
 import type { WorktreeInfo, TaskInfo } from '../types.ts';
 
 export interface WorkerLaunchServices {
   taskPort: TaskPort;
-  planAdapter: FsPlanAdapter;
-  contextAdapter: FsContextAdapter;
+  planAdapter: PlanPort;
+  contextAdapter: ContextPort;
   directory: string;
 }
 

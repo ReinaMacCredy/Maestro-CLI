@@ -4,20 +4,20 @@
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
-import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
-import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
+import type { FeaturePort } from '../ports/features.ts';
+import type { WorktreePort } from '../ports/worktree.ts';
+import type { PlanPort } from '../ports/plans.ts';
+import type { ContextPort } from '../ports/context.ts';
 import { checkDependencies } from '../utils/dependency-check.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { prepareWorkerLaunch, type WorkerLaunchServices, type WorkerLaunchContext } from '../utils/worker-launch.ts';
-import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
-import type { FsContextAdapter } from '../adapters/fs-context.ts';
 
 export interface StartTaskServices {
   taskPort: TaskPort;
-  featureAdapter: FsFeatureAdapter;
-  worktreeAdapter: GitWorktreeAdapter;
-  planAdapter: FsPlanAdapter;
-  contextAdapter: FsContextAdapter;
+  featureAdapter: FeaturePort;
+  worktreeAdapter: WorktreePort;
+  planAdapter: PlanPort;
+  contextAdapter: ContextPort;
   directory: string;
 }
 

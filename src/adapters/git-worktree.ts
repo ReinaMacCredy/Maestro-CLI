@@ -11,8 +11,9 @@ import * as path from "path";
 import simpleGit, { SimpleGit } from "simple-git";
 import { acquireLock } from '../utils/locking.ts';
 import type { WorktreeInfo, DiffResult, ApplyResult, CommitResult, MergeResult, WorktreeConfig } from '../types.ts';
+import type { WorktreePort } from '../ports/worktree.ts';
 
-export class GitWorktreeAdapter {
+export class GitWorktreeAdapter implements WorktreePort {
   private config: WorktreeConfig;
 
   constructor(config: WorktreeConfig) {

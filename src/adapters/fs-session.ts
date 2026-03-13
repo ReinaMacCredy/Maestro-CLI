@@ -8,8 +8,9 @@ import * as path from 'path';
 import { getFeaturePath } from '../utils/paths.ts';
 import { ensureDir, readJson, writeJson } from '../utils/fs-io.ts';
 import type { SessionInfo, SessionsJson } from '../types.ts';
+import type { SessionPort } from '../ports/sessions.ts';
 
-export class FsSessionAdapter {
+export class FsSessionAdapter implements SessionPort {
   constructor(private projectRoot: string) {}
 
   private getSessionsPath(featureName: string): string {

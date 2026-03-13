@@ -1,11 +1,11 @@
 import type { TaskPort } from '../ports/tasks.ts';
-import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
+import type { FeaturePort } from '../ports/features.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { FeatureJson } from '../types.ts';
 
 export interface CompleteFeatureServices {
   taskPort: TaskPort;
-  featureAdapter: FsFeatureAdapter;
+  featureAdapter: FeaturePort;
 }
 
 export interface CompleteFeatureResult {
