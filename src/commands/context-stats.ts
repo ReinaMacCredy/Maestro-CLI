@@ -23,7 +23,7 @@ export default defineCommand({
       output(stats, (s) => {
         const lines = [
           `files:  ${s.count}`,
-          `chars:  ${s.totalChars}`,
+          `bytes:  ${s.totalBytes}`,
         ];
         if (s.oldest) lines.push(`oldest: ${s.oldest}`);
         if (s.newest) lines.push(`newest: ${s.newest}`);

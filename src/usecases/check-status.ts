@@ -39,7 +39,7 @@ export interface StatusResult {
   blocked: Record<string, string[]>;
   context: {
     count: number;
-    totalChars: number;
+    totalBytes: number;
   };
   nextAction: string;
 }
@@ -93,7 +93,7 @@ export async function checkStatus(
     blocked,
     context: {
       count: contextStats.count,
-      totalChars: contextStats.totalChars,
+      totalBytes: contextStats.totalBytes,
     },
     nextAction,
   };

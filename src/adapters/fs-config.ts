@@ -37,7 +37,7 @@ export class FsConfigAdapter {
       const raw = fs.readFileSync(this.configPath, 'utf-8');
       const stored = JSON.parse(raw) as Partial<HiveConfig>;
 
-      const agents: HiveConfig['agents'] = { ...DEFAULT_HIVE_CONFIG.agents, ...stored.agents };
+      const agents: HiveConfig['agents'] = { ...DEFAULT_HIVE_CONFIG.agents };
       for (const name of AGENT_NAMES) {
         agents[name] = { ...DEFAULT_HIVE_CONFIG.agents?.[name], ...stored.agents?.[name] };
       }

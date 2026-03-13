@@ -54,7 +54,7 @@ export class FsFeatureAdapter {
     return listFeatures(this.projectRoot);
   }
 
-  /** Get feature or throw. Rejects completed features unless allowCompleted is set. */
+  /** Get feature or throw. Rejects completed features. */
   requireActive(name: string): FeatureJson {
     const feature = this.get(name);
     if (!feature) throw new MaestroError(`Feature '${name}' not found`);

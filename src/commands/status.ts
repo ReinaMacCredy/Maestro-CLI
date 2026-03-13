@@ -39,7 +39,7 @@ function formatStatus(result: StatusResult): string {
   }
 
   if (result.context.count > 0) {
-    lines.push(renderStatusLine('context', `${result.context.count} files, ${result.context.totalChars} chars`));
+    lines.push(renderStatusLine('context', `${result.context.count} files, ~${result.context.totalBytes} bytes`));
   }
 
   lines.push(renderStatusLine('next', result.nextAction));

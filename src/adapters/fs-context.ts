@@ -95,9 +95,9 @@ export class FsContextAdapter {
     return { archived, archivePath: archiveDir };
   }
 
-  stats(featureName: string): { count: number; totalChars: number; oldest?: string; newest?: string } {
+  stats(featureName: string): { count: number; totalBytes: number; oldest?: string; newest?: string } {
     const contextPath = getContextPath(this.projectRoot, featureName);
-    if (!fileExists(contextPath)) return { count: 0, totalChars: 0 };
+    if (!fileExists(contextPath)) return { count: 0, totalBytes: 0 };
 
     const entries = fs.readdirSync(contextPath, { withFileTypes: true })
       .filter(f => f.isFile() && f.name.endsWith('.md'))
@@ -106,13 +106,13 @@ export class FsContextAdapter {
         return { name: f.name.replace(/\.md$/, ''), size: stat.size, mtime: stat.mtime.getTime() };
       });
 
-    if (entries.length === 0) return { count: 0, totalChars: 0 };
+    if (entries.length === 0) return { count: 0, totalBytes: 0 };
 
     entries.sort((a, b) => a.mtime - b.mtime);
 
     return {
       count: entries.length,
-      totalChars: entries.reduce((sum, e) => sum + e.size, 0),
+      totalBytes: entries.reduce((sum, e) => sum + e.size, 0),
       oldest: entries[0].name,
       newest: entries[entries.length - 1].name,
     };
