@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
 import { resolveFeature } from '../lib/resolve-feature.ts';
-import { formatError, handleCommandError } from '../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'session-info', description: 'Show session details' },
@@ -25,13 +25,14 @@ export default defineCommand({
     try {
       const feature = resolveFeature(args.feature);
       const { sessionAdapter } = getServices();
-      const session = sessionAdapter.get(feature, args.id);
+      const data = sessionAdapter.getAll(feature);
+      const session = data.sessions.find(s => s.sessionId === args.id);
       if (!session) {
-        console.error(formatError('session-info', `session '${args.id}' not found in feature '${feature}'`));
-        process.exit(1);
+        throw new MaestroError(`session '${args.id}' not found in feature '${feature}'`, [
+          'List sessions: maestro session-list --feature <name>',
+        ]);
       }
-      const master = sessionAdapter.getMaster(feature);
-      output({ ...session, isMaster: master === session.sessionId }, (s) => {
+      output({ ...session, isMaster: data.master === session.sessionId }, (s) => {
         const lines = [
           `session: ${s.sessionId}${s.isMaster ? ' [master]' : ''}`,
           `task: ${s.taskFolder ?? '-'}`,

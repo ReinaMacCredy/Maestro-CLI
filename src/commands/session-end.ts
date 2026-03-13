@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
 import { resolveFeature } from '../lib/resolve-feature.ts';
-import { formatError, handleCommandError } from '../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'session-end', description: 'End a session' },
@@ -27,8 +27,9 @@ export default defineCommand({
       const { sessionAdapter } = getServices();
       const removed = sessionAdapter.remove(feature, args.id);
       if (!removed) {
-        console.error(formatError('session-end', `session '${args.id}' not found in feature '${feature}'`));
-        process.exit(1);
+        throw new MaestroError(`session '${args.id}' not found in feature '${feature}'`, [
+          'List sessions: maestro session-list --feature <name>',
+        ]);
       }
       output({ id: args.id, feature }, (r) => `[ok] session '${r.id}' ended`);
     } catch (err) {

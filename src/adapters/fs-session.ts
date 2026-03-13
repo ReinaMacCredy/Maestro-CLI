@@ -15,7 +15,7 @@ export class FsSessionAdapter {
     return path.join(getFeaturePath(this.projectRoot, featureName), 'sessions.json');
   }
 
-  private getSessions(featureName: string): SessionsJson {
+  getAll(featureName: string): SessionsJson {
     const sessionsPath = this.getSessionsPath(featureName);
     return readJson<SessionsJson>(sessionsPath) || { sessions: [] };
   }
@@ -27,7 +27,7 @@ export class FsSessionAdapter {
   }
 
   track(featureName: string, sessionId: string, taskFolder?: string): SessionInfo {
-    const data = this.getSessions(featureName);
+    const data = this.getAll(featureName);
     const now = new Date().toISOString();
 
     let session = data.sessions.find(s => s.sessionId === sessionId);
@@ -53,29 +53,29 @@ export class FsSessionAdapter {
   }
 
   setMaster(featureName: string, sessionId: string): void {
-    const data = this.getSessions(featureName);
+    const data = this.getAll(featureName);
     data.master = sessionId;
     this.saveSessions(featureName, data);
   }
 
   getMaster(featureName: string): string | undefined {
-    return this.getSessions(featureName).master;
+    return this.getAll(featureName).master;
   }
 
   list(featureName: string): SessionInfo[] {
-    return this.getSessions(featureName).sessions;
+    return this.getAll(featureName).sessions;
   }
 
   get(featureName: string, sessionId: string): SessionInfo | undefined {
-    return this.getSessions(featureName).sessions.find(s => s.sessionId === sessionId);
+    return this.getAll(featureName).sessions.find(s => s.sessionId === sessionId);
   }
 
   getByTask(featureName: string, taskFolder: string): SessionInfo | undefined {
-    return this.getSessions(featureName).sessions.find(s => s.taskFolder === taskFolder);
+    return this.getAll(featureName).sessions.find(s => s.taskFolder === taskFolder);
   }
 
   remove(featureName: string, sessionId: string): boolean {
-    const data = this.getSessions(featureName);
+    const data = this.getAll(featureName);
     const index = data.sessions.findIndex(s => s.sessionId === sessionId);
     if (index === -1) return false;
 
@@ -96,7 +96,7 @@ export class FsSessionAdapter {
       .map(d => d.name);
 
     for (const feature of features) {
-      const sessions = this.getSessions(feature);
+      const sessions = this.getAll(feature);
       if (sessions.sessions.some(s => s.sessionId === sessionId)) {
         return feature;
       }
@@ -109,7 +109,7 @@ export class FsSessionAdapter {
   }
 
   fork(featureName: string, fromSessionId?: string): SessionInfo {
-    const data = this.getSessions(featureName);
+    const data = this.getAll(featureName);
     const now = new Date().toISOString();
 
     const sourceSession = fromSessionId
@@ -130,7 +130,7 @@ export class FsSessionAdapter {
   }
 
   fresh(featureName: string, title?: string): SessionInfo {
-    const data = this.getSessions(featureName);
+    const data = this.getAll(featureName);
     const now = new Date().toISOString();
 
     const newSessionId = `ses_${title ? title.replace(/\s+/g, '_').toLowerCase() : Date.now()}`;
