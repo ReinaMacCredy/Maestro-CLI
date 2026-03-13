@@ -92,6 +92,7 @@ export async function prepareWorkerLaunch(
   ];
 
   const droppedTasksHint = taskBudgetResult.droppedTasksHint;
+  const droppedTaskCount = rawPreviousTasks.length - previousTasks.length;
 
   const taskOrder = parseInt(taskInfo.folder.match(/^(\d+)/)?.[1] || '0', 10);
   const specContent = buildSpecContent({
@@ -132,7 +133,7 @@ export async function prepareWorkerLaunch(
     spec: specContent,
     previousTasks,
     continueFrom: continueFromParam,
-    droppedTaskCount: rawPreviousTasks.length - previousTasks.length,
+    droppedTaskCount,
     droppedTasksHint,
   });
 
@@ -152,6 +153,6 @@ export async function prepareWorkerLaunch(
     branch: worktree.branch,
     truncationEvents,
     droppedTasksHint,
-    droppedTaskCount: rawPreviousTasks.length - previousTasks.length,
+    droppedTaskCount,
   };
 }
