@@ -21,6 +21,10 @@ import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath } from '../utils/paths.ts';
 import { readJson, writeJson, ensureDir } from '../utils/fs-io.ts';
 import * as path from 'path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 /** br returns exit code 5 when its database is locked (transient). */
 const TRANSIENT_EXIT_CODE = 5;
@@ -247,25 +251,32 @@ export class BrTaskAdapter implements TaskPort {
   private async exec<T = unknown>(args: string[]): Promise<T> {
     for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
       try {
-        const proc = Bun.spawn(['br', ...args], {
+        const { stdout, stderr } = await execFileAsync('br', args, {
           cwd: this.projectRoot,
-          stdout: 'pipe',
-          stderr: 'pipe',
+          maxBuffer: 10 * 1024 * 1024,
         });
 
-        const [exitCode, stdout, stderr] = await Promise.all([
-          proc.exited,
-          new Response(proc.stdout).text(),
-          new Response(proc.stderr).text(),
-        ]);
-
-        if (exitCode === 0) {
-          try {
-            return JSON.parse(stdout) as T;
-          } catch {
-            return stdout as unknown as T;
-          }
+        try {
+          return JSON.parse(stdout) as T;
+        } catch {
+          return stdout as unknown as T;
         }
+      } catch (err) {
+        if (err instanceof MaestroError) throw err;
+
+        const error = err as NodeJS.ErrnoException & { code?: string; exitCode?: number; stdout?: string; stderr?: string };
+
+        if (error.code === 'ENOENT') {
+          throw new MaestroError(
+            'br not found',
+            [this.installHint()]
+          );
+        }
+
+        // execFile rejects on non-zero exit -- extract exit code from error
+        const exitCode = error.exitCode ?? (error as any).status ?? 1;
+        const stdout = error.stdout || '';
+        const stderr = error.stderr || '';
 
         if (exitCode === TRANSIENT_EXIT_CODE && attempt < RETRY_DELAYS.length) {
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
@@ -276,17 +287,6 @@ export class BrTaskAdapter implements TaskPort {
           `br command failed (exit ${exitCode}): ${stderr.trim() || stdout.trim()}`,
           exitCode === TRANSIENT_EXIT_CODE ? ['Database locked. Retry or check for other br processes.'] : []
         );
-      } catch (err) {
-        if (err instanceof MaestroError) throw err;
-
-        const error = err as NodeJS.ErrnoException;
-        if (error.code === 'ENOENT') {
-          throw new MaestroError(
-            'br not found',
-            [this.installHint()]
-          );
-        }
-        throw err;
       }
     }
 

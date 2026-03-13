@@ -7,6 +7,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { ensureDir, writeJsonAtomic, readJson, deepMerge } from './fs-io.ts';
 
+/** Node-compatible synchronous sleep (replaces Bun.sleepSync). */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 export interface LockOptions {
   timeout?: number;
   retryInterval?: number;
@@ -157,7 +162,7 @@ export function acquireLockSync(
         );
       }
 
-      Bun.sleepSync(opts.retryInterval);
+      sleepSync(opts.retryInterval);
     }
   }
 }
