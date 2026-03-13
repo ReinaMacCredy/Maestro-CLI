@@ -6,6 +6,9 @@ async function build() {
   console.log('[build] Generating skills registry...');
   await $`bun src/skills/generate.ts`;
 
+  console.log('[build] Generating command registry...');
+  await $`bun src/commands/generate.ts`;
+
   console.log('[build] Compiling...');
   const result = await Bun.build({
     entrypoints: ['./src/cli.ts'],
