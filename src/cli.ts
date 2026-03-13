@@ -58,6 +58,8 @@ import cmdSessionList from './commands/session-list.ts';
 import cmdSessionMaster from './commands/session-master.ts';
 import cmdSessionFork from './commands/session-fork.ts';
 import cmdSessionFresh from './commands/session-fresh.ts';
+import cmdSessionEnd from './commands/session-end.ts';
+import cmdSessionInfo from './commands/session-info.ts';
 import cmdAskCreate from './commands/ask-create.ts';
 import cmdAskAnswer from './commands/ask-answer.ts';
 import cmdAskList from './commands/ask-list.ts';
@@ -126,6 +128,8 @@ const subCommands = {
   'session-master': cmdSessionMaster,
   'session-fork': cmdSessionFork,
   'session-fresh': cmdSessionFresh,
+  'session-end': cmdSessionEnd,
+  'session-info': cmdSessionInfo,
   'ask-create': cmdAskCreate,
   'ask-answer': cmdAskAnswer,
   'ask-list': cmdAskList,

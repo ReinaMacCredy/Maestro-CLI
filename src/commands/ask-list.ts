@@ -5,6 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderTable } from '../lib/output.ts';
+import { resolveFeature } from '../lib/resolve-feature.ts';
 import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
@@ -12,14 +13,14 @@ export default defineCommand({
   args: {
     feature: {
       type: 'string',
-      description: 'Feature name',
-      required: true,
+      description: 'Feature name (auto-resolved if omitted)',
     },
   },
   async run({ args }) {
     try {
+      const feature = resolveFeature(args.feature);
       const { askAdapter } = getServices();
-      const asks = askAdapter.listPending(args.feature);
+      const asks = askAdapter.listPending(feature);
       output(asks, (items) => {
         if (items.length === 0) return 'No pending asks.';
         const rows = items.map((a: { id: string; question: string; timestamp: string }) => [

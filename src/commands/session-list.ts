@@ -5,6 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderTable } from '../lib/output.ts';
+import { resolveFeature } from '../lib/resolve-feature.ts';
 import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
@@ -12,14 +13,14 @@ export default defineCommand({
   args: {
     feature: {
       type: 'string',
-      description: 'Feature name',
-      required: true,
+      description: 'Feature name (auto-resolved if omitted)',
     },
   },
   async run({ args }) {
     try {
+      const feature = resolveFeature(args.feature);
       const { sessionAdapter } = getServices();
-      const sessions = sessionAdapter.list(args.feature);
+      const sessions = sessionAdapter.list(feature);
       output(sessions, (items) => {
         if (items.length === 0) return 'No sessions found.';
         const rows = items.map((s: { sessionId: string; taskFolder?: string; lastActiveAt: string }) => [

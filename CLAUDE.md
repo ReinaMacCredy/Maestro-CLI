@@ -85,7 +85,7 @@ A NEW worker spawns in the SAME worktree. Previous progress is preserved.
 
 ## Command Reference
 
-66 commands organized by domain:
+68 commands organized by domain:
 
 ### Feature (5)
 
@@ -169,15 +169,17 @@ A NEW worker spawns in the SAME worktree. Previous progress is preserved.
 | `context-archive` | Archive context files |
 | `context-stats` | Show context statistics |
 
-### Session (5)
+### Session (7)
 
 | Command | Purpose |
 |---------|---------|
 | `session-track` | Track current session |
 | `session-list` | List sessions |
-| `session-master` | Show master session |
+| `session-master` | Set master session |
 | `session-fork` | Fork from existing session |
 | `session-fresh` | Start fresh session |
+| `session-end` | End (remove) a session |
+| `session-info` | Show session details |
 
 ### Ask (4)
 
