@@ -44,7 +44,7 @@ function sanitizeShellArg(s: string): string {
  * Build a context-rich prompt for a worker agent.
  *
  * All tool references use CLI syntax (maestro worktree-commit, etc.)
- * instead of MCP function calls (hive_worktree_commit, etc.).
+ * instead of MCP function calls (maestro_worktree_commit, etc.).
  */
 export function buildWorkerPrompt(params: WorkerPromptParams): string {
   const {

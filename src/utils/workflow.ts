@@ -1,7 +1,7 @@
 /**
  * Workflow utilities for maestroCLI.
  * Forked from hive-core/src/utils/workflow.ts.
- * Adapted: tool references changed from hive_ MCP calls to maestro CLI commands.
+ * Adapted: tool references changed from maestro_ MCP calls to maestro CLI commands.
  */
 
 export function countTaskStatuses(tasks: Array<{ status: string }>): {

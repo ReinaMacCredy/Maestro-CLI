@@ -1,6 +1,6 @@
 /**
  * Name validation for maestroCLI.
- * Forked from claude-hive/src/utils/resolve.ts validateName function.
+ * Forked from claude-maestro/src/utils/resolve.ts validateName function.
  */
 
 export function validateName(raw: string, label = 'name'): { ok: true; name: string } | { ok: false; error: string } {
