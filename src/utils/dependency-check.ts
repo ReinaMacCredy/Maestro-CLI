@@ -1,6 +1,5 @@
 /**
- * Feature resolution utilities for maestroCLI.
- * Adapted: TaskService -> TaskPort for checkDependencies.
+ * Task dependency checking for maestroCLI.
  */
 
 import { buildEffectiveDependencies } from './task-dependency-graph.ts';

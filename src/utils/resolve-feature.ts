@@ -2,7 +2,7 @@
  * Feature resolution: explicit --feature > worktree detection > single-feature fallback.
  */
 
-import { detectContext, listFeatures, findProjectRoot } from '../utils/detection.ts';
+import { detectContext, listFeatures, findProjectRoot } from './detection.ts';
 
 export function resolveFeature(explicit?: string): string {
   if (explicit) return explicit;

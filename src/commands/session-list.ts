@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderTable } from '../lib/output.ts';
-import { resolveFeature } from '../lib/resolve-feature.ts';
+import { resolveFeature } from '../utils/resolve-feature.ts';
 import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({

@@ -6,7 +6,7 @@
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
 import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
-import { checkDependencies } from '../utils/feature-resolution.ts';
+import { checkDependencies } from '../utils/dependency-check.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { prepareWorkerLaunch, type WorkerLaunchServices, type WorkerLaunchContext } from '../utils/worker-launch.ts';
 import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
