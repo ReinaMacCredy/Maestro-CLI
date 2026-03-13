@@ -113,8 +113,7 @@ export function readJson<T>(filePath: string): T | null {
 }
 
 export function writeJson<T>(filePath: string, data: T): void {
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  writeJsonAtomic(filePath, data);
 }
 
 // ============================================================================
@@ -137,11 +136,30 @@ export function getLockPath(filePath: string): string {
   return `${filePath}.lock`;
 }
 
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function isLockStale(lockPath: string, staleTTL: number): boolean {
   try {
     const stat = fs.statSync(lockPath);
     const age = Date.now() - stat.mtimeMs;
-    return age > staleTTL;
+    if (age > staleTTL) return true;
+
+    // Check if owning process is still alive (PID-based detection)
+    try {
+      const content = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
+      if (content.pid && !isProcessAlive(content.pid)) return true;
+    } catch {
+      // Can't read lock content -- fall back to TTL only
+    }
+
+    return false;
   } catch {
     return true;
   }
@@ -382,6 +400,5 @@ export function readText(filePath: string): string | null {
 }
 
 export function writeText(filePath: string, content: string): void {
-  ensureDir(path.dirname(filePath));
-  fs.writeFileSync(filePath, content);
+  writeAtomic(filePath, content);
 }

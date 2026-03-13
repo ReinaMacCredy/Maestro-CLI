@@ -5,8 +5,11 @@
  */
 
 import * as fs from "fs/promises";
+import { rmSync } from "fs";
+import { spawnSync } from "child_process";
 import * as path from "path";
 import simpleGit, { SimpleGit } from "simple-git";
+import { acquireLock } from '../utils/paths.ts';
 import type { WorktreeInfo, DiffResult, ApplyResult, CommitResult, MergeResult, WorktreeConfig } from '../types.ts';
 
 export class GitWorktreeAdapter {
@@ -50,26 +53,40 @@ export class GitWorktreeAdapter {
       return existing;
     }
 
-    try {
-      await git.raw(["worktree", "add", "-b", branchName, worktreePath, base]);
-    } catch {
-      try {
-        await git.raw(["worktree", "add", worktreePath, branchName]);
-      } catch (retryError) {
-        throw new Error(`Failed to create worktree: ${retryError}`);
-      }
-    }
-
-    const worktreeGit = this.getGit(worktreePath);
-    const commit = (await worktreeGit.revparse(["HEAD"])).trim();
-
-    return {
-      path: worktreePath,
-      branch: branchName,
-      commit,
-      feature,
-      step,
+    // Clean up partial worktree on SIGINT to prevent phantom worktrees
+    const baseDir = this.config.baseDir;
+    const cleanupOnAbort = () => {
+      try { rmSync(worktreePath, { recursive: true, force: true }); } catch {}
+      spawnSync('git', ['worktree', 'prune'], { cwd: baseDir, stdio: 'ignore' });
+      spawnSync('git', ['branch', '-D', branchName], { cwd: baseDir, stdio: 'ignore' });
+      process.exit(130);
     };
+    process.on('SIGINT', cleanupOnAbort);
+
+    try {
+      try {
+        await git.raw(["worktree", "add", "-b", branchName, worktreePath, base]);
+      } catch {
+        try {
+          await git.raw(["worktree", "add", worktreePath, branchName]);
+        } catch (retryError) {
+          throw new Error(`Failed to create worktree: ${retryError}`);
+        }
+      }
+
+      const worktreeGit = this.getGit(worktreePath);
+      const commit = (await worktreeGit.revparse(["HEAD"])).trim();
+
+      return {
+        path: worktreePath,
+        branch: branchName,
+        commit,
+        feature,
+        step,
+      };
+    } finally {
+      process.removeListener('SIGINT', cleanupOnAbort);
+    }
   }
 
   async get(feature: string, step: string): Promise<WorktreeInfo | null> {
@@ -354,63 +371,71 @@ export class GitWorktreeAdapter {
   }
 
   async merge(feature: string, step: string, strategy: 'merge' | 'squash' | 'rebase' = 'merge'): Promise<MergeResult> {
-    const branchName = this.getBranchName(feature, step);
-    const git = this.getGit();
+    // Serialize merges to prevent git index.lock collisions
+    const mergeLockPath = path.join(this.config.hiveDir, 'merge');
+    const release = await acquireLock(mergeLockPath);
 
     try {
-      const branches = await git.branch();
-      if (!branches.all.includes(branchName)) {
-        return { success: false, merged: false, error: `Branch ${branchName} not found` };
-      }
+      const branchName = this.getBranchName(feature, step);
+      const git = this.getGit();
 
-      const currentBranch = branches.current;
-
-      const diffStat = await git.diff([`${currentBranch}...${branchName}`, "--stat"]);
-      const filesChanged = diffStat
-        .split("\n")
-        .filter(l => l.trim() && l.includes("|"))
-        .map(l => l.split("|")[0].trim());
-
-      if (strategy === 'squash') {
-        await git.raw(["merge", "--squash", branchName]);
-        const result = await git.commit(`hive: merge ${step} (squashed)`);
-        return { success: true, merged: true, sha: result.commit, filesChanged };
-      } else if (strategy === 'rebase') {
-        const commits = await git.log([`${currentBranch}..${branchName}`]);
-        const commitsToApply = [...commits.all].reverse();
-        for (const commit of commitsToApply) {
-          await git.raw(["cherry-pick", commit.hash]);
+      try {
+        const branches = await git.branch();
+        if (!branches.all.includes(branchName)) {
+          return { success: false, merged: false, error: `Branch ${branchName} not found` };
         }
-        const head = (await git.revparse(["HEAD"])).trim();
-        return { success: true, merged: true, sha: head, filesChanged };
-      } else {
-        const result = await git.merge([branchName, "--no-ff", "-m", `hive: merge ${step}`]);
-        const head = (await git.revparse(["HEAD"])).trim();
-        return {
-          success: true,
-          merged: !result.failed,
-          sha: head,
-          filesChanged,
-          conflicts: result.conflicts?.map(c => c.file || String(c)) || [],
-        };
+
+        const currentBranch = branches.current;
+
+        const diffStat = await git.diff([`${currentBranch}...${branchName}`, "--stat"]);
+        const filesChanged = diffStat
+          .split("\n")
+          .filter(l => l.trim() && l.includes("|"))
+          .map(l => l.split("|")[0].trim());
+
+        if (strategy === 'squash') {
+          await git.raw(["merge", "--squash", branchName]);
+          const result = await git.commit(`hive: merge ${step} (squashed)`);
+          return { success: true, merged: true, sha: result.commit, filesChanged };
+        } else if (strategy === 'rebase') {
+          const commits = await git.log([`${currentBranch}..${branchName}`]);
+          const commitsToApply = [...commits.all].reverse();
+          for (const commit of commitsToApply) {
+            await git.raw(["cherry-pick", commit.hash]);
+          }
+          const head = (await git.revparse(["HEAD"])).trim();
+          return { success: true, merged: true, sha: head, filesChanged };
+        } else {
+          const result = await git.merge([branchName, "--no-ff", "-m", `hive: merge ${step}`]);
+          const head = (await git.revparse(["HEAD"])).trim();
+          return {
+            success: true,
+            merged: !result.failed,
+            sha: head,
+            filesChanged,
+            conflicts: result.conflicts?.map(c => c.file || String(c)) || [],
+          };
+        }
+      } catch (error: unknown) {
+        const err = error as { message?: string };
+
+        if (err.message?.includes("CONFLICT") || err.message?.includes("conflict")) {
+          await git.raw(["merge", "--abort"]).catch(() => {});
+          await git.raw(["rebase", "--abort"]).catch(() => {});
+          await git.raw(["cherry-pick", "--abort"]).catch(() => {});
+
+          return {
+            success: false,
+            merged: false,
+            error: "Merge conflicts detected",
+            conflicts: this.parseConflictsFromError(err.message || ""),
+          };
+        }
+
+        return { success: false, merged: false, error: err.message || "Merge failed" };
       }
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-
-      if (err.message?.includes("CONFLICT") || err.message?.includes("conflict")) {
-        await git.raw(["merge", "--abort"]).catch(() => {});
-        await git.raw(["rebase", "--abort"]).catch(() => {});
-        await git.raw(["cherry-pick", "--abort"]).catch(() => {});
-
-        return {
-          success: false,
-          merged: false,
-          error: "Merge conflicts detected",
-          conflicts: this.parseConflictsFromError(err.message || ""),
-        };
-      }
-
-      return { success: false, merged: false, error: err.message || "Merge failed" };
+    } finally {
+      release();
     }
   }
 

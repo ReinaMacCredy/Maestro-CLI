@@ -14,6 +14,8 @@ import {
   ensureDir,
   readJson,
   writeJson,
+  writeJsonAtomic,
+  acquireLockSync,
   fileExists,
 } from '../utils/paths.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../types.ts';
@@ -76,20 +78,26 @@ export class FsFeatureAdapter {
   }
 
   updateStatus(name: string, status: FeatureStatusType): FeatureJson {
-    const feature = this.get(name);
-    if (!feature) throw new Error(`Feature '${name}' not found`);
+    const jsonPath = getFeatureJsonPath(this.projectRoot, name);
+    const release = acquireLockSync(jsonPath);
+    try {
+      const feature = readJson<FeatureJson>(jsonPath);
+      if (!feature) throw new Error(`Feature '${name}' not found`);
 
-    feature.status = status;
+      feature.status = status;
 
-    if (status === 'approved' && !feature.approvedAt) {
-      feature.approvedAt = new Date().toISOString();
+      if (status === 'approved' && !feature.approvedAt) {
+        feature.approvedAt = new Date().toISOString();
+      }
+      if (status === 'completed' && !feature.completedAt) {
+        feature.completedAt = new Date().toISOString();
+      }
+
+      writeJsonAtomic(jsonPath, feature);
+      return feature;
+    } finally {
+      release();
     }
-    if (status === 'completed' && !feature.completedAt) {
-      feature.completedAt = new Date().toISOString();
-    }
-
-    writeJson(getFeatureJsonPath(this.projectRoot, name), feature);
-    return feature;
   }
 
   /**
@@ -124,11 +132,17 @@ export class FsFeatureAdapter {
   }
 
   setSession(name: string, sessionId: string): void {
-    const feature = this.get(name);
-    if (!feature) throw new Error(`Feature '${name}' not found`);
+    const jsonPath = getFeatureJsonPath(this.projectRoot, name);
+    const release = acquireLockSync(jsonPath);
+    try {
+      const feature = readJson<FeatureJson>(jsonPath);
+      if (!feature) throw new Error(`Feature '${name}' not found`);
 
-    feature.sessionId = sessionId;
-    writeJson(getFeatureJsonPath(this.projectRoot, name), feature);
+      feature.sessionId = sessionId;
+      writeJsonAtomic(jsonPath, feature);
+    } finally {
+      release();
+    }
   }
 
   getSession(name: string): string | undefined {
