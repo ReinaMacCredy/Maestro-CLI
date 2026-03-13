@@ -1,0 +1,13 @@
+{
+  "owner": "maestro",
+  "metadata": {
+    "repository": "https://github.com/user/maestro"
+  },
+  "plugins": [
+    {
+      "name": "maestro",
+      "category": "development",
+      "keywords": ["mcp", "orchestration", "worktree", "tdd", "agent", "workflow"]
+    }
+  ]
+}
