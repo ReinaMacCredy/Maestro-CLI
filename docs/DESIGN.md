@@ -48,7 +48,7 @@ commands/  -->  usecases/  -->  ports/  <--  adapters/
 
 **Use Cases** (8 files) -- Business rules: merge-task, start-task, write-plan, sync-plan, approve-plan, complete-feature, commit-task, check-status. Depend on ports, never on adapters.
 
-**Ports** (4 interfaces) -- Boundaries: `TaskPort` (task CRUD), `VcsPort` (version control), `SearchPort` (code search), `CodeIntelPort` (AST operations). Defined as TypeScript interfaces.
+**Ports** (1 interface) -- Boundaries: `TaskPort` (task CRUD). Defined as a TypeScript interface.
 
 **Adapters** (10 files) -- Implementations: filesystem-based feature/plan/context/session/config/ask adapters, git worktree adapter, br task adapter, agents-md adapter, docker sandbox adapter.
 

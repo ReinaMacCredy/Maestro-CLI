@@ -50,7 +50,7 @@ src/
   commands/     # One file per CLI command
   lib/          # Cross-cutting: output, errors, signals
   plugins/      # Plugin registry and loader
-  ports/        # Interfaces (TaskPort, VcsPort, etc.)
+  ports/        # Interfaces (TaskPort)
   skills/       # Skill loader and registry generator
   usecases/     # Business rules
   utils/        # Helpers: paths, detection, plan-parser
