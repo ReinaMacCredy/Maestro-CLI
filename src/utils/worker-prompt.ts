@@ -33,6 +33,11 @@ export interface WorkerPromptParams {
   continueFrom?: ContinueFromBlocked;
 }
 
+/** Escape characters that could break double-quoted shell arguments. */
+function sanitizeShellArg(s: string): string {
+  return s.replace(/["$`\\!]/g, '\\$&');
+}
+
 /**
  * Build a context-rich prompt for a worker agent.
  *
@@ -49,6 +54,10 @@ export function buildWorkerPrompt(params: WorkerPromptParams): string {
     spec,
     continueFrom,
   } = params;
+
+  // Sanitize values used in bash command examples to prevent injection
+  const safeTask = sanitizeShellArg(task);
+  const safeFeature = sanitizeShellArg(feature);
 
   const continuationSection = continueFrom ? `
 ## Continuation from Blocked State
@@ -109,7 +118,7 @@ Instead, escalate via the blocker protocol:
 2. **Run maestro worktree-commit** with blocker info:
 
 \`\`\`bash
-maestro worktree-commit --task "${task}" --feature "${feature}" --status blocked --summary "What you accomplished so far" --blocker-reason "Why you're blocked" --blocker-recommendation "Your suggested choice"
+maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status blocked --summary "What you accomplished so far" --blocker-reason "Why you're blocked" --blocker-recommendation "Your suggested choice"
 \`\`\`
 
 **After running maestro worktree-commit with blocked status, STOP IMMEDIATELY.**
@@ -128,7 +137,7 @@ This keeps the user focused on ONE conversation instead of multiple worker panes
 When your task is **fully complete**:
 
 \`\`\`bash
-maestro worktree-commit --task "${task}" --feature "${feature}" --status completed --summary "Concise summary of what you accomplished"
+maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status completed --summary "Concise summary of what you accomplished"
 \`\`\`
 
 Then inspect the command output:
@@ -152,13 +161,13 @@ The orchestrator will take over from here.
 If you encounter an **unrecoverable error**:
 
 \`\`\`bash
-maestro worktree-commit --task "${task}" --feature "${feature}" --status failed --summary "What went wrong and what was attempted"
+maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status failed --summary "What went wrong and what was attempted"
 \`\`\`
 
 If you made **partial progress** but can't continue:
 
 \`\`\`bash
-maestro worktree-commit --task "${task}" --feature "${feature}" --status partial --summary "What was completed and what remains"
+maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status partial --summary "What was completed and what remains"
 \`\`\`
 
 ---

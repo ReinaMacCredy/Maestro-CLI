@@ -82,7 +82,8 @@ export async function checkTool(
   if (!cmd) {
     // No detect command -- try `which <binary>`
     try {
-      execSync(`which ${tool.binary}`, { stdio: "pipe" });
+      const safeBinary = tool.binary.replace(/'/g, "'\\''");
+      execSync(`command -v '${safeBinary}'`, { stdio: "pipe" });
       status.installed = true;
     } catch {
       // not found

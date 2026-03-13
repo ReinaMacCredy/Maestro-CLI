@@ -9,6 +9,11 @@ import { join, sep } from 'path';
 import { execSync } from 'child_process';
 import type { SandboxConfig } from '../types.ts';
 
+/** POSIX single-quote escaping: wraps in single quotes, escapes embedded quotes. */
+function shellQuote(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}
+
 export class DockerSandboxAdapter {
   static detectImage(worktreePath: string): string | null {
     if (existsSync(join(worktreePath, 'Dockerfile'))) {
@@ -31,8 +36,7 @@ export class DockerSandboxAdapter {
   }
 
   static buildRunCommand(worktreePath: string, command: string, image: string): string {
-    const escapedCommand = command.replace(/'/g, "'\\''");
-    return `docker run --rm -v ${worktreePath}:/app -w /app ${image} sh -c '${escapedCommand}'`;
+    return `docker run --rm -v ${shellQuote(worktreePath)}:/app -w /app ${shellQuote(image)} sh -c ${shellQuote(command)}`;
   }
 
   static containerName(worktreePath: string): string {
@@ -53,11 +57,11 @@ export class DockerSandboxAdapter {
     const name = this.containerName(worktreePath);
 
     try {
-      execSync(`docker inspect --format='{{.State.Running}}' ${name}`, { stdio: 'pipe' });
+      execSync(`docker inspect --format='{{.State.Running}}' ${shellQuote(name)}`, { stdio: 'pipe' });
       return name;
     } catch {
       execSync(
-        `docker run -d --name ${name} -v ${worktreePath}:/app -w /app ${image} tail -f /dev/null`,
+        `docker run -d --name ${shellQuote(name)} -v ${shellQuote(worktreePath)}:/app -w /app ${shellQuote(image)} tail -f /dev/null`,
         { stdio: 'pipe' }
       );
       return name;
@@ -65,14 +69,13 @@ export class DockerSandboxAdapter {
   }
 
   static buildExecCommand(containerName: string, command: string): string {
-    const escapedCommand = command.replace(/'/g, "'\\''");
-    return `docker exec ${containerName} sh -c '${escapedCommand}'`;
+    return `docker exec ${shellQuote(containerName)} sh -c ${shellQuote(command)}`;
   }
 
   static stopContainer(worktreePath: string): void {
     const name = this.containerName(worktreePath);
     try {
-      execSync(`docker rm -f ${name}`, { stdio: 'ignore' });
+      execSync(`docker rm -f ${shellQuote(name)}`, { stdio: 'ignore' });
     } catch {
       // Container may not exist
     }

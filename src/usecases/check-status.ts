@@ -7,6 +7,7 @@ import type { TaskPort } from '../ports/tasks.ts';
 import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
 import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
 import type { FsContextAdapter } from '../adapters/fs-context.ts';
+import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
@@ -15,6 +16,7 @@ export interface StatusServices {
   featureAdapter: FsFeatureAdapter;
   planAdapter: FsPlanAdapter;
   contextAdapter: FsContextAdapter;
+  worktreeAdapter?: GitWorktreeAdapter;
 }
 
 export interface StatusResult {
@@ -37,6 +39,7 @@ export interface StatusResult {
   };
   runnable: string[];
   blocked: Record<string, string[]>;
+  zombies: string[];
   context: {
     count: number;
     totalBytes: number;
@@ -48,7 +51,7 @@ export async function checkStatus(
   services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
-  const { taskPort, featureAdapter, planAdapter, contextAdapter } = services;
+  const { taskPort, featureAdapter, planAdapter, contextAdapter, worktreeAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new Error(`Feature '${featureName}' not found`);
@@ -62,6 +65,19 @@ export async function checkStatus(
   ]);
   const contextStats = contextAdapter.stats(featureName);
   const comments = plan?.comments || [];
+
+  // Detect zombie tasks: in_progress but worktree no longer exists
+  let zombies: string[] = [];
+  if (worktreeAdapter) {
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    const checks = await Promise.all(
+      inProgress.map(async (t) => {
+        const wt = await worktreeAdapter.get(featureName, t.folder);
+        return wt ? null : t.folder;
+      }),
+    );
+    zombies = checks.filter((f): f is string => f !== null);
+  }
 
   const counts = countTaskStatuses(tasks);
   const runnableFolders = runnable.map(t => t.folder);
@@ -91,6 +107,7 @@ export async function checkStatus(
     },
     runnable: runnableFolders,
     blocked,
+    zombies,
     context: {
       count: contextStats.count,
       totalBytes: contextStats.totalBytes,

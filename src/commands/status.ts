@@ -38,6 +38,14 @@ function formatStatus(result: StatusResult): string {
     lines.push(`  ${formatTruncation(truncated, 'tasks')}`);
   }
 
+  if (result.zombies.length > 0) {
+    lines.push('');
+    lines.push(renderStatusLine('zombies', `${result.zombies.length} task(s) in_progress with no worktree`));
+    for (const z of result.zombies) {
+      lines.push(`  [!] ${z} -- worktree missing, task stuck`);
+    }
+  }
+
   if (result.context.count > 0) {
     lines.push(renderStatusLine('context', `${result.context.count} files, ~${result.context.totalBytes} bytes`));
   }
