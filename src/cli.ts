@@ -3,13 +3,14 @@ import { setOutputMode } from './lib/output.ts';
 import { initServices } from './services.ts';
 import { findProjectRoot } from './utils/detection.ts';
 import { subCommands } from './commands/registry.generated.ts';
+import { VERSION } from './version.ts';
 
 const subCommandNames = Object.keys(subCommands);
 
 const main = defineCommand({
   meta: {
     name: 'maestro',
-    version: '0.1.0',
+    version: VERSION,
     description: 'Agent-optimized development orchestrator',
   },
   args: {
@@ -31,8 +32,9 @@ const main = defineCommand({
       setOutputMode('json');
     }
 
-    const isInit = process.argv.includes('init');
-    if (!isInit) {
+    const metaCommands = new Set(['init', 'self-update', 'update']);
+    const isMetaCommand = process.argv.some(a => metaCommands.has(a));
+    if (!isMetaCommand) {
       const projectRoot = findProjectRoot(process.cwd());
       if (projectRoot) {
         initServices(projectRoot);
@@ -44,10 +46,10 @@ const main = defineCommand({
     if (hasSubCommand) return;
 
     if (args.version) {
-      console.log('0.1.0');
+      console.log(VERSION);
       return;
     }
-    console.log('maestro 0.1.0 -- agent-optimized development orchestrator');
+    console.log(`maestro ${VERSION} -- agent-optimized development orchestrator`);
     console.log('Run `maestro --help` for usage.');
   },
 });

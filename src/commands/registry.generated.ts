@@ -29,6 +29,7 @@ import cmdPlanRevoke from './plan/revoke.ts';
 import cmdPlanWrite from './plan/write.ts';
 import cmdSandboxStatus from './sandbox/status.ts';
 import cmdSandboxWrap from './sandbox/wrap.ts';
+import cmdSelfUpdate from './self-update.ts';
 import cmdSessionEnd from './session/end.ts';
 import cmdSessionFork from './session/fork.ts';
 import cmdSessionFresh from './session/fresh.ts';
@@ -57,6 +58,7 @@ import cmdTaskSpecRead from './task/spec-read.ts';
 import cmdTaskSpecWrite from './task/spec-write.ts';
 import cmdTaskSync from './task/sync.ts';
 import cmdTaskUpdate from './task/update.ts';
+import cmdUpdate from './update.ts';
 import cmdWorktreeCleanup from './worktree/cleanup.ts';
 import cmdWorktreeCommit from './worktree/commit.ts';
 import cmdWorktreeConflicts from './worktree/conflicts.ts';
@@ -99,6 +101,7 @@ export const subCommands = {
   'plan-write': cmdPlanWrite,
   'sandbox-status': cmdSandboxStatus,
   'sandbox-wrap': cmdSandboxWrap,
+  'self-update': cmdSelfUpdate,
   'session-end': cmdSessionEnd,
   'session-fork': cmdSessionFork,
   'session-fresh': cmdSessionFresh,
@@ -127,6 +130,7 @@ export const subCommands = {
   'task-spec-write': cmdTaskSpecWrite,
   'task-sync': cmdTaskSync,
   'task-update': cmdTaskUpdate,
+  'update': cmdUpdate,
   'worktree-cleanup': cmdWorktreeCleanup,
   'worktree-commit': cmdWorktreeCommit,
   'worktree-conflicts': cmdWorktreeConflicts,
