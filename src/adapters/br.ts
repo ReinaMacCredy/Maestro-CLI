@@ -18,7 +18,8 @@ import type { TaskInfo, TaskStatusType } from '../types.ts';
 import type { TaskPort, CreateOpts, UpdateFields, ListOpts } from '../ports/tasks.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { readJson, writeJson, ensureDir, getFeaturePath } from '../utils/paths.ts';
+import { getFeaturePath } from '../utils/paths.ts';
+import { readJson, writeJson, ensureDir } from '../utils/fs-io.ts';
 import * as path from 'path';
 
 /** br returns exit code 5 when its database is locked (transient). */

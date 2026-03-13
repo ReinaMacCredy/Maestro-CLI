@@ -10,7 +10,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { writeJson, writeAtomic, readJson } from "../../utils/paths";
+import { writeJson, writeAtomic, readJson } from "../../utils/fs-io";
 import { DockerSandboxAdapter } from "../../adapters/docker-sandbox";
 
 // ============================================================================

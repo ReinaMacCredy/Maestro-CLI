@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { output } from '../lib/output.ts';
 import { handleCommandError } from '../lib/errors.ts';
-import { getHivePath, ensureDir } from '../utils/paths.ts';
+import { getHivePath } from '../utils/paths.ts';
+import { ensureDir } from '../utils/fs-io.ts';
 import { findProjectRoot } from '../utils/detection.ts';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -9,7 +9,7 @@ import { rmSync } from "fs";
 import { spawnSync } from "child_process";
 import * as path from "path";
 import simpleGit, { SimpleGit } from "simple-git";
-import { acquireLock } from '../utils/paths.ts';
+import { acquireLock } from '../utils/locking.ts';
 import type { WorktreeInfo, DiffResult, ApplyResult, CommitResult, MergeResult, WorktreeConfig } from '../types.ts';
 
 export class GitWorktreeAdapter {

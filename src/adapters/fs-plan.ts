@@ -8,12 +8,8 @@ import {
   getCommentsPath,
   getFeatureJsonPath,
   getApprovedPath,
-  readJson,
-  writeJson,
-  readText,
-  writeText,
-  fileExists,
 } from '../utils/paths.ts';
+import { readJson, writeJson, readText, writeText, fileExists } from '../utils/fs-io.ts';
 import type { FeatureJson, CommentsJson, PlanComment, PlanReadResult } from '../types.ts';
 import * as fs from 'fs';
 
