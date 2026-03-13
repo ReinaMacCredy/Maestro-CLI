@@ -43,7 +43,6 @@ function isLockStale(lockPath: string, staleTTL: number): boolean {
     const age = Date.now() - stat.mtimeMs;
     if (age > staleTTL) return true;
 
-    // Check if owning process is still alive (PID-based detection)
     const content = readJson<{ pid?: number }>(lockPath);
     if (content?.pid && !isProcessAlive(content.pid)) return true;
 
@@ -53,66 +52,14 @@ function isLockStale(lockPath: string, staleTTL: number): boolean {
   }
 }
 
-export async function acquireLock(
+/**
+ * Core lock acquisition loop. All fs operations are synchronous;
+ * only the sleep strategy differs between async and sync callers.
+ */
+function acquireLockImpl(
   filePath: string,
-  options: LockOptions = {}
-): Promise<() => void> {
-  const opts = { ...DEFAULT_LOCK_OPTIONS, ...options };
-  const lockPath = getLockPath(filePath);
-  const lockDir = path.dirname(lockPath);
-  const startTime = Date.now();
-  const lockContent = JSON.stringify({
-    pid: process.pid,
-    timestamp: new Date().toISOString(),
-    filePath,
-  });
-
-  ensureDir(lockDir);
-
-  while (true) {
-    try {
-      const fd = fs.openSync(lockPath, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY);
-      fs.writeSync(fd, lockContent);
-      fs.closeSync(fd);
-
-      return () => {
-        try {
-          fs.unlinkSync(lockPath);
-        } catch {
-          // Lock file already removed
-        }
-      };
-    } catch (err: unknown) {
-      const error = err as NodeJS.ErrnoException;
-      if (error.code === 'ENOENT') {
-        ensureDir(lockDir);
-      } else if (error.code === 'EEXIST') {
-        if (isLockStale(lockPath, opts.staleLockTTL)) {
-          try {
-            fs.unlinkSync(lockPath);
-            continue;
-          } catch {
-            // Another process might have removed it
-          }
-        }
-      } else {
-        throw error;
-      }
-
-      if (Date.now() - startTime >= opts.timeout) {
-        throw new Error(
-          `Failed to acquire lock on ${filePath} after ${opts.timeout}ms. Lock file: ${lockPath}`
-        );
-      }
-
-      await new Promise(resolve => setTimeout(resolve, opts.retryInterval));
-    }
-  }
-}
-
-export function acquireLockSync(
-  filePath: string,
-  options: LockOptions = {}
+  options: LockOptions,
+  sleep: (ms: number) => void,
 ): () => void {
   const opts = { ...DEFAULT_LOCK_OPTIONS, ...options };
   const lockPath = getLockPath(filePath);
@@ -133,11 +80,7 @@ export function acquireLockSync(
       fs.closeSync(fd);
 
       return () => {
-        try {
-          fs.unlinkSync(lockPath);
-        } catch {
-          // Lock file already removed
-        }
+        try { fs.unlinkSync(lockPath); } catch { /* already removed */ }
       };
     } catch (err: unknown) {
       const error = err as NodeJS.ErrnoException;
@@ -145,12 +88,7 @@ export function acquireLockSync(
         ensureDir(lockDir);
       } else if (error.code === 'EEXIST') {
         if (isLockStale(lockPath, opts.staleLockTTL)) {
-          try {
-            fs.unlinkSync(lockPath);
-            continue;
-          } catch {
-            // Continue
-          }
+          try { fs.unlinkSync(lockPath); continue; } catch { /* race */ }
         }
       } else {
         throw error;
@@ -162,9 +100,25 @@ export function acquireLockSync(
         );
       }
 
-      sleepSync(opts.retryInterval);
+      sleep(opts.retryInterval);
     }
   }
+}
+
+export async function acquireLock(
+  filePath: string,
+  options: LockOptions = {}
+): Promise<() => void> {
+  // All fs ops are synchronous; brief sync sleep on retry is acceptable
+  // since lock contention is rare and retry intervals are short (50ms).
+  return acquireLockImpl(filePath, options, sleepSync);
+}
+
+export function acquireLockSync(
+  filePath: string,
+  options: LockOptions = {}
+): () => void {
+  return acquireLockImpl(filePath, options, sleepSync);
 }
 
 export async function writeJsonLocked<T>(
@@ -172,7 +126,7 @@ export async function writeJsonLocked<T>(
   data: T,
   options: LockOptions = {}
 ): Promise<void> {
-  const release = await acquireLock(filePath, options);
+  const release = acquireLockImpl(filePath, options, sleepSync);
   try {
     writeJsonAtomic(filePath, data);
   } finally {
@@ -198,7 +152,7 @@ export async function patchJsonLocked<T extends object>(
   patch: Partial<T>,
   options: LockOptions = {}
 ): Promise<T> {
-  const release = await acquireLock(filePath, options);
+  const release = acquireLockImpl(filePath, options, sleepSync);
   try {
     const current = readJson<T>(filePath) || ({} as T);
     const merged = deepMerge(current as Record<string, unknown>, patch as Record<string, unknown>) as T;

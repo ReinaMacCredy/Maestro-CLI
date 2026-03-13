@@ -73,7 +73,22 @@ export function listFeatures(projectRoot: string): string[] {
     .map(d => d.name);
 }
 
-export function findProjectRoot(startDir: string): string | null {
+export interface FindProjectRootOptions {
+  /** Only match directories containing .maestro/ (skip .git-only). */
+  maestroOnly?: boolean;
+  /** Check CLAUDE_PROJECT_DIR env var first. */
+  envOverride?: boolean;
+}
+
+export function findProjectRoot(startDir: string, opts?: FindProjectRootOptions): string | null {
+  // Check env override first (used by hooks in plugin context)
+  if (opts?.envOverride) {
+    const envDir = process.env.CLAUDE_PROJECT_DIR;
+    if (envDir && fs.existsSync(path.join(envDir, '.maestro'))) {
+      return envDir;
+    }
+  }
+
   // Resolve symlinks to ensure consistent canonical paths across processes
   let current: string;
   try {
@@ -87,7 +102,7 @@ export function findProjectRoot(startDir: string): string | null {
     if (fs.existsSync(path.join(current, '.maestro'))) {
       return current;
     }
-    if (fs.existsSync(path.join(current, '.git'))) {
+    if (!opts?.maestroOnly && fs.existsSync(path.join(current, '.git'))) {
       return current;
     }
     current = path.dirname(current);

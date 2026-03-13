@@ -1,4 +1,4 @@
-import { readStdin, writeOutput, resolveProjectDir, logHookError } from './_helpers.ts';
+import { readStdin, writeOutput, resolveProjectDir, logHookError, HOOK_EVENTS } from './_helpers.ts';
 import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
     ].join('\n');
     writeOutput({
       hookSpecificOutput: {
-        hookEventName: 'SessionStart',
+        hookEventName: HOOK_EVENTS.SessionStart,
         additionalContext: ctx,
       },
     });
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     ];
     writeOutput({
       hookSpecificOutput: {
-        hookEventName: 'SessionStart',
+        hookEventName: HOOK_EVENTS.SessionStart,
         additionalContext: lines.join('\n'),
       },
     });
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
 
   writeOutput({
     hookSpecificOutput: {
-      hookEventName: 'SessionStart',
+      hookEventName: HOOK_EVENTS.SessionStart,
       additionalContext: lines.join('\n'),
     },
   });

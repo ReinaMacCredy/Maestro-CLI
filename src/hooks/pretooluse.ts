@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { readStdin, writeOutput, resolveProjectDir, logHookError } from './_helpers.ts';
+import { readStdin, writeOutput, resolveProjectDir, logHookError, HOOK_EVENTS } from './_helpers.ts';
 
 const HOOK_NAME = 'pretooluse';
 
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
     if (!isInWorktree() && !isOnMaestroBranch()) {
       writeOutput({
         hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
+          hookEventName: HOOK_EVENTS.PreToolUse,
           additionalContext:
             'Consider using maestro_worktree_commit to track task progress and maintain workflow state.',
         },
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
     if (isOnMaestroBranch()) {
       writeOutput({
         hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
+          hookEventName: HOOK_EVENTS.PreToolUse,
           additionalContext:
             'This branch is managed by maestro. Consider using maestro_merge instead of git push to maintain workflow state.',
         },

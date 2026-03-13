@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { findProjectRoot } from '../utils/detection.ts';
 
 /** Parse JSON from stdin. Returns {} on parse failure. */
 export async function readStdin(): Promise<Record<string, unknown>> {
@@ -26,26 +27,22 @@ export function writeOutput(data: object): void {
 }
 
 /**
- * Walk cwd upward looking for .maestro/ directory.
- * Uses CLAUDE_PROJECT_DIR first if set.
- * Returns the parent directory containing .maestro/, or null.
+ * Resolve project directory for hooks.
+ * Delegates to findProjectRoot with maestroOnly + envOverride options.
+ * Returns null if no .maestro/ found (not a maestro project).
  */
 export function resolveProjectDir(): string | null {
-  const envDir = process.env.CLAUDE_PROJECT_DIR;
-  if (envDir) {
-    const maestroPath = path.join(envDir, '.maestro');
-    if (fs.existsSync(maestroPath)) return envDir;
-  }
-
-  let current = process.cwd();
-  while (true) {
-    const maestroPath = path.join(current, '.maestro');
-    if (fs.existsSync(maestroPath)) return current;
-    const parent = path.dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
+  return findProjectRoot(process.cwd(), { maestroOnly: true, envOverride: true });
 }
+
+/** Hook event names -- must match keys in .claude-plugin/hooks/hooks.json. */
+export const HOOK_EVENTS = {
+  SessionStart: 'SessionStart',
+  PreToolUse: 'PreToolUse',
+  PostToolUse: 'PostToolUse',
+  PreCompact: 'PreCompact',
+} as const;
+export type HookEventName = typeof HOOK_EVENTS[keyof typeof HOOK_EVENTS];
 
 /** Log error to hook error log (best-effort). */
 export function logHookError(projectDir: string | null, hookName: string, error: unknown): void {
