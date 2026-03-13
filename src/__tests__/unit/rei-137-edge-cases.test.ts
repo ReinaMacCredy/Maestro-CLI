@@ -71,7 +71,7 @@ describe("git shallow clone handling", () => {
     // The method exists and returns a string
     const adapter = new GitWorktreeAdapter({
       baseDir: "/tmp/nonexistent",
-      hiveDir: "/tmp/nonexistent/.hive",
+      maestroDir: "/tmp/nonexistent/.maestro",
     });
     // When repo doesn't exist, falls back to HEAD~1
     // @ts-expect-error -- accessing private method for testing
@@ -117,9 +117,9 @@ describe("symlink resolution", () => {
   });
 
   test("findProjectRoot resolves symlinks to canonical path", () => {
-    // Create a real project dir with .hive
+    // Create a real project dir with .maestro
     const realDir = path.join(tmpDir, "real-project");
-    fs.mkdirSync(path.join(realDir, ".hive"), { recursive: true });
+    fs.mkdirSync(path.join(realDir, ".maestro"), { recursive: true });
 
     // Create a symlink to it
     const linkDir = path.join(tmpDir, "link-project");
@@ -141,7 +141,7 @@ describe("case-insensitive feature collision", () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "maestro-case-"));
-    fs.mkdirSync(path.join(tmpDir, ".hive", "features", "API-Auth"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, ".maestro", "features", "API-Auth"), { recursive: true });
   });
 
   afterEach(() => {
@@ -164,7 +164,7 @@ describe("worker prompt context drift warning", () => {
     task: "task-5",
     taskOrder: 5,
     worktreePath: "/tmp/wt",
-    branch: "hive/my-feature/task-5",
+    branch: "maestro/my-feature/task-5",
     plan: "test plan",
     contextFiles: [],
     spec: "do stuff",
@@ -205,7 +205,7 @@ describe("worker prompt tool semantics", () => {
     task: "task-1",
     taskOrder: 1,
     worktreePath: "/tmp/wt",
-    branch: "hive/feat/task-1",
+    branch: "maestro/feat/task-1",
     plan: "test plan",
     contextFiles: [],
     spec: "do stuff",
@@ -240,7 +240,7 @@ describe("worker prompt retry guidance", () => {
       task: "task-1",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/feat/task-1",
+      branch: "maestro/feat/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -262,7 +262,7 @@ describe("worker prompt summary grounding", () => {
       task: "task-1",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/feat/task-1",
+      branch: "maestro/feat/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",

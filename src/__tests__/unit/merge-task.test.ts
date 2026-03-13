@@ -1,35 +1,7 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { mergeTask } from '../../usecases/merge-task.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
-
-function createMockWorktreeAdapter(overrides: Partial<Record<string, any>> = {}) {
-  const calls: Record<string, any[]> = { remove: [], merge: [], checkConflicts: [] };
-
-  return {
-    calls,
-    commitChanges: async (_f: string, _t: string, _msg: string) => ({
-      committed: true,
-      sha: 'abc123',
-    }),
-    checkConflicts: overrides.checkConflicts ?? (async (_f: string, _t: string) => {
-      calls.checkConflicts.push([_f, _t]);
-      return [];
-    }),
-    merge: overrides.merge ?? (async (_f: string, _t: string, _s: string) => {
-      calls.merge.push([_f, _t, _s]);
-      return {
-        success: true,
-        merged: true,
-        sha: 'def456',
-        filesChanged: ['src/widget.ts', 'src/api.ts'],
-      };
-    }),
-    remove: overrides.remove ?? (async (_f: string, _t: string, _d: boolean) => {
-      calls.remove.push([_f, _t, _d]);
-    }),
-    create: async () => ({ path: '/tmp/wt', branch: 'test-branch' }),
-  };
-}
+import { createMockWorktreeAdapter } from '../mocks/mock-worktree-adapter.ts';
 
 describe('mergeTask', () => {
   let taskPort: InMemoryTaskPort;
@@ -47,7 +19,7 @@ describe('mergeTask', () => {
   test('merges completed task successfully', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await mergeTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder },
     );
 
@@ -61,7 +33,7 @@ describe('mergeTask', () => {
 
     await expect(
       mergeTask(
-        { taskPort, worktreeAdapter: adapter as any },
+        { taskPort, worktreeAdapter: adapter },
         { feature, task: taskFolder },
       ),
     ).rejects.toThrow("Cannot merge task");
@@ -74,7 +46,7 @@ describe('mergeTask', () => {
 
     await expect(
       mergeTask(
-        { taskPort, worktreeAdapter: adapter as any },
+        { taskPort, worktreeAdapter: adapter },
         { feature, task: taskFolder },
       ),
     ).rejects.toThrow('Merge conflicts detected');
@@ -87,12 +59,14 @@ describe('mergeTask', () => {
         merged: false,
         error: 'Branch diverged',
         conflicts: ['src/widget.ts'],
+        sha: '',
+        filesChanged: [],
       }),
     });
 
     await expect(
       mergeTask(
-        { taskPort, worktreeAdapter: adapter as any },
+        { taskPort, worktreeAdapter: adapter },
         { feature, task: taskFolder },
       ),
     ).rejects.toThrow('Branch diverged');
@@ -101,7 +75,7 @@ describe('mergeTask', () => {
   test('closes task after successful merge', async () => {
     const adapter = createMockWorktreeAdapter();
     await mergeTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder },
     );
 
@@ -113,7 +87,7 @@ describe('mergeTask', () => {
   test('removes worktree after merge', async () => {
     const adapter = createMockWorktreeAdapter();
     await mergeTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder },
     );
 
@@ -124,7 +98,7 @@ describe('mergeTask', () => {
   test('uses merge strategy by default', async () => {
     const adapter = createMockWorktreeAdapter();
     await mergeTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder },
     );
 
@@ -135,7 +109,7 @@ describe('mergeTask', () => {
   test('returns filesChanged and sha from merge result', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await mergeTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder },
     );
 

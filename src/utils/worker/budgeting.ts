@@ -111,7 +111,7 @@ export function applyTaskBudget(
     });
 
     if (feature) {
-      droppedTasksHint = `Dropped tasks: ${droppedTasks.join(', ')}. Full reports available at .hive/features/${feature}/tasks/<task>/report.md`;
+      droppedTasksHint = `Dropped tasks: ${droppedTasks.join(', ')}. Full reports available at .maestro/features/${feature}/tasks/<task>/report.md`;
     } else {
       droppedTasksHint = `Dropped tasks: ${droppedTasks.join(', ')}. Full reports available in task directories.`;
     }
@@ -164,7 +164,7 @@ export function applyContextBudget(
 
   for (const file of files) {
     const pathHint = feature
-      ? `.hive/features/${feature}/context/${file.name}.md`
+      ? `.maestro/features/${feature}/context/${file.name}.md`
       : `context/${file.name}.md`;
 
     if (totalChars >= maxTotalContextChars && !switchedToNamesOnly) {

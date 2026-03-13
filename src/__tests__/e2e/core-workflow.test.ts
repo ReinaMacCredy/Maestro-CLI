@@ -13,14 +13,14 @@ afterEach(async () => {
 });
 
 describe('core workflow', () => {
-  test('init creates .hive directory', async () => {
+  test('init creates .maestro directory', async () => {
     harness = await createTestHarness();
     const result = await harness.run('init');
 
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
     expect(parsed.projectRoot).toBe(harness.dir);
-    expect(parsed.hivePath).toContain('.hive');
+    expect(parsed.maestroPath).toContain('.maestro');
   });
 
   test('feature-create creates a feature', async () => {

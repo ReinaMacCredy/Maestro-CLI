@@ -10,8 +10,9 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { syncPlan } from "../../usecases/sync-plan.ts";
-import { FsPlanAdapter } from "../../adapters/fs-plan.ts";
+import { FsPlanAdapter } from "../../adapters/fs/plan.ts";
 import { InMemoryTaskPort } from "../mocks/in-memory-task-port.ts";
+import type { TaskStatusType, TaskOrigin } from "../../types.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,9 +50,9 @@ Implement REST endpoints for the new schema.
 **Depends on**: 1
 `.trim();
 
-/** Set up the minimal .hive directory structure for FsPlanAdapter. */
+/** Set up the minimal .maestro directory structure for FsPlanAdapter. */
 function setupFeatureDir(tmpDir: string, planContent: string, approved: boolean): void {
-  const featureDir = path.join(tmpDir, ".hive", "features", FEATURE);
+  const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
   fs.mkdirSync(featureDir, { recursive: true });
 
   fs.writeFileSync(path.join(featureDir, "plan.md"), planContent);
@@ -84,20 +85,12 @@ function setupFeatureDir(tmpDir: string, planContent: string, approved: boolean)
 function seedTask(
   taskPort: InMemoryTaskPort,
   folder: string,
-  overrides: { status?: string; origin?: string; dependsOn?: string[] } = {},
+  overrides: { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {},
 ): void {
-  const featureTasks = (taskPort as any).tasks;
-  if (!featureTasks.has(FEATURE)) {
-    featureTasks.set(FEATURE, new Map());
-  }
-  const map = featureTasks.get(FEATURE)!;
-  map.set(folder, {
-    folder,
-    name: folder,
-    status: overrides.status ?? "pending",
-    origin: overrides.origin ?? "plan",
-    planTitle: folder,
-    dependsOn: overrides.dependsOn ?? [],
+  taskPort.seed(FEATURE, folder, {
+    status: overrides.status,
+    origin: overrides.origin,
+    dependsOn: overrides.dependsOn,
   });
 }
 
@@ -166,7 +159,7 @@ describe("syncPlan", () => {
     await syncPlan({ taskPort, planAdapter }, FEATURE);
 
     // Rewrite plan with only 2 tasks (task 3 dropped)
-    const featureDir = path.join(tmpDir, ".hive", "features", FEATURE);
+    const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
     fs.writeFileSync(path.join(featureDir, "plan.md"), PLAN_2_TASKS);
 
     const result = await syncPlan({ taskPort, planAdapter }, FEATURE);
@@ -188,7 +181,7 @@ describe("syncPlan", () => {
     seedTask(taskPort, "03-add-tests", { status: "done" });
 
     // Sync with plan that only has 2 tasks (task 3 not in plan)
-    const featureDir = path.join(tmpDir, ".hive", "features", FEATURE);
+    const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
     fs.writeFileSync(path.join(featureDir, "plan.md"), PLAN_2_TASKS);
 
     const result = await syncPlan({ taskPort, planAdapter }, FEATURE);
@@ -209,7 +202,7 @@ describe("syncPlan", () => {
     seedTask(taskPort, "03-add-tests", { status: "in_progress" });
 
     // Sync with plan that only has 2 tasks
-    const featureDir = path.join(tmpDir, ".hive", "features", FEATURE);
+    const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
     fs.writeFileSync(path.join(featureDir, "plan.md"), PLAN_2_TASKS);
 
     const result = await syncPlan({ taskPort, planAdapter }, FEATURE);
@@ -268,14 +261,14 @@ describe("syncPlan", () => {
     setupFeatureDir(tmpDir, PLAN_3_TASKS, false);
     planAdapter = new FsPlanAdapter(tmpDir);
 
-    expect(syncPlan({ taskPort, planAdapter }, FEATURE)).rejects.toThrow("approved");
+    await expect(syncPlan({ taskPort, planAdapter }, FEATURE)).rejects.toThrow("approved");
   });
 
   test("throws if no plan exists", async () => {
-    const featureDir = path.join(tmpDir, ".hive", "features", FEATURE);
+    const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
     fs.mkdirSync(featureDir, { recursive: true });
     planAdapter = new FsPlanAdapter(tmpDir);
 
-    expect(syncPlan({ taskPort, planAdapter }, FEATURE)).rejects.toThrow("No plan found");
+    await expect(syncPlan({ taskPort, planAdapter }, FEATURE)).rejects.toThrow("No plan found");
   });
 });

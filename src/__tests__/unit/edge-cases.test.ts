@@ -110,7 +110,7 @@ describe("DockerSandboxAdapter shell escaping", () => {
   test("containerName sanitizes to safe characters", () => {
     // Simulate a worktree path
     const name = DockerSandboxAdapter.containerName(
-      "/project/.hive/.worktrees/my feature!/task-1",
+      "/project/.maestro/.worktrees/my feature!/task-1",
     );
     expect(name).toMatch(/^[a-z0-9-]+$/);
     expect(name).not.toContain(" ");
@@ -133,7 +133,7 @@ describe("worker prompt sanitization", () => {
       task: "task-1",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/feat/task-1",
+      branch: "maestro/feat/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -149,7 +149,7 @@ describe("worker prompt sanitization", () => {
       task: "task-$(rm -rf /)",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/feat/task-1",
+      branch: "maestro/feat/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -164,7 +164,7 @@ describe("worker prompt sanitization", () => {
       task: "task-1",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/feat/task-1",
+      branch: "maestro/feat/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -178,7 +178,7 @@ describe("worker prompt sanitization", () => {
       task: "task-1",
       taskOrder: 1,
       worktreePath: "/tmp/wt",
-      branch: "hive/my-feature/task-1",
+      branch: "maestro/my-feature/task-1",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",

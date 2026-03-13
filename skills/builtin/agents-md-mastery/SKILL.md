@@ -156,7 +156,7 @@ Remove entries when they become:
 
 **Describing code:**
 - "TaskService manages tasks" → Agent can read `TaskService` class
-- "Worktrees are in `.hive/.worktrees/`" → Observable from filesystem
+- "Worktrees are in `.maestro/.worktrees/`" → Observable from filesystem
 
 **Proven unnecessary:**
 - Entry added 6 months ago, but agents haven't hit that issue since

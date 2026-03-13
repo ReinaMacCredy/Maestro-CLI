@@ -1,6 +1,6 @@
 /**
  * E2E test harness for maestroCLI.
- * Creates a temp directory with git + .hive/ setup, provides a run() helper
+ * Creates a temp directory with git + .maestro/ setup, provides a run() helper
  * that shells out to `bun src/cli.ts`.
  */
 

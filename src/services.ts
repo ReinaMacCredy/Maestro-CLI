@@ -8,15 +8,15 @@
  */
 
 import { BrTaskAdapter } from './adapters/br.ts';
-import { FsFeatureAdapter } from './adapters/fs-feature.ts';
-import { FsPlanAdapter } from './adapters/fs-plan.ts';
-import { FsContextAdapter } from './adapters/fs-context.ts';
-import { FsSessionAdapter } from './adapters/fs-session.ts';
-import { FsConfigAdapter } from './adapters/fs-config.ts';
-import { FsAskAdapter } from './adapters/fs-ask.ts';
+import { FsFeatureAdapter } from './adapters/fs/feature.ts';
+import { FsPlanAdapter } from './adapters/fs/plan.ts';
+import { FsContextAdapter } from './adapters/fs/context.ts';
+import { FsSessionAdapter } from './adapters/fs/session.ts';
+import { FsConfigAdapter } from './adapters/fs/config.ts';
+import { FsAskAdapter } from './adapters/fs/ask.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { GitWorktreeAdapter } from './adapters/git-worktree.ts';
-import { getHivePath } from './utils/paths.ts';
+import { getMaestroPath } from './utils/paths.ts';
 import { MaestroError } from './lib/errors.ts';
 import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
@@ -54,7 +54,7 @@ export function initServices(directory: string): MaestroServices {
     agentsMdAdapter: new AgentsMdAdapter(directory, contextAdapter),
     worktreeAdapter: new GitWorktreeAdapter({
       baseDir: directory,
-      hiveDir: getHivePath(directory),
+      maestroDir: getMaestroPath(directory),
     }),
     directory,
   };
@@ -66,7 +66,7 @@ export function getServices(): MaestroServices {
   if (!_services) {
     throw new MaestroError(
       'Services not initialized',
-      ['Run maestro from a project directory with .hive/ or run: maestro init'],
+      ['Run maestro from a project directory with .maestro/ or run: maestro init'],
     );
   }
   return _services;

@@ -296,7 +296,7 @@ export interface MergeResult {
 
 export interface WorktreeConfig {
   baseDir: string;
-  hiveDir: string;
+  maestroDir: string;
 }
 
 // ============================================================================

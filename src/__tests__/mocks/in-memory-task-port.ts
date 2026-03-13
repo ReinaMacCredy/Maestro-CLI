@@ -3,7 +3,7 @@
  * No br required.
  */
 
-import type { TaskInfo, TaskStatusType } from '../../types.ts';
+import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
 import type { TaskPort, CreateOpts, UpdateFields, ListOpts } from '../../ports/tasks.ts';
 import { isValidTransition } from '../../ports/tasks.ts';
 import { MaestroError } from '../../lib/errors.ts';
@@ -166,5 +166,18 @@ export class InMemoryTaskPort implements TaskPort {
   setStatus(feature: string, folder: string, status: TaskStatusType): void {
     const task = this.getFeatureTasks(feature).get(folder);
     if (task) task.status = status;
+  }
+
+  /** Seed a task with an exact folder name (bypass create()'s auto-generated folder) */
+  seed(feature: string, folder: string, overrides: { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {}): void {
+    const map = this.getFeatureTasks(feature);
+    map.set(folder, {
+      folder,
+      name: folder,
+      status: overrides.status ?? 'pending',
+      origin: overrides.origin ?? 'plan',
+      planTitle: folder,
+      dependsOn: overrides.dependsOn ?? [],
+    });
   }
 }

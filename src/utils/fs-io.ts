@@ -16,9 +16,7 @@ export function ensureDir(dirPath: string): void {
       `shorten feature/task names or move project to a shorter base path.`
     );
   }
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
+  fs.mkdirSync(dirPath, { recursive: true });
 }
 
 export function fileExists(filePath: string): boolean {
@@ -26,9 +24,13 @@ export function fileExists(filePath: string): boolean {
 }
 
 export function readJson<T>(filePath: string): T | null {
-  if (!fs.existsSync(filePath)) return null;
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(content) as T;
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(content) as T;
+  } catch (e: any) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
 }
 
 export function writeJson<T>(filePath: string, data: T): void {
@@ -61,8 +63,12 @@ export function writeJsonAtomic<T>(filePath: string, data: T): void {
 }
 
 export function readText(filePath: string): string | null {
-  if (!fs.existsSync(filePath)) return null;
-  return fs.readFileSync(filePath, 'utf-8');
+  try {
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch (e: any) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
 }
 
 export function writeText(filePath: string, content: string): void {

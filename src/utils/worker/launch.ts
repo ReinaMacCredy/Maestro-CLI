@@ -52,10 +52,7 @@ export async function prepareWorkerLaunch(
   params: WorkerLaunchParams,
 ): Promise<WorkerLaunchContext> {
   const { feature, task, taskInfo, worktree, continueFrom, decision } = params;
-
-  // Get task to read dependsOn before updating
-  const currentTask = await services.taskPort.get(feature, task);
-  const dependsOn = currentTask?.dependsOn ?? [];
+  const dependsOn = taskInfo.dependsOn ?? [];
 
   await services.taskPort.update(feature, task, {
     status: 'in_progress',
@@ -77,14 +74,8 @@ export async function prepareWorkerLaunch(
   const taskBudgetResult = applyTaskBudget(rawPreviousTasks, { ...DEFAULT_BUDGET, feature });
   const contextBudgetResult = applyContextBudget(rawContextFiles, { ...DEFAULT_BUDGET, feature });
 
-  const contextFiles: WorkerContextFile[] = contextBudgetResult.files.map(f => ({
-    name: f.name,
-    content: f.content,
-  }));
-  const previousTasks: CompletedTask[] = taskBudgetResult.tasks.map(t => ({
-    name: t.name,
-    summary: t.summary,
-  }));
+  const contextFiles: WorkerContextFile[] = contextBudgetResult.files;
+  const previousTasks: CompletedTask[] = taskBudgetResult.tasks;
 
   const truncationEvents: TruncationEvent[] = [
     ...taskBudgetResult.truncationEvents,
@@ -137,8 +128,8 @@ export async function prepareWorkerLaunch(
     droppedTasksHint,
   });
 
-  const hiveDir = path.join(services.directory, '.hive');
-  const workerPromptPath = writeWorkerPromptFile(feature, task, workerPrompt, hiveDir);
+  const maestroDir = path.join(services.directory, '.maestro');
+  const workerPromptPath = writeWorkerPromptFile(feature, task, workerPrompt, maestroDir);
   const relativePromptPath = normalizePath(path.relative(services.directory, workerPromptPath));
 
   return {

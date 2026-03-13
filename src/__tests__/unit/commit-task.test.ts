@@ -1,26 +1,7 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { commitTask } from '../../usecases/commit-task.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
-
-function createMockWorktreeAdapter(overrides: Partial<Record<string, any>> = {}) {
-  return {
-    commitChanges: overrides.commitChanges ?? (async (_f: string, _t: string, _msg: string) => ({
-      committed: true,
-      sha: 'abc123',
-    })),
-    checkConflicts: async (_f: string, _t: string) =>
-      overrides.checkConflicts ?? [],
-    merge: async (_f: string, _t: string, _s: string) => ({
-      success: true,
-      merged: true,
-      sha: 'def456',
-      filesChanged: ['file.ts'],
-      ...overrides.merge,
-    }),
-    remove: async (_f: string, _t: string, _d: boolean) => {},
-    create: async () => ({ path: '/tmp/wt', branch: 'test-branch' }),
-  };
-}
+import { createMockWorktreeAdapter } from '../mocks/mock-worktree-adapter.ts';
 
 describe('commitTask', () => {
   let taskPort: InMemoryTaskPort;
@@ -38,7 +19,7 @@ describe('commitTask', () => {
   test('completes task and writes report', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'completed', summary: 'Finished the widget' },
     );
 
@@ -57,7 +38,7 @@ describe('commitTask', () => {
   test('marks completed as terminal', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'completed', summary: 'Done' },
     );
 
@@ -68,7 +49,7 @@ describe('commitTask', () => {
   test('marks failed as terminal', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'failed', summary: 'Could not finish' },
     );
 
@@ -79,7 +60,7 @@ describe('commitTask', () => {
   test('marks blocked as non-terminal with escalation hint', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'blocked', summary: 'Waiting on API' },
     );
 
@@ -90,7 +71,7 @@ describe('commitTask', () => {
   test('marks partial as non-terminal with review hint', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'partial', summary: 'Half done' },
     );
 
@@ -103,7 +84,7 @@ describe('commitTask', () => {
 
     await expect(
       commitTask(
-        { taskPort, worktreeAdapter: adapter as any },
+        { taskPort, worktreeAdapter: adapter },
         { feature, task: taskFolder, status: 'bogus' as any, summary: 'Nope' },
       ),
     ).rejects.toThrow('Invalid status');
@@ -112,7 +93,7 @@ describe('commitTask', () => {
   test('includes commit sha when changes were committed', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'completed', summary: 'With changes' },
     );
 
@@ -124,7 +105,7 @@ describe('commitTask', () => {
       commitChanges: async () => ({ committed: false, sha: '' }),
     });
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'completed', summary: 'No file changes' },
     );
 
@@ -138,7 +119,7 @@ describe('commitTask', () => {
   test('writes report with correct markdown format', async () => {
     const adapter = createMockWorktreeAdapter();
     const result = await commitTask(
-      { taskPort, worktreeAdapter: adapter as any },
+      { taskPort, worktreeAdapter: adapter },
       { feature, task: taskFolder, status: 'completed', summary: 'Built the API endpoint' },
     );
 

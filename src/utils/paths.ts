@@ -1,12 +1,12 @@
 /**
  * Path utilities for maestroCLI.
  * Pure path construction -- no filesystem I/O.
- * Forked from hive-core/src/utils/paths.ts -- direct copy.
+ * Forked from hive-core/src/utils/paths.ts.
  */
 
 import * as path from 'path';
 
-const HIVE_DIR = '.hive';
+const MAESTRO_DIR = '.maestro';
 const FEATURES_DIR = 'features';
 const TASKS_DIR = 'tasks';
 const CONTEXT_DIR = 'context';
@@ -23,12 +23,12 @@ export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
 }
 
-export function getHivePath(projectRoot: string): string {
-  return path.join(projectRoot, HIVE_DIR);
+export function getMaestroPath(projectRoot: string): string {
+  return path.join(projectRoot, MAESTRO_DIR);
 }
 
 export function getFeaturesPath(projectRoot: string): string {
-  return path.join(getHivePath(projectRoot), FEATURES_DIR);
+  return path.join(getMaestroPath(projectRoot), FEATURES_DIR);
 }
 
 export function getFeaturePath(projectRoot: string, featureName: string): string {
@@ -68,7 +68,7 @@ export function getTaskReportPath(projectRoot: string, featureName: string, task
 }
 
 export function getTaskSpecPath(projectRoot: string, featureName: string, taskFolder: string): string {
-  return path.join(getTaskPath(projectRoot, featureName, taskFolder), 'spec.md');
+  return path.join(getTaskPath(projectRoot, featureName, taskFolder), SPEC_FILE);
 }
 
 export function getApprovedPath(projectRoot: string, featureName: string): string {

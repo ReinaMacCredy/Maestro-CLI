@@ -39,12 +39,8 @@ function isLockStale(lockPath: string, staleTTL: number): boolean {
     if (age > staleTTL) return true;
 
     // Check if owning process is still alive (PID-based detection)
-    try {
-      const content = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
-      if (content.pid && !isProcessAlive(content.pid)) return true;
-    } catch {
-      // Can't read lock content -- fall back to TTL only
-    }
+    const content = readJson<{ pid?: number }>(lockPath);
+    if (content?.pid && !isProcessAlive(content.pid)) return true;
 
     return false;
   } catch {
@@ -161,10 +157,7 @@ export function acquireLockSync(
         );
       }
 
-      const waitUntil = Date.now() + opts.retryInterval;
-      while (Date.now() < waitUntil) {
-        // Spin
-      }
+      Bun.sleepSync(opts.retryInterval);
     }
   }
 }

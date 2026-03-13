@@ -131,7 +131,7 @@ throw new MaestroError(
 
 - Framework: `bun:test`
 - Unit tests: `src/__tests__/unit/` -- pure logic (plan-parser, feature-resolution, errors, output, etc.)
-- E2E tests: `src/__tests__/e2e/` -- test harness creates temp git repo with `.hive/` directory
+- E2E tests: `src/__tests__/e2e/` -- test harness creates temp git repo with `.maestro/` directory
 - Mocks: `src/__tests__/mocks/` -- `InMemoryTaskPort` for testing without br dependency
 - Run: `bun test` or `bun test <file>`
 

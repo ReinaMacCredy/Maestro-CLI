@@ -9,12 +9,12 @@ PROBLEM  -->  CONTEXT  -->  EXECUTION  -->  REPORT
 (why)         (what)        (how)           (shape)
 ```
 
-Every decision, constraint, and finding is persisted to `.hive/` so agents can resume with full context across sessions.
+Every decision, constraint, and finding is persisted to `.maestro/` so agents can resume with full context across sessions.
 
 ## Data Structure
 
 ```
-.hive/
+.maestro/
   features/
     {feature}/
       feature.json          # metadata and state
@@ -95,7 +95,7 @@ When a worker encounters a decision it cannot make:
 All commands use detection-based feature resolution:
 
 1. **Explicit parameter** -- `--feature <name>` always wins
-2. **Worktree detection** -- detect from cwd path (`.hive/.worktrees/{feature}/{task}/`)
+2. **Worktree detection** -- detect from cwd path (`.maestro/.worktrees/{feature}/{task}/`)
 3. **Single-feature fallback** -- if only one feature exists, use it
 4. **Error** -- if multiple features exist, require explicit `--feature`
 
@@ -103,7 +103,7 @@ This enables multi-session support (parallel agents on different features) and w
 
 ## Worker Prompt Building
 
-`maestro worktree-start` generates a complete worker prompt at `.hive/features/{feature}/tasks/{task}/worker-prompt.md` containing:
+`maestro worktree-start` generates a complete worker prompt at `.maestro/features/{feature}/tasks/{task}/worker-prompt.md` containing:
 
 - Task spec (name, description, dependencies)
 - Prior task summaries (what came before)
@@ -119,7 +119,7 @@ Defaults: last 10 tasks, 2000 chars per summary, 20KB per context file, 60KB tot
 
 Each task executes in an isolated git worktree:
 
-- Full repo copy at `.hive/.worktrees/{feature}/{task}/`
+- Full repo copy at `.maestro/.worktrees/{feature}/{task}/`
 - Agent makes changes freely without affecting main branch
 - On `worktree-commit`: changes committed to task branch
 - On `merge`: task branch merged into main
@@ -141,6 +141,6 @@ Each task executes in an isolated git worktree:
 - **No global state** -- all commands accept explicit feature parameter
 - **Detection-first** -- worktree path reveals feature context
 - **Isolation** -- each task in its own worktree, safe to discard
-- **Audit trail** -- every action logged to `.hive/`
+- **Audit trail** -- every action logged to `.maestro/`
 - **Agent-friendly** -- minimal overhead during execution
-- **Context persists** -- write to `.hive/` files; memory is ephemeral
+- **Context persists** -- write to `.maestro/` files; memory is ephemeral

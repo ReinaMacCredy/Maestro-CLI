@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileExists, readText, writeText } from '../utils/fs-io.ts';
 import type { ContextFile } from '../types.ts';
-import type { FsContextAdapter } from './fs-context.ts';
+import type { FsContextAdapter } from './fs/context.ts';
 
 export interface InitResult {
   content: string;

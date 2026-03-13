@@ -11,7 +11,7 @@
  *   partial      <-> in_progress (notes starts with "partial:")
  *
  * All br queries are scoped by label `feature:<name>`.
- * Folder-to-ID mapping stored in `.hive/features/<name>/br-mapping.json`.
+ * Folder-to-ID mapping stored in `.maestro/features/<name>/br-mapping.json`.
  */
 
 import type { TaskInfo, TaskStatusType } from '../types.ts';

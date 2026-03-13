@@ -5,7 +5,7 @@ import { parseFrontmatter } from '../utils/frontmatter.ts';
 
 export { BUILTIN_SKILLS, BUILTIN_SKILL_NAMES, type BuiltinSkillName };
 
-export type SkillSource = 'builtin' | 'maestro' | 'claude';
+export type SkillSource = 'builtin' | 'internal' | 'maestro' | 'claude';
 
 export interface SkillEntry {
   name: string;
@@ -13,8 +13,9 @@ export interface SkillEntry {
   source: SkillSource;
 }
 
-/** Directories to scan for internal (project-local) skills, in priority order. */
+/** Directories to scan for internal skills, in priority order. */
 const INTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
+  { dir: 'skills/internal', source: 'internal' },
   { dir: '.maestro/skills', source: 'maestro' },
   { dir: '.claude/skills', source: 'claude' },
 ];
@@ -27,7 +28,7 @@ interface InternalSkill {
 }
 
 /**
- * Discover internal skills from project-local directories.
+ * Discover internal skills from repository-local and project-local directories.
  * Expects the same layout as builtin: <dir>/<slug>/SKILL.md with name+description frontmatter.
  */
 async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
@@ -64,18 +65,18 @@ async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
 }
 
 export async function loadSkill(name: string, basePath?: string): Promise<{ content: string } | { error: string }> {
-  // Check builtin first -- content is embedded at build time, no file I/O needed
-  const builtin = BUILTIN_SKILLS[name as BuiltinSkillName];
-  if (builtin) {
-    return { content: builtin.content };
-  }
-
-  // Check internal sources (runtime discovery)
+  // Check internal sources first so repository-local overrides can shadow builtins.
   const projectRoot = basePath || process.cwd();
   const internals = await discoverInternal(projectRoot);
   const match = internals.find((s) => s.slug === name);
   if (match) {
     return { content: match.content };
+  }
+
+  // Fall back to builtin -- content is embedded at build time, no file I/O needed.
+  const builtin = BUILTIN_SKILLS[name as BuiltinSkillName];
+  if (builtin) {
+    return { content: builtin.content };
   }
 
   // Collect all available names for the error message
@@ -89,19 +90,25 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
 export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> {
   const projectRoot = basePath || process.cwd();
   const seen = new Set<string>();
+  const results: SkillEntry[] = [];
 
-  // Builtin skills first
-  const results: SkillEntry[] = BUILTIN_SKILL_NAMES.map((name) => {
-    seen.add(name);
-    return { name, description: BUILTIN_SKILLS[name].description, source: 'builtin' as const };
-  });
-
-  // Internal skills (skip if name collides with builtin)
+  // Internal skills first so repo-local overrides replace builtin entries in the listing.
   const internals = await discoverInternal(projectRoot);
   for (const s of internals) {
-    if (seen.has(s.slug)) continue;
+    if (seen.has(s.slug)) {
+      continue;
+    }
     seen.add(s.slug);
     results.push({ name: s.slug, description: s.description, source: s.source });
+  }
+
+  // Builtins last; skip any names already provided by internal sources.
+  for (const name of BUILTIN_SKILL_NAMES) {
+    if (seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    results.push({ name, description: BUILTIN_SKILLS[name].description, source: 'builtin' });
   }
 
   return results;

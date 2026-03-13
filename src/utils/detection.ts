@@ -1,6 +1,6 @@
 /**
  * Context detection utilities for maestroCLI.
- * Forked from hive-core/src/utils/detection.ts -- direct copy.
+ * Forked from hive-core/src/utils/detection.ts.
  */
 
 import * as path from 'path';
@@ -25,7 +25,7 @@ export function detectContext(cwd: string): DetectionResult {
   };
 
   const normalizedCwd = normalizePath(cwd);
-  const worktreeMatch = normalizedCwd.match(/(.+)\/\.hive\/\.worktrees\/([^/]+)\/([^/]+)/);
+  const worktreeMatch = normalizedCwd.match(/(.+)\/\.maestro\/\.worktrees\/([^/]+)\/([^/]+)/);
   if (worktreeMatch) {
     result.mainProjectRoot = worktreeMatch[1];
     result.feature = worktreeMatch[2];
@@ -47,7 +47,7 @@ export function detectContext(cwd: string): DetectionResult {
         const worktreePathMatch = normalizedGitdir.match(/(.+)\/\.git\/worktrees\/(.+)/);
         if (worktreePathMatch) {
           const mainRepo = worktreePathMatch[1];
-          const cwdWorktreeMatch = normalizedCwd.match(/\.hive\/\.worktrees\/([^/]+)\/([^/]+)/);
+          const cwdWorktreeMatch = normalizedCwd.match(/\.maestro\/\.worktrees\/([^/]+)\/([^/]+)/);
           if (cwdWorktreeMatch) {
             result.mainProjectRoot = mainRepo;
             result.feature = cwdWorktreeMatch[1];
@@ -84,7 +84,7 @@ export function findProjectRoot(startDir: string): string | null {
   const root = path.parse(current).root;
 
   while (current !== root) {
-    if (fs.existsSync(path.join(current, '.hive'))) {
+    if (fs.existsSync(path.join(current, '.maestro'))) {
       return current;
     }
     if (fs.existsSync(path.join(current, '.git'))) {

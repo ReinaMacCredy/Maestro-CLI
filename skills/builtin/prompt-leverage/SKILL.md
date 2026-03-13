@@ -1,6 +1,6 @@
 ---
 name: prompt-leverage
-description: Strengthen a raw user prompt into an execution-ready instruction set for Claude Code, Codex, or another AI agent. Use when the user wants to improve an existing prompt, build a reusable prompting framework, wrap the current request with better structure, add clearer tool rules, or create a hook that upgrades prompts before execution. Also use when the user says "make this prompt better", "optimize my prompt", "prompt engineering", or asks how to get better results from an AI model.
+description: Strengthen a raw user prompt into an execution-ready instruction set for Amp, Claude Code, or another AI agent. Use when the user wants to improve an existing prompt, build a reusable prompting framework, wrap the current request with better structure, add clearer tool rules, or create a hook that upgrades prompts before execution.
 ---
 
 # Prompt Leverage
@@ -11,13 +11,9 @@ Turn the user's current prompt into a stronger working prompt without changing t
 
 1. Read the raw prompt and identify the real job to be done.
 2. Infer the task type: coding, research, writing, analysis, planning, or review.
-3. Rebuild the prompt using the framework blocks in `references/framework.md`.
-4. Consult provider-specific guidance when targeting a specific model family:
-   - Claude: `references/anthropic-guidance.md`
-   - GPT: `references/openai-guidance.md`
-   - Cross-provider or unknown target: `references/provider-guidance.md`
-5. Keep the result proportional: do not over-specify a simple task.
-6. Return both the improved prompt and a short explanation of what changed when useful.
+3. Rebuild the prompt with the framework blocks in `references/framework.md`.
+4. Keep the result proportional: do not over-specify a simple task.
+5. Return both the improved prompt and a short explanation of what changed when useful.
 
 ## Transformation Rules
 
@@ -27,21 +23,18 @@ Turn the user's current prompt into a stronger working prompt without changing t
 - Add tool rules only when tool use materially affects correctness.
 - Add verification and completion criteria for non-trivial tasks.
 - Keep prompts compact enough to be practical in repeated use.
-- Use XML tags to separate structural blocks when the prompt mixes instructions, context, examples, and inputs.
-- Include few-shot examples when steering output format, tone, or structure -- 3-5 diverse examples wrapped in `<example>` tags is the sweet spot.
 
 ## Framework Blocks
 
-Use these blocks selectively. See `references/framework.md` for full definitions and per-task adjustments.
+Use these blocks selectively.
 
 - `Objective`: state the task and what success looks like.
 - `Context`: list sources, files, constraints, and unknowns.
-- `Role`: set the persona, expertise, and tone when it focuses behavior.
 - `Work Style`: set depth, breadth, care, and first-principles expectations.
-- `Tool Rules`: state when tools, browsing, or file inspection are required. Include dependency checks and persistence rules.
-- `Output Contract`: define structure, formatting, and level of detail. Be explicit about what format to use and what to omit.
-- `Verification`: require checks for correctness, edge cases, grounding, and better alternatives.
-- `Done Criteria`: define what must be true before the agent stops.
+- `Tool Rules`: state when tools, browsing, or file inspection are required.
+- `Output Contract`: define structure, formatting, and level of detail.
+- `Verification`: require checks for correctness, edge cases, and better alternatives.
+- `Done Criteria`: define when the agent should stop.
 
 ## Output Modes
 
@@ -66,13 +59,11 @@ Use `scripts/augment_prompt.py` when a deterministic first-pass rewrite is helpf
 
 ## Quality Bar
 
-Before finalizing, check the upgraded prompt against these criteria:
+Before finalizing, check the upgraded prompt:
 
-- Still matches the original intent.
-- Does not add unnecessary ceremony.
-- Uses XML tags to separate concerns when the prompt is complex.
-- Includes the right verification level for the task.
-- Gives the agent a clear definition of done.
-- Follows provider-specific best practices from the relevant guidance file (`references/anthropic-guidance.md`, `references/openai-guidance.md`, or `references/provider-guidance.md` for cross-provider).
+- still matches the original intent
+- does not add unnecessary ceremony
+- includes the right verification level for the task
+- gives the agent a clear definition of done
 
 If the prompt is already strong, say so and make only minimal edits.

@@ -3,9 +3,9 @@
  * Forked from hive-core/src/utils/prompt-file.ts -- direct copy.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { normalizePath } from '../paths.ts';
+import { ensureDir, readText as readTextFile, writeText } from '../fs-io.ts';
 
 export interface PromptFileResult {
   content?: string;
@@ -47,14 +47,13 @@ export async function resolvePromptFromFile(
   }
 
   const resolvedPath = path.resolve(promptFilePath);
-  if (!fs.existsSync(resolvedPath)) {
-    return {
-      error: `Prompt file not found: "${resolvedPath}"`,
-    };
-  }
-
   try {
-    const content = fs.readFileSync(resolvedPath, 'utf-8');
+    const content = readTextFile(resolvedPath);
+    if (content === null) {
+      return {
+        error: `Prompt file not found: "${resolvedPath}"`,
+      };
+    }
     return { content };
   } catch (err) {
     return {
@@ -67,16 +66,13 @@ export function writeWorkerPromptFile(
   feature: string,
   task: string,
   prompt: string,
-  hiveDir: string
+  maestroDir: string
 ): string {
-  const promptDir = path.join(hiveDir, 'features', feature, 'tasks', task);
+  const promptDir = path.join(maestroDir, 'features', feature, 'tasks', task);
   const promptPath = path.join(promptDir, 'worker-prompt.md');
 
-  if (!fs.existsSync(promptDir)) {
-    fs.mkdirSync(promptDir, { recursive: true });
-  }
-
-  fs.writeFileSync(promptPath, prompt, 'utf-8');
+  ensureDir(promptDir);
+  writeText(promptPath, prompt);
 
   return promptPath;
 }

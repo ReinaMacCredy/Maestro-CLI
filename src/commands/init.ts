@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { output } from '../lib/output.ts';
 import { handleCommandError } from '../lib/errors.ts';
-import { getHivePath } from '../utils/paths.ts';
+import { getMaestroPath } from '../utils/paths.ts';
 import { ensureDir } from '../utils/fs-io.ts';
 import { findProjectRoot } from '../utils/detection.ts';
 import * as fs from 'fs';
@@ -20,10 +20,10 @@ export default defineCommand({
       const existing = findProjectRoot(cwd);
       const projectRoot = existing || cwd;
 
-      // Create .hive/ directory
-      const hivePath = getHivePath(projectRoot);
-      ensureDir(hivePath);
-      ensureDir(path.join(hivePath, 'features'));
+      // Create .maestro/ directory
+      const maestroPath = getMaestroPath(projectRoot);
+      ensureDir(maestroPath);
+      ensureDir(path.join(maestroPath, 'features'));
 
       // Initialize br if .beads/ doesn't exist
       const beadsPath = path.join(projectRoot, '.beads');
@@ -42,7 +42,7 @@ export default defineCommand({
 
       const result = {
         projectRoot,
-        hivePath,
+        maestroPath,
         brInitialized,
         existing: !!existing,
       };
@@ -50,7 +50,7 @@ export default defineCommand({
       output(result, (r) => {
         const lines = [
           `[ok] maestro initialized at ${r.projectRoot}`,
-          `  .hive/ ${r.existing ? 'already existed' : 'created'}`,
+          `  .maestro/ ${r.existing ? 'already existed' : 'created'}`,
           `  br: ${r.brInitialized ? 'ready' : 'not available (install br for task tracking)'}`,
         ];
         return lines.join('\n');

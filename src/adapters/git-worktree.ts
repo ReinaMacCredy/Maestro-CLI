@@ -46,7 +46,7 @@ export class GitWorktreeAdapter implements WorktreePort {
   }
 
   private getWorktreesDir(): string {
-    return path.join(this.config.hiveDir, ".worktrees");
+    return path.join(this.config.maestroDir, ".worktrees");
   }
 
   private getWorktreePath(feature: string, step: string): string {
@@ -54,11 +54,11 @@ export class GitWorktreeAdapter implements WorktreePort {
   }
 
   private getStepStatusPath(feature: string, step: string): string {
-    return path.join(this.config.hiveDir, "features", feature, "tasks", step, "status.json");
+    return path.join(this.config.maestroDir, "features", feature, "tasks", step, "status.json");
   }
 
   private getBranchName(feature: string, step: string): string {
-    return `hive/${feature}/${step}`;
+    return `maestro/${feature}/${step}`;
   }
 
   async create(feature: string, step: string, baseBranch?: string): Promise<WorktreeInfo> {
@@ -235,7 +235,7 @@ export class GitWorktreeAdapter implements WorktreePort {
       return { success: true, filesAffected: [] };
     }
 
-    const patchPath = path.join(this.config.hiveDir, ".worktrees", feature, `${step}.patch`);
+    const patchPath = path.join(this.config.maestroDir, ".worktrees", feature, `${step}.patch`);
 
     try {
       await fs.writeFile(patchPath, diffContent);
@@ -348,7 +348,7 @@ export class GitWorktreeAdapter implements WorktreePort {
       return [];
     }
 
-    const patchPath = path.join(this.config.hiveDir, ".worktrees", feature, `${step}-check.patch`);
+    const patchPath = path.join(this.config.maestroDir, ".worktrees", feature, `${step}-check.patch`);
 
     try {
       await fs.writeFile(patchPath, diffContent);
@@ -394,7 +394,7 @@ export class GitWorktreeAdapter implements WorktreePort {
         return { committed: false, sha: currentSha, message: "No changes to commit" };
       }
 
-      const commitMessage = message || `hive(${step}): task changes`;
+      const commitMessage = message || `maestro(${step}): task changes`;
       const result = await worktreeGit.commit(commitMessage, ["--allow-empty-message"]);
 
       return {
@@ -415,7 +415,7 @@ export class GitWorktreeAdapter implements WorktreePort {
 
   async merge(feature: string, step: string, strategy: 'merge' | 'squash' | 'rebase' = 'merge'): Promise<MergeResult> {
     // Serialize merges to prevent git index.lock collisions
-    const mergeLockPath = path.join(this.config.hiveDir, 'merge');
+    const mergeLockPath = path.join(this.config.maestroDir, 'merge');
     const release = await acquireLock(mergeLockPath);
 
     try {
@@ -446,7 +446,7 @@ export class GitWorktreeAdapter implements WorktreePort {
 
         if (strategy === 'squash') {
           await git.raw(["merge", "--squash", branchName]);
-          const result = await git.commit(`hive: merge ${step} (squashed)`);
+          const result = await git.commit(`maestro: merge ${step} (squashed)`);
           return { success: true, merged: true, sha: result.commit, filesChanged };
         } else if (strategy === 'rebase') {
           const commits = await git.log([`${currentBranch}..${branchName}`]);
@@ -457,7 +457,7 @@ export class GitWorktreeAdapter implements WorktreePort {
           const head = (await git.revparse(["HEAD"])).trim();
           return { success: true, merged: true, sha: head, filesChanged };
         } else {
-          const result = await git.merge([branchName, "--no-ff", "-m", `hive: merge ${step}`]);
+          const result = await git.merge([branchName, "--no-ff", "-m", `maestro: merge ${step}`]);
           const head = (await git.revparse(["HEAD"])).trim();
           return {
             success: true,
@@ -532,6 +532,6 @@ export class GitWorktreeAdapter implements WorktreePort {
 export function createGitWorktreeAdapter(projectDir: string): GitWorktreeAdapter {
   return new GitWorktreeAdapter({
     baseDir: projectDir,
-    hiveDir: path.join(projectDir, ".hive"),
+    maestroDir: path.join(projectDir, ".maestro"),
   });
 }
