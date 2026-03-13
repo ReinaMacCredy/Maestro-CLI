@@ -31,6 +31,8 @@ export interface WorkerPromptParams {
   spec: string;
   previousTasks?: CompletedTask[];
   continueFrom?: ContinueFromBlocked;
+  droppedTaskCount?: number;
+  droppedTasksHint?: string;
 }
 
 /** Escape characters that could break double-quoted shell arguments. */
@@ -53,11 +55,22 @@ export function buildWorkerPrompt(params: WorkerPromptParams): string {
     branch,
     spec,
     continueFrom,
+    droppedTaskCount,
+    droppedTasksHint,
   } = params;
 
   // Sanitize values used in bash command examples to prevent injection
   const safeTask = sanitizeShellArg(task);
   const safeFeature = sanitizeShellArg(feature);
+
+  const contextBudgetSection = (droppedTaskCount && droppedTaskCount > 0) ? `
+## Context Budget Warning
+
+${droppedTaskCount} earlier completed task(s) were dropped from your context to stay within budget.
+${droppedTasksHint || ''}
+If your task depends on earlier work not shown above, read the task reports directly:
+\`maestro task-report-read --feature "${safeFeature}" --task <task-folder>\`
+` : '';
 
   const continuationSection = continueFrom ? `
 ## Continuation from Blocked State
@@ -90,7 +103,7 @@ You are a worker agent executing a task in an isolated git worktree.
 \`${worktreePath}\`
 
 Do NOT modify files outside this directory.
-${continuationSection}
+${continuationSection}${contextBudgetSection}
 ---
 
 ## Your Mission
@@ -152,11 +165,13 @@ Only when commit result is terminal should you stop.
 Do NOT continue working after a terminal result. Your session is DONE.
 The orchestrator will take over from here.
 
-**Summary Guidance** (used verbatim for downstream task context):
-1. Start with **what changed** (files/areas touched).
+**Summary Guidance** (used verbatim as context for downstream workers -- accuracy is critical):
+1. Start with **what changed** -- cite specific file paths, not vague descriptions.
 2. Mention **why** if it affects future tasks.
-3. Note **verification evidence** (tests/build/lint) or explicitly say "Not run".
+3. Note **verification evidence** -- cite the exact command run and its outcome.
+   If you did NOT run tests/build/lint, say "Not verified" explicitly. Never claim "all tests pass" without running them.
 4. Keep it **2-4 sentences** max.
+5. **Grounding rule**: Only state facts you directly observed. Hallucinated summaries propagate as "facts" to subsequent workers.
 
 If you encounter an **unrecoverable error**:
 
@@ -188,16 +203,26 @@ Exception: Pure refactoring of existing tested code.
 3. **Hypothesize**: Form theory, test it
 4. **Fix**: Minimal change that resolves
 
-After 3 failed attempts at same fix: STOP and report blocker.
+**HARD LIMIT: After 3 failed attempts at the same fix, you MUST escalate as blocker.**
+DO NOT continue retrying. Each retry burns context window budget.
+Use the blocker protocol above with \`--status blocked\` and explain what you tried.
 
 ---
 
 ## Tool Access
 
-**You have access to:**
+**CRITICAL -- Tool Semantics (do not confuse these):**
+
+| Tool | Action | Reversible? |
+|------|--------|-------------|
+| \`maestro worktree-commit\` | **SAVES** your work, updates task status, reports to orchestrator | Yes |
+| \`maestro worktree-discard\` | **DESTROYS** the entire worktree, **LOSES ALL CHANGES** permanently | No |
+
+ALWAYS use \`worktree-commit\` to complete your task (even for failures/blockers).
+Only use \`worktree-discard\` if explicitly instructed to abandon the entire task.
+
+**Other tools available:**
 - All standard tools (read, write, edit, bash, glob, grep)
-- \`maestro worktree-commit\` -- Signal task done/blocked/failed
-- \`maestro worktree-discard\` -- Abort and discard changes
 - \`maestro plan-read\` -- Re-read plan if needed
 - \`maestro context-write\` -- Save learnings for future tasks
 

@@ -132,6 +132,8 @@ export async function prepareWorkerLaunch(
     spec: specContent,
     previousTasks,
     continueFrom: continueFromParam,
+    droppedTaskCount: rawPreviousTasks.length - previousTasks.length,
+    droppedTasksHint,
   });
 
   const hiveDir = path.join(services.directory, '.hive');
