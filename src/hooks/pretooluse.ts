@@ -19,12 +19,11 @@ function isInWorktree(): boolean {
 
 function isOnMaestroBranch(): boolean {
   try {
-    const { execSync } = require('node:child_process');
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    return branch.startsWith('maestro/');
+    // Read .git/HEAD directly instead of spawning git (avoids ~40ms subprocess cost)
+    const head = fs.readFileSync(path.join(process.cwd(), '.git', 'HEAD'), 'utf-8').trim();
+    // HEAD format: "ref: refs/heads/<branch>"
+    const match = head.match(/^ref: refs\/heads\/(.+)$/);
+    return match ? match[1].startsWith('maestro/') : false;
   } catch {
     return false;
   }

@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, errorResponse } from './_utils/respond.ts';
+import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { resolveFeature } from './_utils/resolve.ts';
+import { requireFeature } from './_utils/resolve.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
-import { MaestroError } from '../lib/errors.ts';
 import type { UpdateFields, ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 
@@ -21,28 +20,12 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
-
-        const result = await syncPlan(services, feature);
-        return respond({ success: true, ...result });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = await syncPlan(services, feature);
+      return respond({ success: true, ...result });
+    }),
   );
 
   server.registerTool(
@@ -57,31 +40,15 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
-
-        const task = await services.taskPort.create(feature, input.title, {
-          description: input.description,
-          deps: input.deps,
-        });
-        return respond({ success: true, feature, task });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const task = await services.taskPort.create(feature, input.title, {
+        description: input.description,
+        deps: input.deps,
+      });
+      return respond({ success: true, feature, task });
+    }),
   );
 
   server.registerTool(
@@ -96,32 +63,17 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
 
-        const fields: UpdateFields = {};
-        if (input.status !== undefined) fields.status = input.status as TaskStatusType;
-        if (input.notes !== undefined) fields.notes = input.notes;
+      const fields: UpdateFields = {};
+      if (input.status !== undefined) fields.status = input.status as TaskStatusType;
+      if (input.notes !== undefined) fields.notes = input.notes;
 
-        const task = await services.taskPort.update(feature, input.task, fields);
-        return respond({ success: true, feature, task });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+      const task = await services.taskPort.update(feature, input.task, fields);
+      return respond({ success: true, feature, task });
+    }),
   );
 
   server.registerTool(
@@ -135,30 +87,15 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_READONLY,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
 
-        const opts: ListOpts = {};
-        if (input.status !== undefined) opts.status = input.status as TaskStatusType;
-        if (input.includeAll !== undefined) opts.includeAll = input.includeAll;
-        const tasks = await services.taskPort.list(feature, opts);
-        return respond({ success: true, feature, tasks, count: tasks.length });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+      const opts: ListOpts = {};
+      if (input.status !== undefined) opts.status = input.status as TaskStatusType;
+      if (input.includeAll !== undefined) opts.includeAll = input.includeAll;
+      const tasks = await services.taskPort.list(feature, opts);
+      return respond({ success: true, feature, tasks, count: tasks.length });
+    }),
   );
 }

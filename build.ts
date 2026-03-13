@@ -31,19 +31,19 @@ async function build() {
     naming: { entry: 'server.bundle.mjs' },
   }), 'Server bundle');
 
-  // Step 2: Hook scripts (Node target, ESM)
+  // Step 2: Hook scripts (Node target, ESM) -- built in parallel
   console.log('[build] Bundling hooks...');
-  for (const hook of ['sessionstart', 'pretooluse', 'posttooluse', 'precompact']) {
-    checkBuild(await Bun.build({
-      entrypoints: [`./src/hooks/${hook}.ts`],
-      outdir: './dist/hooks',
-      target: 'node',
-      format: 'esm',
-      minify: true,
-      external: ['simple-git'],
-      naming: { entry: `${hook}.mjs` },
-    }), `Hook: ${hook}`);
-  }
+  const hooks = ['sessionstart', 'pretooluse', 'posttooluse', 'precompact'];
+  const hookResults = await Promise.all(hooks.map(hook => Bun.build({
+    entrypoints: [`./src/hooks/${hook}.ts`],
+    outdir: './dist/hooks',
+    target: 'node',
+    format: 'esm',
+    minify: true,
+    external: ['simple-git'],
+    naming: { entry: `${hook}.mjs` },
+  })));
+  hooks.forEach((hook, i) => checkBuild(hookResults[i], `Hook: ${hook}`));
 
   // Step 3: CLI bundle for npm bin entry (Node target)
   console.log('[build] Bundling CLI for npm...');

@@ -19,9 +19,7 @@ async function main(): Promise<void> {
   const activeFeature = services.featureAdapter.getActive();
 
   const sessionsDir = path.join(projectDir, '.maestro', 'sessions');
-  if (!fs.existsSync(sessionsDir)) {
-    fs.mkdirSync(sessionsDir, { recursive: true });
-  }
+  fs.mkdirSync(sessionsDir, { recursive: true });
 
   const snapshotPath = path.join(sessionsDir, 'compact-snapshot.json');
 
@@ -48,7 +46,14 @@ async function main(): Promise<void> {
   const eventsPath = path.join(sessionsDir, 'events.jsonl');
   let recentEvents: unknown[] = [];
   if (fs.existsSync(eventsPath)) {
-    const lines = fs.readFileSync(eventsPath, 'utf-8').split('\n').filter(Boolean);
+    // Read up to 64KB from the end to avoid unbounded memory on large files
+    const stat = fs.statSync(eventsPath);
+    const maxTailBytes = 65536;
+    const buf = Buffer.alloc(Math.min(stat.size, maxTailBytes));
+    const fd = fs.openSync(eventsPath, 'r');
+    fs.readSync(fd, buf, 0, buf.length, Math.max(0, stat.size - maxTailBytes));
+    fs.closeSync(fd);
+    const lines = buf.toString('utf-8').split('\n').filter(Boolean);
     const lastLines = lines.slice(-50);
     recentEvents = lastLines.map((line) => {
       try {

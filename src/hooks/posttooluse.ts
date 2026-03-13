@@ -12,9 +12,7 @@ async function main(): Promise<void> {
   const toolName = (input.tool_name as string) || 'unknown';
 
   const sessionsDir = path.join(projectDir, '.maestro', 'sessions');
-  if (!fs.existsSync(sessionsDir)) {
-    fs.mkdirSync(sessionsDir, { recursive: true });
-  }
+  fs.mkdirSync(sessionsDir, { recursive: true });
 
   const eventsPath = path.join(sessionsDir, 'events.jsonl');
   const entry = JSON.stringify({ ts: new Date().toISOString(), tool: toolName }) + '\n';

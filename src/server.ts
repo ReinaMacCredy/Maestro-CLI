@@ -44,8 +44,11 @@ export async function main() {
   await server.connect(transport);
 }
 
-// Direct execution
-main().catch((err) => {
-  console.error('[maestro] Server failed to start:', err);
-  process.exit(1);
-});
+// Only auto-start when run directly, not when imported by start.mjs
+const isBunDirect = typeof Bun !== 'undefined' && Bun.main === Bun.resolveSync(import.meta.path, '.');
+if (isBunDirect) {
+  main().catch((err) => {
+    console.error('[maestro] Server failed to start:', err);
+    process.exit(1);
+  });
+}

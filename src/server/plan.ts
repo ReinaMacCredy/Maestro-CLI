@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, errorResponse } from './_utils/respond.ts';
+import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { resolveFeature } from './_utils/resolve.ts';
+import { requireFeature } from './_utils/resolve.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { MaestroError } from '../lib/errors.ts';
@@ -21,28 +21,12 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
-
-        const result = await writePlan(services, feature, input.content);
-        return respond({ success: true, ...result });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = await writePlan(services, feature, input.content);
+      return respond({ success: true, ...result });
+    }),
   );
 
   server.registerTool(
@@ -54,37 +38,17 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_READONLY,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
 
-        const plan = services.planAdapter.read(feature);
-        if (!plan) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_plan',
-            error: `No plan found for feature '${feature}'`,
-            suggestions: ['Write a plan with maestro_plan_write'],
-          });
-        }
-
-        return respond({ success: true, feature, plan });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
+      const plan = services.planAdapter.read(feature);
+      if (!plan) {
+        throw new MaestroError(`No plan found for feature '${feature}'`, ['Write a plan with maestro_plan_write']);
       }
-    },
+
+      return respond({ success: true, feature, plan });
+    }),
   );
 
   server.registerTool(
@@ -96,28 +60,12 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
-
-        const result = await approvePlan(services, feature);
-        return respond({ success: true, ...result });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = await approvePlan(services, feature);
+      return respond({ success: true, ...result });
+    }),
   );
 
   server.registerTool(
@@ -132,31 +80,15 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       },
       annotations: ANNOTATIONS_MUTATING,
     },
-    async (input) => {
-      try {
-        const services = thunk.get();
-        const feature = resolveFeature(services, input.feature);
-        if (!feature) {
-          return errorResponse({
-            terminal: false,
-            reason: 'no_feature',
-            error: 'No active feature found',
-            suggestions: ['Specify a feature name or create one with maestro_feature_create'],
-          });
-        }
-
-        const comment = services.planAdapter.addComment(feature, {
-          body: input.body,
-          line: input.line ?? 0,
-          author: input.author ?? 'agent',
-        });
-        return respond({ success: true, feature, comment });
-      } catch (err) {
-        if (err instanceof MaestroError) {
-          return errorResponse({ terminal: false, reason: 'maestro_error', error: err.message, suggestions: err.hints });
-        }
-        return errorResponse({ terminal: true, reason: 'unexpected_error', error: String(err) });
-      }
-    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const comment = services.planAdapter.addComment(feature, {
+        body: input.body,
+        line: input.line ?? 0,
+        author: input.author ?? 'agent',
+      });
+      return respond({ success: true, feature, comment });
+    }),
   );
 }
