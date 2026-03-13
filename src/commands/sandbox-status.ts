@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { DockerSandboxAdapter } from '../adapters/docker-sandbox.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 interface SandboxStatusResult {
   path: string;
@@ -47,12 +47,7 @@ export default defineCommand({
 
       output(result, formatSandboxStatus);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('sandbox-status', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('sandbox-status', err);
     }
   },
 });

@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { loadSkill } from '../skills/registry.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 
 function formatSkillContent(result: { content: string }): string {
   return result.content;
@@ -30,12 +30,7 @@ export default defineCommand({
 
       output(result, formatSkillContent);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('skill', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('skill', err);
     }
   },
 });

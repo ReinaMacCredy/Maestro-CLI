@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 import { getHivePath, ensureDir } from '../utils/paths.ts';
 import { findProjectRoot } from '../utils/detection.ts';
 import * as fs from 'fs';
@@ -55,12 +55,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('init', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('init', err);
     }
   },
 });

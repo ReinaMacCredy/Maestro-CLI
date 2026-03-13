@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderTable } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'subtask-list', description: 'List subtasks for a parent task' },
@@ -34,12 +34,7 @@ export default defineCommand({
         return renderTable(headers, rows);
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('subtask-list', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('subtask-list', err);
     }
   },
 });

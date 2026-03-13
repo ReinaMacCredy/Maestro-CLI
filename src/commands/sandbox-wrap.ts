@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { DockerSandboxAdapter } from '../adapters/docker-sandbox.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 interface WrapResult {
   original: string;
@@ -54,12 +54,7 @@ export default defineCommand({
 
       output(result, formatWrapResult);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('sandbox-wrap', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('sandbox-wrap', err);
     }
   },
 });

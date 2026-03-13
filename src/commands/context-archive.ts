@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'context-archive', description: 'Archive context files' },
@@ -26,12 +26,7 @@ export default defineCommand({
           r.archived.map((name: string) => `  - ${name}`).join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('context-archive', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('context-archive', err);
     }
   },
 });

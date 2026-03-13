@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'worktree-diff', description: 'Show worktree diff' },
@@ -38,12 +38,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('worktree-diff', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('worktree-diff', err);
     }
   },
 });

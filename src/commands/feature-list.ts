@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
 import { renderTable } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'feature-list', description: 'List all features' },
@@ -30,12 +30,7 @@ export default defineCommand({
         return renderTable(['Name', 'Status', 'Created'], rows);
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('feature-list', err.message));
-        if (err instanceof MaestroError) err.hints.forEach((h) => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('feature-list', err);
     }
   },
 });

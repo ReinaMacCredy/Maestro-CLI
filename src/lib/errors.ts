@@ -27,3 +27,20 @@ export function formatSuggestion(message: string): string {
 export function formatHint(message: string): string {
   return `[hint] ${message}`;
 }
+
+/**
+ * Standard error handler for command `run()` blocks.
+ * Prints formatted error + hints, exits with code 1.
+ */
+export function handleCommandError(command: string, err: unknown): never {
+  if (err instanceof MaestroError) {
+    console.error(formatError(command, err.message));
+    err.hints.forEach(h => console.error(formatHint(h)));
+    process.exit(1);
+  }
+  if (err instanceof Error) {
+    console.error(formatError(command, err.message));
+    process.exit(1);
+  }
+  throw err;
+}

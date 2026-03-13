@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'plan-read', description: 'Read feature plan' },
@@ -37,12 +37,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('plan-read', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('plan-read', err);
     }
   },
 });

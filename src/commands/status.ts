@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { checkStatus, type StatusResult } from '../usecases/check-status.ts';
 import { output, renderStatusLine } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 import { truncateList, formatTruncation } from '../lib/truncation.ts';
 
 function formatStatus(result: StatusResult): string {
@@ -73,12 +73,7 @@ export default defineCommand({
       const result = await checkStatus(taskPort, featureAdapter, planAdapter, contextAdapter, featureName);
       output(result, formatStatus);
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('status', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('status', err);
     }
   },
 });

@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'subtask-create', description: 'Create a subtask under a parent task' },
@@ -42,12 +42,7 @@ export default defineCommand({
         `[ok] subtask created: ${r.folder} (parent: ${args.parent})`,
       );
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('subtask-create', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('subtask-create', err);
     }
   },
 });

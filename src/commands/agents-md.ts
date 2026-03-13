@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 
 type Action = 'init' | 'sync' | 'apply';
 const VALID_ACTIONS: Action[] = ['init', 'sync', 'apply'];
@@ -73,12 +73,7 @@ export default defineCommand({
         output(result, formatApplyResult);
       }
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('agents-md', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('agents-md', err);
     }
   },
 });

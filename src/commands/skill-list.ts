@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { listSkills } from '../skills/registry.ts';
 import { output, renderTable } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 function formatSkillList(skills: Array<{ name: string; description: string }>): string {
   if (skills.length === 0) return 'No skills available.';
@@ -21,12 +21,7 @@ export default defineCommand({
       const skills = listSkills();
       output(skills, formatSkillList);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('skill-list', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('skill-list', err);
     }
   },
 });

@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 import * as fs from 'fs';
 
 export default defineCommand({
@@ -43,12 +43,7 @@ export default defineCommand({
       const result = await writePlan(planAdapter, featureAdapter, args.feature, content);
       output(result, (r) => `[ok] plan written for '${r.feature}' (${r.taskCount} task headings)`);
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('plan-write', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('plan-write', err);
     }
   },
 });

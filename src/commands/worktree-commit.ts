@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { commitTask } from '../usecases/commit-task.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'worktree-commit', description: 'Commit task changes and update status' },
@@ -67,12 +67,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('worktree-commit', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('worktree-commit', err);
     }
   },
 });

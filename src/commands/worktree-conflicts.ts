@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderList } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'worktree-conflicts', description: 'Check for merge conflicts' },
@@ -33,12 +33,7 @@ export default defineCommand({
         return `[!] ${files.length} conflicting file(s):\n${renderList(files)}`;
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('worktree-conflicts', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('worktree-conflicts', err);
     }
   },
 });

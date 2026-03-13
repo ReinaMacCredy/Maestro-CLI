@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { formatError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'context-compile', description: 'Compile all context into single string' },
@@ -26,12 +26,7 @@ export default defineCommand({
       }
       output(compiled, (c) => c);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('context-compile', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('context-compile', err);
     }
   },
 });

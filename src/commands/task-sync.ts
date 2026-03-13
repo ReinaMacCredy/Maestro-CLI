@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'task-sync', description: 'Sync tasks from approved plan' },
@@ -31,12 +31,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('task-sync', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('task-sync', err);
     }
   },
 });

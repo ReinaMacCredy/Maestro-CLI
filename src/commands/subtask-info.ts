@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderStatusLine } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { formatError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'subtask-info', description: 'Show subtask details' },
@@ -43,12 +43,7 @@ export default defineCommand({
         ].filter(Boolean).join('\n'),
       );
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('subtask-info', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('subtask-info', err);
     }
   },
 });

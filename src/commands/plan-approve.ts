@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'plan-approve', description: 'Approve feature plan' },
@@ -23,12 +23,7 @@ export default defineCommand({
       const result = await approvePlan(planAdapter, featureAdapter, args.feature);
       output(result, () => `[ok] plan approved for '${args.feature}'`);
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('plan-approve', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('plan-approve', err);
     }
   },
 });

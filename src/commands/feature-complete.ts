@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { completeFeature } from '../usecases/complete-feature.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'feature-complete', description: 'Mark feature as completed' },
@@ -27,12 +27,7 @@ export default defineCommand({
         return `[ok] feature '${args.feature}' completed (${done} done, ${cancelled} cancelled, ${total} total)`;
       });
     } catch (err) {
-      if (err instanceof MaestroError) {
-        console.error(formatError('feature-complete', err.message));
-        err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('feature-complete', err);
     }
   },
 });

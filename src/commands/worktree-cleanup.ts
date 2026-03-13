@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderList } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'worktree-cleanup', description: 'Clean up orphaned worktrees' },
@@ -27,12 +27,7 @@ export default defineCommand({
         return `[ok] Removed ${r.removed.length} orphaned worktree(s):\n${renderList(r.removed)}`;
       });
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('worktree-cleanup', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('worktree-cleanup', err);
     }
   },
 });

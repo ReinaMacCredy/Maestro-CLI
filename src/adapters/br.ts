@@ -16,7 +16,7 @@
 
 import type { TaskInfo, TaskStatusType } from '../types.ts';
 import type { TaskPort, CreateOpts, UpdateFields, ListOpts } from '../ports/tasks.ts';
-import { isValidTransition } from '../ports/tasks.ts';
+import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { readJson, writeJson, ensureDir, getFeaturePath } from '../utils/paths.ts';
 import * as path from 'path';
@@ -101,11 +101,11 @@ export class BrTaskAdapter implements TaskPort {
 
     if (fields.description) args.push('--description', fields.description);
 
-    if (fields.notes) {
-      args.push('--notes', fields.notes);
-    } else if (fields.status === 'partial') {
-      // Encode partial status in notes prefix
+    if (fields.status === 'partial') {
+      // Always encode partial prefix so toMaestroStatus() can detect it
       args.push('--notes', `${PARTIAL_PREFIX}${fields.notes || ''}`);
+    } else if (fields.notes) {
+      args.push('--notes', fields.notes);
     }
 
     if (fields.baseCommit) {
@@ -142,12 +142,7 @@ export class BrTaskAdapter implements TaskPort {
     args.push('--json', '--limit', '0');
 
     const issues = await this.exec<BrIssue[]>(args);
-    const mapping = this.getMapping(feature);
-
-    return issues.map(issue => {
-      const folder = mapping.idToFolder[String(issue.id)] || `unknown-${issue.id}`;
-      return this.toTaskInfo(issue, folder);
-    });
+    return this.mapIssuesToTasks(feature, issues);
   }
 
   async close(feature: string, id: string, reason?: string): Promise<{ suggestNext?: string[] }> {
@@ -175,12 +170,7 @@ export class BrTaskAdapter implements TaskPort {
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const args = ['ready', '-l', `feature:${feature}`, '--json', '--limit', '0'];
     const issues = await this.exec<BrIssue[]>(args);
-    const mapping = this.getMapping(feature);
-
-    return issues.map(issue => {
-      const folder = mapping.idToFolder[String(issue.id)] || `unknown-${issue.id}`;
-      return this.toTaskInfo(issue, folder);
-    });
+    return this.mapIssuesToTasks(feature, issues);
   }
 
   async getBlocked(feature: string): Promise<Record<string, string[]>> {
@@ -248,9 +238,11 @@ export class BrTaskAdapter implements TaskPort {
           stderr: 'pipe',
         });
 
-        const exitCode = await proc.exited;
-        const stdout = await new Response(proc.stdout).text();
-        const stderr = await new Response(proc.stderr).text();
+        const [exitCode, stdout, stderr] = await Promise.all([
+          proc.exited,
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+        ]);
 
         if (exitCode === 0) {
           try {
@@ -344,7 +336,6 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   private validTargets(status: TaskStatusType): string[] {
-    const { VALID_TRANSITIONS } = require('../ports/tasks.ts');
     return VALID_TRANSITIONS[status] || [];
   }
 
@@ -390,7 +381,16 @@ export class BrTaskAdapter implements TaskPort {
   // Conversion helpers
   // --------------------------------------------------------------------------
 
-  private toTaskInfo(issue: BrIssue, folder: string): TaskInfo {
+  /** Map a batch of br issues to TaskInfo using a single mapping read. */
+  private mapIssuesToTasks(feature: string, issues: BrIssue[]): TaskInfo[] {
+    const mapping = this.getMapping(feature);
+    return issues.map(issue => {
+      const folder = mapping.idToFolder[String(issue.id)] || `unknown-${issue.id}`;
+      return this.toTaskInfo(issue, folder, mapping);
+    });
+  }
+
+  private toTaskInfo(issue: BrIssue, folder: string, mapping?: BrMapping): TaskInfo {
     return {
       folder,
       name: folder.replace(/^\d+-/, ''),
@@ -398,20 +398,10 @@ export class BrTaskAdapter implements TaskPort {
       origin: 'plan',
       planTitle: issue.title,
       summary: issue.notes?.replace(new RegExp(`^${PARTIAL_PREFIX}`), '') || undefined,
-      dependsOn: issue.dependencies?.map(depId => {
-        const mapping = this.getMappingFromIssue(issue, depId);
-        return mapping || `unknown-${depId}`;
-      }),
+      dependsOn: issue.dependencies?.map(depId =>
+        mapping?.idToFolder[String(depId)] || `unknown-${depId}`
+      ),
     };
-  }
-
-  private getMappingFromIssue(issue: BrIssue, depId: number): string | undefined {
-    // We need the feature label to look up the mapping
-    const featureLabel = issue.labels?.find(l => l.startsWith('feature:'));
-    if (!featureLabel) return undefined;
-    const feature = featureLabel.replace('feature:', '');
-    const mapping = this.getMapping(feature);
-    return mapping.idToFolder[String(depId)];
   }
 
   private titleToFolder(title: string, id: number): string {

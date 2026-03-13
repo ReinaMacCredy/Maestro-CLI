@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
 import { renderStatusLine } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { formatError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'feature-info', description: 'Show feature details' },
@@ -36,12 +36,7 @@ export default defineCommand({
         ].join('\n'),
       );
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('feature-info', err.message));
-        if (err instanceof MaestroError) err.hints.forEach((h) => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('feature-info', err);
     }
   },
 });

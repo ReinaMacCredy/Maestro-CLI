@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'ask-create', description: 'Create an ask' },
@@ -27,12 +27,7 @@ export default defineCommand({
       const ask = askAdapter.createAsk(args.feature, args.question);
       output(ask, (a) => `[ok] ask '${a.id}' created`);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('ask-create', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('ask-create', err);
     }
   },
 });

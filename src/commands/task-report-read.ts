@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
-import { formatError, formatHint, MaestroError } from '../lib/errors.ts';
+import { formatError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'task-report-read', description: 'Read task report' },
@@ -33,12 +33,7 @@ export default defineCommand({
 
       output({ content: report }, () => report);
     } catch (err) {
-      if (err instanceof MaestroError || err instanceof Error) {
-        console.error(formatError('task-report-read', err.message));
-        if (err instanceof MaestroError) err.hints.forEach(h => console.error(formatHint(h)));
-        process.exit(1);
-      }
-      throw err;
+      handleCommandError('task-report-read', err);
     }
   },
 });
