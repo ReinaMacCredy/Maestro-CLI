@@ -32,6 +32,16 @@ export class FsFeatureAdapter {
       throw new Error(`Feature '${name}' already exists`);
     }
 
+    // Detect case-insensitive filesystem collisions (macOS HFS+/APFS)
+    const existing = this.list();
+    const collision = existing.find(f => f.toLowerCase() === name.toLowerCase());
+    if (collision) {
+      throw new MaestroError(
+        `Feature '${name}' conflicts with existing feature '${collision}' on case-insensitive filesystem`,
+        [`Rename to avoid collision or use the existing feature: ${collision}`],
+      );
+    }
+
     ensureDir(featurePath);
     ensureDir(getContextPath(this.projectRoot, name));
     ensureDir(getTasksPath(this.projectRoot, name));

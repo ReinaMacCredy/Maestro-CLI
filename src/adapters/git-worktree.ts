@@ -19,6 +19,27 @@ export class GitWorktreeAdapter {
     this.config = config;
   }
 
+  /** Validate that a name is safe for use in git branch names. */
+  private static validateBranchSegment(name: string, label: string): void {
+    if (/[~^:?*\[\]\\]/.test(name) || name.includes('..') || name.includes('@{') || name.includes(' ')) {
+      throw new Error(
+        `${label} '${name}' contains characters invalid for git branches. ` +
+        `Use only alphanumeric, dash, underscore, and dot characters.`
+      );
+    }
+  }
+
+  /** Get a safe diff base, handling shallow clones where HEAD~1 may not exist. */
+  private async getSafeDiffBase(worktreePath: string): Promise<string> {
+    try {
+      const isShallow = (await this.getGit(worktreePath).raw(['rev-parse', '--is-shallow-repository'])).trim();
+      if (isShallow === 'true') {
+        return '4b825dc642cb6eb9a060e54bf899d15d4a18d0c7'; // well-known empty tree hash
+      }
+    } catch {}
+    return 'HEAD~1';
+  }
+
   private getGit(cwd?: string): SimpleGit {
     return simpleGit(cwd || this.config.baseDir);
   }
@@ -53,6 +74,10 @@ export class GitWorktreeAdapter {
       return existing;
     }
 
+    // Validate names are safe for git branch construction
+    GitWorktreeAdapter.validateBranchSegment(feature, 'Feature name');
+    GitWorktreeAdapter.validateBranchSegment(step, 'Task name');
+
     // Clean up partial worktree on SIGINT to prevent phantom worktrees
     const baseDir = this.config.baseDir;
     const cleanupOnAbort = () => {
@@ -66,7 +91,17 @@ export class GitWorktreeAdapter {
     try {
       try {
         await git.raw(["worktree", "add", "-b", branchName, worktreePath, base]);
-      } catch {
+      } catch (createError: unknown) {
+        const errMsg = (createError as Error).message || '';
+        // Branch already checked out in another worktree -- unrecoverable
+        if (errMsg.includes('already checked out')) {
+          const pathMatch = errMsg.match(/already checked out at '([^']+)'/);
+          const otherPath = pathMatch ? pathMatch[1] : 'another worktree';
+          throw new Error(
+            `Branch '${branchName}' is already checked out at ${otherPath}. ` +
+            `Remove that worktree first: git worktree remove ${otherPath}`
+          );
+        }
         try {
           await git.raw(["worktree", "add", worktreePath, branchName]);
         } catch (retryError) {
@@ -76,6 +111,13 @@ export class GitWorktreeAdapter {
 
       const worktreeGit = this.getGit(worktreePath);
       const commit = (await worktreeGit.revparse(["HEAD"])).trim();
+
+      // Initialize submodules if present (non-fatal)
+      try {
+        await worktreeGit.raw(['submodule', 'update', '--init', '--recursive']);
+      } catch {
+        // Submodule init is best-effort -- worktree is still usable
+      }
 
       return {
         path: worktreePath,
@@ -122,7 +164,7 @@ export class GitWorktreeAdapter {
     }
 
     if (!base) {
-      base = "HEAD~1";
+      base = await this.getSafeDiffBase(worktreePath);
     }
 
     const worktreeGit = this.getGit(worktreePath);
@@ -176,7 +218,7 @@ export class GitWorktreeAdapter {
   async exportPatch(feature: string, step: string, baseBranch?: string): Promise<string> {
     const worktreePath = this.getWorktreePath(feature, step);
     const patchPath = path.join(worktreePath, "..", `${step}.patch`);
-    const base = baseBranch || "HEAD~1";
+    const base = baseBranch || await this.getSafeDiffBase(worktreePath);
     const worktreeGit = this.getGit(worktreePath);
 
     const diff = await worktreeGit.diff([`${base}...HEAD`]);
@@ -385,6 +427,14 @@ export class GitWorktreeAdapter {
           return { success: false, merged: false, error: `Branch ${branchName} not found` };
         }
 
+        if (!branches.current) {
+          return {
+            success: false,
+            merged: false,
+            error: 'Cannot merge in detached HEAD state. Checkout a branch first: git checkout <branch>',
+          };
+        }
+
         const currentBranch = branches.current;
 
         const diffStat = await git.diff([`${currentBranch}...${branchName}`, "--stat"]);
@@ -418,6 +468,16 @@ export class GitWorktreeAdapter {
         }
       } catch (error: unknown) {
         const err = error as { message?: string };
+
+        // IDE or other process holding git index lock
+        if (err.message?.includes('index.lock')) {
+          return {
+            success: false,
+            merged: false,
+            error: 'Git index is locked by another process (IDE, editor, or other git command). ' +
+                   'Close other programs accessing this repo and retry.',
+          };
+        }
 
         if (err.message?.includes("CONFLICT") || err.message?.includes("conflict")) {
           await git.raw(["merge", "--abort"]).catch(() => {});

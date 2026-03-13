@@ -74,7 +74,13 @@ export function listFeatures(projectRoot: string): string[] {
 }
 
 export function findProjectRoot(startDir: string): string | null {
-  let current = startDir;
+  // Resolve symlinks to ensure consistent canonical paths across processes
+  let current: string;
+  try {
+    current = fs.realpathSync(startDir);
+  } catch {
+    current = startDir;
+  }
   const root = path.parse(current).root;
 
   while (current !== root) {

@@ -96,7 +96,16 @@ export function getSubtaskReportPath(projectRoot: string, featureName: string, t
   return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), REPORT_FILE);
 }
 
+/** Maximum path length (conservative cross-platform limit). */
+const MAX_PATH_LENGTH = 240;
+
 export function ensureDir(dirPath: string): void {
+  if (dirPath.length > MAX_PATH_LENGTH) {
+    throw new Error(
+      `Path exceeds maximum length (${dirPath.length} > ${MAX_PATH_LENGTH}): ` +
+      `shorten feature/task names or move project to a shorter base path.`
+    );
+  }
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
@@ -293,7 +302,11 @@ export function writeAtomic(filePath: string, content: string): void {
     try {
       fs.unlinkSync(tempPath);
     } catch {
-      // Ignore cleanup errors
+      // Temp file cleanup failed -- may be left behind on disk-full
+    }
+    const errno = (error as NodeJS.ErrnoException).code;
+    if (errno === 'ENOSPC') {
+      throw new Error(`Disk full: cannot write ${filePath}. Free disk space and retry.`);
     }
     throw error;
   }
