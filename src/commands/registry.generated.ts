@@ -36,8 +36,8 @@ import cmdSessionInfo from './session-info.ts';
 import cmdSessionList from './session-list.ts';
 import cmdSessionMaster from './session-master.ts';
 import cmdSessionTrack from './session-track.ts';
-import cmdSkillList from './skill-list.ts';
 import cmdSkill from './skill.ts';
+import cmdSkillList from './skill-list.ts';
 import cmdStatus from './status.ts';
 import cmdSubtaskCreate from './subtask-create.ts';
 import cmdSubtaskDelete from './subtask-delete.ts';
@@ -106,8 +106,8 @@ export const subCommands = {
   'session-list': cmdSessionList,
   'session-master': cmdSessionMaster,
   'session-track': cmdSessionTrack,
-  'skill-list': cmdSkillList,
   'skill': cmdSkill,
+  'skill-list': cmdSkillList,
   'status': cmdStatus,
   'subtask-create': cmdSubtaskCreate,
   'subtask-delete': cmdSubtaskDelete,

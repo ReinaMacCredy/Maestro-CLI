@@ -21,24 +21,45 @@ function toCamelCase(slug: string): string {
 }
 
 async function main() {
-  const entries = await readdir(COMMANDS_DIR);
-  const commandFiles = entries
-    .filter((f) => f.endsWith('.ts') && !f.startsWith('_') && !EXCLUDED.has(f))
-    .sort();
+  const entries = await readdir(COMMANDS_DIR, { withFileTypes: true });
+  const commands: Array<{ slug: string; importPath: string }> = [];
 
-  const imports = commandFiles
-    .map((f) => {
-      const slug = f.replace(/\.ts$/, '');
-      const varName = toCamelCase(slug);
-      return `import ${varName} from './${f}';`;
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      const subEntries = await readdir(join(COMMANDS_DIR, entry.name));
+      for (const sub of subEntries.filter(
+        (f) => f.endsWith('.ts') && !f.startsWith('_'),
+      )) {
+        const basename = sub.replace(/\.ts$/, '');
+        commands.push({
+          slug: `${entry.name}-${basename}`,
+          importPath: `./${entry.name}/${sub}`,
+        });
+      }
+    } else if (
+      entry.name.endsWith('.ts') &&
+      !entry.name.startsWith('_') &&
+      !EXCLUDED.has(entry.name)
+    ) {
+      commands.push({
+        slug: entry.name.replace(/\.ts$/, ''),
+        importPath: `./${entry.name}`,
+      });
+    }
+  }
+  commands.sort((a, b) => a.slug.localeCompare(b.slug));
+
+  const imports = commands
+    .map((cmd) => {
+      const varName = toCamelCase(cmd.slug);
+      return `import ${varName} from '${cmd.importPath}';`;
     })
     .join('\n');
 
-  const mapEntries = commandFiles
-    .map((f) => {
-      const slug = f.replace(/\.ts$/, '');
-      const varName = toCamelCase(slug);
-      return `  '${slug}': ${varName},`;
+  const mapEntries = commands
+    .map((cmd) => {
+      const varName = toCamelCase(cmd.slug);
+      return `  '${cmd.slug}': ${varName},`;
     })
     .join('\n');
 
@@ -51,7 +72,7 @@ ${mapEntries}
 `;
 
   await writeFile(OUT_FILE, code, 'utf-8');
-  console.log(`[ok] Generated ${OUT_FILE} with ${commandFiles.length} commands`);
+  console.log(`[ok] Generated ${OUT_FILE} with ${commands.length} commands`);
 }
 
 main().catch((err) => {
