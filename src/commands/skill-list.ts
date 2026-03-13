@@ -3,14 +3,14 @@
  */
 
 import { defineCommand } from 'citty';
-import { listSkills } from '../skills/registry.ts';
+import { listSkills, type SkillEntry } from '../skills/registry.ts';
 import { output, renderTable } from '../lib/output.ts';
 import { handleCommandError } from '../lib/errors.ts';
 
-function formatSkillList(skills: Array<{ name: string; description: string }>): string {
+function formatSkillList(skills: Array<SkillEntry>): string {
   if (skills.length === 0) return 'No skills available.';
-  const rows = skills.map(s => [s.name, s.description]);
-  return renderTable(['Name', 'Description'], rows);
+  const rows = skills.map(s => [s.name, s.source, s.description]);
+  return renderTable(['Name', 'Source', 'Description'], rows);
 }
 
 export default defineCommand({
@@ -18,7 +18,7 @@ export default defineCommand({
   args: {},
   async run() {
     try {
-      const skills = listSkills();
+      const skills = await listSkills();
       output(skills, formatSkillList);
     } catch (err) {
       handleCommandError('skill-list', err);
