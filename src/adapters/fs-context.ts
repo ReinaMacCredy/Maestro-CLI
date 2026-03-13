@@ -8,8 +8,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getContextPath, ensureDir, fileExists, readText, writeText } from '../utils/paths.ts';
 import type { ContextFile } from '../types.ts';
+import type { ContextPort } from '../ports/context.ts';
 
-export class FsContextAdapter {
+export class FsContextAdapter implements ContextPort {
   constructor(private projectRoot: string) {}
 
   write(featureName: string, fileName: string, content: string): string {

@@ -4,13 +4,13 @@
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
-import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
+import type { WorktreePort } from '../ports/worktree.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { MergeResult } from '../types.ts';
 
 export interface MergeTaskServices {
   taskPort: TaskPort;
-  worktreeAdapter: GitWorktreeAdapter;
+  worktreeAdapter: WorktreePort;
 }
 
 export interface MergeTaskParams {

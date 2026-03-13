@@ -4,19 +4,19 @@
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
-import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
-import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
-import type { FsContextAdapter } from '../adapters/fs-context.ts';
-import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
+import type { FeaturePort } from '../ports/features.ts';
+import type { PlanPort } from '../ports/plans.ts';
+import type { ContextPort } from '../ports/context.ts';
+import type { WorktreePort } from '../ports/worktree.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
 export interface StatusServices {
   taskPort: TaskPort;
-  featureAdapter: FsFeatureAdapter;
-  planAdapter: FsPlanAdapter;
-  contextAdapter: FsContextAdapter;
-  worktreeAdapter?: GitWorktreeAdapter;
+  featureAdapter: FeaturePort;
+  planAdapter: PlanPort;
+  contextAdapter: ContextPort;
+  worktreeAdapter?: WorktreePort;
 }
 
 export interface StatusResult {

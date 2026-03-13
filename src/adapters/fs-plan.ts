@@ -15,9 +15,10 @@ import {
   fileExists,
 } from '../utils/paths.ts';
 import type { FeatureJson, CommentsJson, PlanComment, PlanReadResult } from '../types.ts';
+import type { PlanPort } from '../ports/plans.ts';
 import * as fs from 'fs';
 
-export class FsPlanAdapter {
+export class FsPlanAdapter implements PlanPort {
   constructor(private projectRoot: string) {}
 
   write(featureName: string, content: string): string {

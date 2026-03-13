@@ -19,17 +19,22 @@ import { GitWorktreeAdapter } from './adapters/git-worktree.ts';
 import { getHivePath } from './utils/paths.ts';
 import { MaestroError } from './lib/errors.ts';
 import type { TaskPort } from './ports/tasks.ts';
+import type { FeaturePort } from './ports/features.ts';
+import type { PlanPort } from './ports/plans.ts';
+import type { ContextPort } from './ports/context.ts';
+import type { SessionPort } from './ports/sessions.ts';
+import type { WorktreePort } from './ports/worktree.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
-  featureAdapter: FsFeatureAdapter;
-  planAdapter: FsPlanAdapter;
-  contextAdapter: FsContextAdapter;
-  sessionAdapter: FsSessionAdapter;
+  featureAdapter: FeaturePort;
+  planAdapter: PlanPort;
+  contextAdapter: ContextPort;
+  sessionAdapter: SessionPort;
   configAdapter: FsConfigAdapter;
   askAdapter: FsAskAdapter;
   agentsMdAdapter: AgentsMdAdapter;
-  worktreeAdapter: GitWorktreeAdapter;
+  worktreeAdapter: WorktreePort;
   directory: string;
 }
 
