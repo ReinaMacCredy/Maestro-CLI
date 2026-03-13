@@ -6,7 +6,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { getContextPath, ensureDir, fileExists, readText, writeText } from '../utils/paths.ts';
+import { getContextPath } from '../utils/paths.ts';
+import { ensureDir, fileExists, readText, writeText } from '../utils/fs-io.ts';
 import type { ContextFile } from '../types.ts';
 
 export class FsContextAdapter {

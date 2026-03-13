@@ -11,13 +11,9 @@ import {
   getTasksPath,
   getPlanPath,
   getCommentsPath,
-  ensureDir,
-  readJson,
-  writeJson,
-  writeJsonAtomic,
-  acquireLockSync,
-  fileExists,
 } from '../utils/paths.ts';
+import { ensureDir, readJson, writeJson, writeJsonAtomic, fileExists } from '../utils/fs-io.ts';
+import { acquireLockSync } from '../utils/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../types.ts';
 import { listFeatures } from '../utils/detection.ts';
 import { MaestroError } from '../lib/errors.ts';

@@ -9,7 +9,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { ensureDir } from "../../utils/paths";
+import { ensureDir } from "../../utils/fs-io";
 import { GitWorktreeAdapter } from "../../adapters/git-worktree";
 import { findProjectRoot, listFeatures } from "../../utils/detection";
 import { buildWorkerPrompt } from "../../utils/worker-prompt";

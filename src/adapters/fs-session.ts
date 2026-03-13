@@ -5,7 +5,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { getFeaturePath, ensureDir, readJson, writeJson } from '../utils/paths.ts';
+import { getFeaturePath } from '../utils/paths.ts';
+import { ensureDir, readJson, writeJson } from '../utils/fs-io.ts';
 import type { SessionInfo, SessionsJson } from '../types.ts';
 
 export class FsSessionAdapter {
