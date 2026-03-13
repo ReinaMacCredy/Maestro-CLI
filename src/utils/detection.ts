@@ -5,8 +5,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { getHivePath, getFeaturesPath, getFeaturePath, readJson, normalizePath } from './paths.ts';
-import { FeatureJson } from '../types.ts';
+import { getFeaturesPath, normalizePath } from './paths.ts';
 
 export interface DetectionResult {
   projectRoot: string;
@@ -72,12 +71,6 @@ export function listFeatures(projectRoot: string): string[] {
   return fs.readdirSync(featuresPath, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name);
-}
-
-export function getFeatureData(projectRoot: string, featureName: string): FeatureJson | null {
-  const featurePath = getFeaturePath(projectRoot, featureName);
-  const featureJsonPath = path.join(featurePath, 'feature.json');
-  return readJson<FeatureJson>(featureJsonPath);
 }
 
 export function findProjectRoot(startDir: string): string | null {

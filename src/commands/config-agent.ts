@@ -6,13 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output } from '../lib/output.ts';
 import { formatError, handleCommandError } from '../lib/errors.ts';
-
-type AgentName = 'hive-master' | 'architect-planner' | 'swarm-orchestrator' | 'scout-researcher' | 'forager-worker' | 'hygienic-reviewer';
-
-const VALID_AGENTS: AgentName[] = [
-  'hive-master', 'architect-planner', 'swarm-orchestrator',
-  'scout-researcher', 'forager-worker', 'hygienic-reviewer',
-];
+import { AGENT_NAMES } from '../types.ts';
+import type { AgentName } from '../types.ts';
 
 export default defineCommand({
   meta: { name: 'config-agent', description: 'Get agent-specific config' },
@@ -25,8 +20,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      if (!VALID_AGENTS.includes(args.agent as AgentName)) {
-        console.error(formatError('config-agent', `unknown agent '${args.agent}'. Valid: ${VALID_AGENTS.join(', ')}`));
+      if (!AGENT_NAMES.includes(args.agent as AgentName)) {
+        console.error(formatError('config-agent', `unknown agent '${args.agent}'. Valid: ${AGENT_NAMES.join(', ')}`));
         process.exit(1);
       }
 

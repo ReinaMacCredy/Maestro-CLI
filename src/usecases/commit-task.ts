@@ -44,13 +44,7 @@ export async function commitTask(
   // Commit any changes in the worktree
   const commitResult = await worktreeAdapter.commitChanges(feature, task, `maestro(${task}): ${summary}`);
 
-  // Update task status
-  await taskPort.update(feature, task, {
-    status: taskStatus,
-    notes: summary,
-  });
-
-  // Write report
+  // Build report content (independent of update)
   const reportContent = [
     `# Task Report: ${task}`,
     '',
@@ -62,7 +56,11 @@ export async function commitTask(
     commitResult.committed ? `## Commit: ${commitResult.sha}` : '## No changes committed',
   ].join('\n');
 
-  await taskPort.writeReport(feature, task, reportContent);
+  // Update task status and write report in parallel
+  await Promise.all([
+    taskPort.update(feature, task, { status: taskStatus, notes: summary }),
+    taskPort.writeReport(feature, task, reportContent),
+  ]);
 
   // Determine if terminal
   const isTerminal = status === 'completed' || status === 'failed';

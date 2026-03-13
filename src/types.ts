@@ -204,6 +204,9 @@ export const DEFAULT_AGENT_MODELS = {
   'hygienic-reviewer': 'github-copilot/gpt-5.2-codex',
 } as const;
 
+export type AgentName = keyof typeof DEFAULT_AGENT_MODELS;
+export const AGENT_NAMES = Object.keys(DEFAULT_AGENT_MODELS) as AgentName[];
+
 export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   $schema: 'https://raw.githubusercontent.com/tctinh/agent-hive/main/packages/opencode-hive/schema/agent_hive.schema.json',
   enableToolsFor: [],

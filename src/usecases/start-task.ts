@@ -43,12 +43,7 @@ export async function startTask(
   const { taskPort, featureAdapter, worktreeAdapter, planAdapter, contextAdapter, directory } = services;
   const { feature, task, continueFrom, decision } = params;
 
-  // Validate feature exists
-  const featureData = featureAdapter.get(feature);
-  if (!featureData) throw new MaestroError(`Feature '${feature}' not found`);
-  if (featureData.status === 'completed') {
-    throw new MaestroError(`Feature '${feature}' is completed`);
-  }
+  featureAdapter.requireActive(feature);
 
   // Get task info
   const taskInfo = await taskPort.get(feature, task);

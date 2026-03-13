@@ -6,7 +6,10 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { mergeTask } from '../usecases/merge-task.ts';
 import { output } from '../lib/output.ts';
-import { handleCommandError } from '../lib/errors.ts';
+import { handleCommandError, MaestroError } from '../lib/errors.ts';
+
+const VALID_STRATEGIES = ['merge', 'squash', 'rebase'] as const;
+type MergeStrategy = typeof VALID_STRATEGIES[number];
 
 export default defineCommand({
   meta: { name: 'merge', description: 'Merge completed task worktree' },
@@ -34,11 +37,17 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
+      if (!VALID_STRATEGIES.includes(args.strategy as MergeStrategy)) {
+        throw new MaestroError(
+          `Invalid strategy '${args.strategy}'`,
+          [`Valid values: ${VALID_STRATEGIES.join(', ')}`],
+        );
+      }
       const services = getServices();
       const result = await mergeTask(services, {
         feature: args.feature,
         task: args.task,
-        strategy: args.strategy as 'merge' | 'squash' | 'rebase',
+        strategy: args.strategy as MergeStrategy,
         deleteBranch: !args.keepBranch,
       });
 

@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
 import { output, renderTable } from '../lib/output.ts';
 import { handleCommandError } from '../lib/errors.ts';
+import { parseStatus } from './_task-factory.ts';
 import type { TaskStatusType } from '../types.ts';
 
 export default defineCommand({
@@ -28,6 +29,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
+      if (args.status) parseStatus(args.status);
       const { taskPort } = getServices();
       const tasks = await taskPort.list(args.feature, {
         status: args.status as TaskStatusType | undefined,

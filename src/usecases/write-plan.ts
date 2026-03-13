@@ -19,14 +19,7 @@ export async function writePlan(
   content: string,
 ): Promise<WritePlanResult> {
   const { planAdapter, featureAdapter } = services;
-  const feature = featureAdapter.get(featureName);
-  if (!feature) throw new MaestroError(`Feature '${featureName}' not found`);
-  if (feature.status === 'completed') {
-    throw new MaestroError(
-      `Feature '${featureName}' is completed`,
-      ['Completed features cannot be modified']
-    );
-  }
+  featureAdapter.requireActive(featureName);
 
   // Validate Discovery section exists and is >= 100 chars
   const discoveryMatch = content.match(/## Discovery\s*\n([\s\S]*?)(?=\n##\s|$)/i);

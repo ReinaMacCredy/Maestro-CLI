@@ -8,8 +8,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { HiveConfig, DEFAULT_HIVE_CONFIG } from '../types.ts';
-import type { SandboxConfig } from '../types.ts';
+import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../types.ts';
+import type { SandboxConfig, AgentName } from '../types.ts';
 
 export class FsConfigAdapter {
   private configPath: string;
@@ -37,38 +37,11 @@ export class FsConfigAdapter {
       const raw = fs.readFileSync(this.configPath, 'utf-8');
       const stored = JSON.parse(raw) as Partial<HiveConfig>;
 
-      const merged: HiveConfig = {
-        ...DEFAULT_HIVE_CONFIG,
-        ...stored,
-        agents: {
-          ...DEFAULT_HIVE_CONFIG.agents,
-          ...stored.agents,
-          'hive-master': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['hive-master'],
-            ...stored.agents?.['hive-master'],
-          },
-          'architect-planner': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['architect-planner'],
-            ...stored.agents?.['architect-planner'],
-          },
-          'swarm-orchestrator': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['swarm-orchestrator'],
-            ...stored.agents?.['swarm-orchestrator'],
-          },
-          'scout-researcher': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['scout-researcher'],
-            ...stored.agents?.['scout-researcher'],
-          },
-          'forager-worker': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['forager-worker'],
-            ...stored.agents?.['forager-worker'],
-          },
-          'hygienic-reviewer': {
-            ...DEFAULT_HIVE_CONFIG.agents?.['hygienic-reviewer'],
-            ...stored.agents?.['hygienic-reviewer'],
-          },
-        },
-      };
+      const agents: HiveConfig['agents'] = { ...DEFAULT_HIVE_CONFIG.agents, ...stored.agents };
+      for (const name of AGENT_NAMES) {
+        agents[name] = { ...DEFAULT_HIVE_CONFIG.agents?.[name], ...stored.agents?.[name] };
+      }
+      const merged: HiveConfig = { ...DEFAULT_HIVE_CONFIG, ...stored, agents };
       this.cachedConfig = merged;
       return this.cachedConfig;
     } catch {
@@ -112,7 +85,7 @@ export class FsConfigAdapter {
   }
 
   getAgentConfig(
-    agent: 'hive-master' | 'architect-planner' | 'swarm-orchestrator' | 'scout-researcher' | 'forager-worker' | 'hygienic-reviewer',
+    agent: AgentName,
   ): { model?: string; temperature?: number; skills?: string[]; autoLoadSkills?: string[]; variant?: string } {
     const config = this.get();
     const agentConfig = config.agents?.[agent] ?? {};

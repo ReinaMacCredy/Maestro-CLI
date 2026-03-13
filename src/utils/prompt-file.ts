@@ -12,26 +12,6 @@ export interface PromptFileResult {
   error?: string;
 }
 
-export function findWorkspaceRoot(startDir: string): string | null {
-  try {
-    let current = path.resolve(startDir);
-    while (true) {
-      const hivePath = path.join(current, '.hive');
-      if (fs.existsSync(hivePath) && fs.statSync(hivePath).isDirectory()) {
-        return current;
-      }
-
-      const parent = path.dirname(current);
-      if (parent === current) {
-        return null;
-      }
-      current = parent;
-    }
-  } catch {
-    return null;
-  }
-}
-
 export function isValidPromptFilePath(filePath: string, workspaceRoot: string): boolean {
   try {
     const normalizedFilePath = path.resolve(filePath);

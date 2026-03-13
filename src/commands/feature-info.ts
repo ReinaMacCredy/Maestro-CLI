@@ -4,8 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../services.ts';
-import { output } from '../lib/output.ts';
-import { renderStatusLine } from '../lib/output.ts';
+import { output, renderStatusLine } from '../lib/output.ts';
 import { formatError, handleCommandError } from '../lib/errors.ts';
 
 export default defineCommand({

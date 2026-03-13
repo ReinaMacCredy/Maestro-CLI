@@ -1,45 +1,13 @@
 /**
  * Feature resolution utilities for maestroCLI.
- * Forked from hive-core/src/utils/feature-resolution.ts.
  * Adapted: TaskService -> TaskPort for checkDependencies.
  */
 
-import * as path from 'path';
-import * as fs from 'fs';
-import { detectContext, listFeatures } from './detection.ts';
 import { buildEffectiveDependencies } from './task-dependency-graph.ts';
 import type { TaskPort } from '../ports/tasks.ts';
 
-export function resolveFeature(directory: string, explicit?: string): string | null {
-  if (explicit) return explicit;
-
-  const context = detectContext(directory);
-  if (context.feature) return context.feature;
-
-  const features = listFeatures(directory);
-  if (features.length === 1) return features[0];
-
-  return null;
-}
-
-export function checkBlocked(directory: string, feature: string): string | null {
-  const blockedPath = path.join(directory, '.hive', 'features', feature, 'BLOCKED');
-  try {
-    const reason = fs.readFileSync(blockedPath, 'utf-8').trim();
-    return `BLOCKED by Beekeeper
-
-${reason || '(No reason provided)'}
-
-The human has blocked this feature. Wait for them to unblock it.
-To unblock: Remove .hive/features/${feature}/BLOCKED`;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Check if a task's dependencies are satisfied.
- * Adapted: uses TaskPort instead of TaskService.
  */
 export async function checkDependencies(
   taskPort: TaskPort,
@@ -84,27 +52,4 @@ export async function checkDependencies(
   }
 
   return { allowed: true };
-}
-
-export function sanitizeName(name: string): string {
-  if (!name || typeof name !== 'string') {
-    throw new Error('Name must be a non-empty string');
-  }
-
-  let sanitized = name
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-zA-Z0-9\-_.]/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^[-.]+|[-.]+$/g, '');
-
-  if (sanitized.length > 128) {
-    sanitized = sanitized.slice(0, 128).replace(/[-.]+$/, '');
-  }
-
-  if (!sanitized) {
-    throw new Error(`Name "${name}" produces an empty result after sanitization`);
-  }
-
-  return sanitized;
 }

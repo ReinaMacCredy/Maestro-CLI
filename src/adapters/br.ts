@@ -96,12 +96,15 @@ export class BrTaskAdapter implements TaskPort {
 
     // Enforce state machine if status change requested
     if (fields.status) {
-      const current = await this.get(feature, id);
-      if (current && !isValidTransition(current.status, fields.status)) {
-        throw new MaestroError(
-          `Invalid status transition: ${current.status} -> ${fields.status}`,
-          [`Valid transitions from '${current.status}': ${this.validTargets(current.status).join(', ')}`]
-        );
+      const issue = await this.getBrIssue(brId);
+      if (issue) {
+        const currentStatus = this.toMaestroStatus(issue);
+        if (!isValidTransition(currentStatus, fields.status)) {
+          throw new MaestroError(
+            `Invalid status transition: ${currentStatus} -> ${fields.status}`,
+            [`Valid transitions from '${currentStatus}': ${this.validTargets(currentStatus).join(', ')}`]
+          );
+        }
       }
     }
 

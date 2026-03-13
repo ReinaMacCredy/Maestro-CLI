@@ -19,9 +19,9 @@ export class FsContextAdapter {
     const filePath = path.join(contextPath, this.normalizeFileName(fileName));
     writeText(filePath, content);
 
-    const totalChars = this.list(featureName).reduce((sum, c) => sum + c.content.length, 0);
-    if (totalChars > 20000) {
-      return `${filePath}\n\n[warn] Context total: ${totalChars} chars (exceeds 20,000). Consider archiving older contexts with context-archive.`;
+    const totalBytes = this.totalSize(featureName);
+    if (totalBytes > 20000) {
+      return `${filePath}\n\n[warn] Context total: ~${totalBytes} bytes (exceeds 20,000). Consider archiving older contexts with context-archive.`;
     }
 
     return filePath;
@@ -96,19 +96,35 @@ export class FsContextAdapter {
   }
 
   stats(featureName: string): { count: number; totalChars: number; oldest?: string; newest?: string } {
-    const contexts = this.list(featureName);
-    if (contexts.length === 0) return { count: 0, totalChars: 0 };
+    const contextPath = getContextPath(this.projectRoot, featureName);
+    if (!fileExists(contextPath)) return { count: 0, totalChars: 0 };
 
-    const sorted = [...contexts].sort((a, b) =>
-      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-    );
+    const entries = fs.readdirSync(contextPath, { withFileTypes: true })
+      .filter(f => f.isFile() && f.name.endsWith('.md'))
+      .map(f => {
+        const stat = fs.statSync(path.join(contextPath, f.name));
+        return { name: f.name.replace(/\.md$/, ''), size: stat.size, mtime: stat.mtime.getTime() };
+      });
+
+    if (entries.length === 0) return { count: 0, totalChars: 0 };
+
+    entries.sort((a, b) => a.mtime - b.mtime);
 
     return {
-      count: contexts.length,
-      totalChars: contexts.reduce((sum, c) => sum + c.content.length, 0),
-      oldest: sorted[0].name,
-      newest: sorted[sorted.length - 1].name,
+      count: entries.length,
+      totalChars: entries.reduce((sum, e) => sum + e.size, 0),
+      oldest: entries[0].name,
+      newest: entries[entries.length - 1].name,
     };
+  }
+
+  /** Sum file sizes using stat only (no content reads). */
+  private totalSize(featureName: string): number {
+    const contextPath = getContextPath(this.projectRoot, featureName);
+    if (!fileExists(contextPath)) return 0;
+    return fs.readdirSync(contextPath, { withFileTypes: true })
+      .filter(f => f.isFile() && f.name.endsWith('.md'))
+      .reduce((sum, f) => sum + fs.statSync(path.join(contextPath, f.name)).size, 0);
   }
 
   private normalizeFileName(name: string): string {

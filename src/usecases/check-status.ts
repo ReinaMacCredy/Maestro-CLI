@@ -55,9 +55,11 @@ export async function checkStatus(
   }
 
   const plan = planAdapter.read(featureName);
-  const tasks = await taskPort.list(featureName, { includeAll: true });
-  const runnable = await taskPort.getRunnable(featureName);
-  const blocked = await taskPort.getBlocked(featureName);
+  const [tasks, runnable, blocked] = await Promise.all([
+    taskPort.list(featureName, { includeAll: true }),
+    taskPort.getRunnable(featureName),
+    taskPort.getBlocked(featureName),
+  ]);
   const contextStats = contextAdapter.stats(featureName);
   const comments = plan?.comments || [];
 

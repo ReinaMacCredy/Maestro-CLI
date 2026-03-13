@@ -4,10 +4,8 @@
  * Adapted: stripped getTasks() -- task listing goes through TaskPort.
  */
 
-import * as fs from 'fs';
 import {
   getFeaturePath,
-  getFeaturesPath,
   getFeatureJsonPath,
   getContextPath,
   getTasksPath,
@@ -19,6 +17,8 @@ import {
   fileExists,
 } from '../utils/paths.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../types.ts';
+import { listFeatures } from '../utils/detection.ts';
+import { MaestroError } from '../lib/errors.ts';
 
 export class FsFeatureAdapter {
   constructor(private projectRoot: string) {}
@@ -51,12 +51,17 @@ export class FsFeatureAdapter {
   }
 
   list(): string[] {
-    const featuresPath = getFeaturesPath(this.projectRoot);
-    if (!fileExists(featuresPath)) return [];
+    return listFeatures(this.projectRoot);
+  }
 
-    return fs.readdirSync(featuresPath, { withFileTypes: true })
-      .filter(d => d.isDirectory())
-      .map(d => d.name);
+  /** Get feature or throw. Rejects completed features unless allowCompleted is set. */
+  requireActive(name: string): FeatureJson {
+    const feature = this.get(name);
+    if (!feature) throw new MaestroError(`Feature '${name}' not found`);
+    if (feature.status === 'completed') {
+      throw new MaestroError(`Feature '${name}' is completed`, ['Completed features cannot be modified']);
+    }
+    return feature;
   }
 
   getActive(): FeatureJson | null {

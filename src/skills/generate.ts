@@ -4,6 +4,7 @@
 
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { parseFrontmatter } from '../utils/frontmatter.ts';
 
 const ROOT = join(import.meta.dir, '..', '..');
 const SKILLS_DIR = join(ROOT, 'skills');
@@ -14,23 +15,6 @@ interface SkillMeta {
   name: string;
   description: string;
   path: string;
-}
-
-function parseFrontmatter(raw: string): { name?: string; description?: string } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-
-  const body = match[1];
-  const result: Record<string, string> = {};
-
-  for (const line of body.split('\n')) {
-    const m = line.match(/^(\w+):\s*(.+)$/);
-    if (!m) continue;
-    // Strip surrounding quotes if present
-    result[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-
-  return result;
 }
 
 async function main() {
