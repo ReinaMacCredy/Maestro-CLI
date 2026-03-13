@@ -6,6 +6,7 @@ import { subCommands } from './commands/registry.generated.ts';
 import { VERSION } from './version.ts';
 
 const subCommandNames = Object.keys(subCommands);
+const metaCommands = new Set(['init', 'self-update', 'update']);
 
 const main = defineCommand({
   meta: {
@@ -32,7 +33,6 @@ const main = defineCommand({
       setOutputMode('json');
     }
 
-    const metaCommands = new Set(['init', 'self-update', 'update']);
     const isMetaCommand = process.argv.some(a => metaCommands.has(a));
     if (!isMetaCommand) {
       const projectRoot = findProjectRoot(process.cwd());

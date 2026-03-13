@@ -27,13 +27,13 @@ async function execCommand(cmd: string[], opts: { cwd: string }): Promise<ExecRe
 }
 
 function formatResult(result: SelfUpdateResult): string {
-  if (result.alreadyUpToDate) {
+  if (!result.updated) {
     return `[ok] maestro is already up-to-date (${result.beforeSha.slice(0, 7)})`;
   }
   return [
     `[ok] maestro updated (${result.beforeSha.slice(0, 7)} --> ${result.afterSha.slice(0, 7)})`,
     `  repo: ${result.repoPath}`,
-    `  binary rebuilt at dist/maestro`,
+    `  binary rebuilt at ${result.binaryPath}`,
   ].join('\n');
 }
 
@@ -49,7 +49,7 @@ export async function runSelfUpdate() {
         ],
       );
     }
-    const result = await selfUpdate({ exec: execCommand }, { repoPath: install.repoPath });
+    const result = await selfUpdate({ exec: execCommand }, { repoPath: install.repoPath, binaryPath: install.binaryPath });
     output(result, formatResult);
   } catch (err) {
     handleCommandError('self-update', err);

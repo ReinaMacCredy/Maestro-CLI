@@ -26,10 +26,10 @@ export interface DetectResult {
 
 export interface SelfUpdateResult {
   updated: boolean;
-  alreadyUpToDate: boolean;
   beforeSha: string;
   afterSha: string;
   repoPath: string;
+  binaryPath: string;
 }
 
 /**
@@ -82,13 +82,18 @@ export function detectInstall(execPath: string): DetectResult {
 
 export async function selfUpdate(
   services: SelfUpdateServices,
-  params: { repoPath: string },
+  params: { repoPath: string; binaryPath: string },
 ): Promise<SelfUpdateResult> {
   const { exec } = services;
-  const { repoPath } = params;
+  const { repoPath, binaryPath } = params;
 
-  // Check branch
-  const branchResult = await exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], { cwd: repoPath });
+  // Pre-checks: branch, bun, and current SHA are independent reads
+  const [branchResult, bunCheck, beforeResult] = await Promise.all([
+    exec(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], { cwd: repoPath }),
+    exec(['which', 'bun'], { cwd: repoPath }),
+    exec(['git', 'rev-parse', 'HEAD'], { cwd: repoPath }),
+  ]);
+
   if (branchResult.exitCode !== 0) {
     throw new MaestroError('failed to detect git branch', [
       `Run: cd ${repoPath} && git status`,
@@ -102,8 +107,6 @@ export async function selfUpdate(
     );
   }
 
-  // Check bun available
-  const bunCheck = await exec(['which', 'bun'], { cwd: repoPath });
   if (bunCheck.exitCode !== 0) {
     throw new MaestroError(
       'bun not found in PATH',
@@ -111,8 +114,6 @@ export async function selfUpdate(
     );
   }
 
-  // Get current SHA
-  const beforeResult = await exec(['git', 'rev-parse', 'HEAD'], { cwd: repoPath });
   if (beforeResult.exitCode !== 0) {
     throw new MaestroError('failed to read current commit SHA');
   }
@@ -136,7 +137,7 @@ export async function selfUpdate(
 
   // Already up to date?
   if (beforeSha === afterSha) {
-    return { updated: false, alreadyUpToDate: true, beforeSha, afterSha, repoPath };
+    return { updated: false, beforeSha, afterSha, repoPath, binaryPath };
   }
 
   // Rebuild
@@ -148,5 +149,5 @@ export async function selfUpdate(
     );
   }
 
-  return { updated: true, alreadyUpToDate: false, beforeSha, afterSha, repoPath };
+  return { updated: true, beforeSha, afterSha, repoPath, binaryPath };
 }

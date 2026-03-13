@@ -98,19 +98,24 @@ describe('detectInstall', () => {
 
 describe('selfUpdate', () => {
   const repoPath = '/fake/repo';
+  const binaryPath = '/fake/repo/dist/maestro';
 
-  test('returns alreadyUpToDate when SHA unchanged (build NOT called)', async () => {
+  // Pre-check stubs reused across tests (branch, bun, sha run in parallel)
+  const preChecksOk = (sha: string) => [
+    { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
+    { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
+    { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: `${sha}\n`, stderr: '' },
+  ];
+
+  test('returns not-updated when SHA unchanged (build NOT called)', async () => {
     const sha = 'abc1234def5678';
     const mock = createMockExec([
-      { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
-      { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
-      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: `${sha}\n`, stderr: '' },
+      ...preChecksOk(sha),
       { cmd: ['git', 'pull', '--ff-only'], exitCode: 0, stdout: 'Already up to date.\n', stderr: '' },
       { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: `${sha}\n`, stderr: '' },
     ]);
 
-    const result = await selfUpdate({ exec: mock.exec }, { repoPath });
-    expect(result.alreadyUpToDate).toBe(true);
+    const result = await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
     expect(result.updated).toBe(false);
     expect(result.beforeSha).toBe(sha);
     // build should NOT have been called (only 5 calls, not 6)
@@ -121,17 +126,14 @@ describe('selfUpdate', () => {
     const before = 'abc1234';
     const after = 'def5678';
     const mock = createMockExec([
-      { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
-      { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
-      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: `${before}\n`, stderr: '' },
+      ...preChecksOk(before),
       { cmd: ['git', 'pull', '--ff-only'], exitCode: 0, stdout: 'Updating abc..def\n', stderr: '' },
       { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: `${after}\n`, stderr: '' },
       { cmd: ['bun', 'run', 'build'], exitCode: 0, stdout: 'done\n', stderr: '' },
     ]);
 
-    const result = await selfUpdate({ exec: mock.exec }, { repoPath });
+    const result = await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
     expect(result.updated).toBe(true);
-    expect(result.alreadyUpToDate).toBe(false);
     expect(result.beforeSha).toBe(before);
     expect(result.afterSha).toBe(after);
     mock.assertAllCalled();
@@ -140,10 +142,12 @@ describe('selfUpdate', () => {
   test('throws MaestroError when not on main branch', async () => {
     const mock = createMockExec([
       { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'feature-x\n', stderr: '' },
+      { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
+      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: 'abc1234\n', stderr: '' },
     ]);
 
     try {
-      await selfUpdate({ exec: mock.exec }, { repoPath });
+      await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
       expect(true).toBe(false); // should not reach
     } catch (err) {
       expect(err).toBeInstanceOf(MaestroError);
@@ -156,10 +160,11 @@ describe('selfUpdate', () => {
     const mock = createMockExec([
       { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
       { cmd: ['which', 'bun'], exitCode: 1, stdout: '', stderr: '' },
+      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: 'abc1234\n', stderr: '' },
     ]);
 
     try {
-      await selfUpdate({ exec: mock.exec }, { repoPath });
+      await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
       expect(true).toBe(false);
     } catch (err) {
       expect(err).toBeInstanceOf(MaestroError);
@@ -169,14 +174,12 @@ describe('selfUpdate', () => {
 
   test('throws MaestroError when git pull fails (includes stderr)', async () => {
     const mock = createMockExec([
-      { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
-      { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
-      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: 'abc1234\n', stderr: '' },
+      ...preChecksOk('abc1234'),
       { cmd: ['git', 'pull', '--ff-only'], exitCode: 1, stdout: '', stderr: 'fatal: Not possible to fast-forward' },
     ]);
 
     try {
-      await selfUpdate({ exec: mock.exec }, { repoPath });
+      await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
       expect(true).toBe(false);
     } catch (err) {
       expect(err).toBeInstanceOf(MaestroError);
@@ -187,16 +190,14 @@ describe('selfUpdate', () => {
 
   test('throws MaestroError when build fails (includes stale binary hint)', async () => {
     const mock = createMockExec([
-      { cmd: ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], exitCode: 0, stdout: 'main\n', stderr: '' },
-      { cmd: ['which', 'bun'], exitCode: 0, stdout: '/usr/local/bin/bun\n', stderr: '' },
-      { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: 'abc1234\n', stderr: '' },
+      ...preChecksOk('abc1234'),
       { cmd: ['git', 'pull', '--ff-only'], exitCode: 0, stdout: 'Updating\n', stderr: '' },
       { cmd: ['git', 'rev-parse', 'HEAD'], exitCode: 0, stdout: 'def5678\n', stderr: '' },
       { cmd: ['bun', 'run', 'build'], exitCode: 1, stdout: '', stderr: 'Build error' },
     ]);
 
     try {
-      await selfUpdate({ exec: mock.exec }, { repoPath });
+      await selfUpdate({ exec: mock.exec }, { repoPath, binaryPath });
       expect(true).toBe(false);
     } catch (err) {
       expect(err).toBeInstanceOf(MaestroError);
