@@ -32,10 +32,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, featureAdapter, worktreeAdapter, planAdapter, contextAdapter, directory } = getServices();
-      const result = await startTask(
-        taskPort, featureAdapter, worktreeAdapter, planAdapter, contextAdapter, directory,
-        {
+      const services = getServices();
+      const result = await startTask(services, {
           feature: args.feature,
           task: args.task,
           continueFrom: args.continueFrom === 'blocked' ? 'blocked' : undefined,

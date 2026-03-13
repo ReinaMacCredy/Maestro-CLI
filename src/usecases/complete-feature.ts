@@ -3,16 +3,21 @@ import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { FeatureJson } from '../types.ts';
 
+export interface CompleteFeatureServices {
+  taskPort: TaskPort;
+  featureAdapter: FsFeatureAdapter;
+}
+
 export interface CompleteFeatureResult {
   feature: FeatureJson;
   tasksSummary: { total: number; done: number; cancelled: number };
 }
 
 export async function completeFeature(
-  taskPort: TaskPort,
-  featureAdapter: FsFeatureAdapter,
+  services: CompleteFeatureServices,
   featureName: string,
 ): Promise<CompleteFeatureResult> {
+  const { taskPort, featureAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) throw new MaestroError(`Feature '${featureName}' not found`);
   if (feature.status === 'completed') throw new MaestroError(`Feature '${featureName}' is already completed`);

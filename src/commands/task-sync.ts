@@ -19,8 +19,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, planAdapter } = getServices();
-      const result = await syncPlan(taskPort, planAdapter, args.feature);
+      const services = getServices();
+      const result = await syncPlan(services, args.feature);
 
       output(result, (r) => {
         const lines = [`[ok] tasks synced for '${args.feature}'`];

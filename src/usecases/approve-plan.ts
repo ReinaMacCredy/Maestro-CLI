@@ -2,16 +2,21 @@ import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
 import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
 import { MaestroError } from '../lib/errors.ts';
 
+export interface ApprovePlanServices {
+  planAdapter: FsPlanAdapter;
+  featureAdapter: FsFeatureAdapter;
+}
+
 export interface ApprovePlanResult {
   feature: string;
   commentCount: number;
 }
 
 export async function approvePlan(
-  planAdapter: FsPlanAdapter,
-  featureAdapter: FsFeatureAdapter,
+  services: ApprovePlanServices,
   featureName: string,
 ): Promise<ApprovePlanResult> {
+  const { planAdapter, featureAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) throw new MaestroError(`Feature '${featureName}' not found`);
   if (feature.status === 'completed') {

@@ -21,20 +21,36 @@ import { MaestroError } from '../lib/errors.ts';
 import { readJson, writeJson, ensureDir, getFeaturePath } from '../utils/paths.ts';
 import * as path from 'path';
 
-const SQLITE_BUSY_EXIT = 5;
+/** br returns exit code 5 when its database is locked (transient). */
+const TRANSIENT_EXIT_CODE = 5;
 const RETRY_DELAYS = [100, 300, 1000];
 const PARTIAL_PREFIX = 'partial:';
+const METADATA_RE = /\n<!-- (\w+):(.+) -->/g;
+
+const BR_STATUS = {
+  OPEN: 'open',
+  IN_PROGRESS: 'in_progress',
+  DEFERRED: 'deferred',
+  CLOSED: 'closed',
+} as const;
+type BrStatus = typeof BR_STATUS[keyof typeof BR_STATUS];
 
 interface BrIssue {
   id: number;
   title: string;
-  status: string;          // open | in_progress | deferred | closed
+  status: BrStatus;
   labels?: string[];
   description?: string;
   notes?: string;
   close_reason?: string;
   dependencies?: number[];
   parent_id?: number;
+}
+
+interface DecodedNotes {
+  content: string;
+  isPartial: boolean;
+  metadata: Record<string, string>;
 }
 
 interface BrMapping {
@@ -101,18 +117,14 @@ export class BrTaskAdapter implements TaskPort {
 
     if (fields.description) args.push('--description', fields.description);
 
-    if (fields.status === 'partial') {
-      // Always encode partial prefix so toMaestroStatus() can detect it
-      args.push('--notes', `${PARTIAL_PREFIX}${fields.notes || ''}`);
-    } else if (fields.notes) {
-      args.push('--notes', fields.notes);
-    }
-
-    if (fields.baseCommit) {
-      // Store baseCommit in notes metadata
-      const existingNotes = (await this.getBrIssue(brId))?.notes || '';
-      const newNotes = this.appendMetadata(existingNotes, 'baseCommit', fields.baseCommit);
-      args.push('--notes', newNotes);
+    if (fields.status === 'partial' || fields.notes || fields.baseCommit) {
+      const metadata: Record<string, string> = {};
+      if (fields.baseCommit) metadata.baseCommit = fields.baseCommit;
+      args.push('--notes', this.encodeNotes({
+        isPartial: fields.status === 'partial',
+        content: fields.notes || '',
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+      }));
     }
 
     args.push('--json');
@@ -203,8 +215,7 @@ export class BrTaskAdapter implements TaskPort {
   async readReport(feature: string, id: string): Promise<string | null> {
     const issue = await this.getBrIssue(this.resolveBrId(feature, id));
     if (!issue?.notes) return null;
-    // Strip partial prefix and metadata
-    return this.stripMetadata(issue.notes.replace(new RegExp(`^${PARTIAL_PREFIX}`), ''));
+    return this.decodeNotes(issue.notes).content || null;
   }
 
   async writeReport(feature: string, id: string, content: string): Promise<void> {
@@ -252,14 +263,14 @@ export class BrTaskAdapter implements TaskPort {
           }
         }
 
-        if (exitCode === SQLITE_BUSY_EXIT && attempt < RETRY_DELAYS.length) {
+        if (exitCode === TRANSIENT_EXIT_CODE && attempt < RETRY_DELAYS.length) {
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
           continue;
         }
 
         throw new MaestroError(
           `br command failed (exit ${exitCode}): ${stderr.trim() || stdout.trim()}`,
-          exitCode === SQLITE_BUSY_EXIT ? ['SQLite database locked. Retry or check for other br processes.'] : []
+          exitCode === TRANSIENT_EXIT_CODE ? ['Database locked. Retry or check for other br processes.'] : []
         );
       } catch (err) {
         if (err instanceof MaestroError) throw err;
@@ -299,12 +310,11 @@ export class BrTaskAdapter implements TaskPort {
 
   private toMaestroStatus(issue: BrIssue): TaskStatusType {
     switch (issue.status) {
-      case 'open': return 'pending';
-      case 'in_progress':
-        if (issue.notes?.startsWith(PARTIAL_PREFIX)) return 'partial';
-        return 'in_progress';
-      case 'deferred': return 'blocked';
-      case 'closed':
+      case BR_STATUS.OPEN: return 'pending';
+      case BR_STATUS.IN_PROGRESS:
+        return this.decodeNotes(issue.notes).isPartial ? 'partial' : 'in_progress';
+      case BR_STATUS.DEFERRED: return 'blocked';
+      case BR_STATUS.CLOSED:
         if (issue.close_reason === 'cancelled') return 'cancelled';
         if (issue.close_reason === 'failed') return 'failed';
         return 'done';
@@ -312,26 +322,26 @@ export class BrTaskAdapter implements TaskPort {
     }
   }
 
-  private toBrWriteStatus(status: TaskStatusType): string {
+  private toBrWriteStatus(status: TaskStatusType): BrStatus | 'close' {
     switch (status) {
-      case 'pending': return 'open';
-      case 'in_progress': return 'in_progress';
-      case 'blocked': return 'deferred';
-      case 'partial': return 'in_progress';
+      case 'pending': return BR_STATUS.OPEN;
+      case 'in_progress': return BR_STATUS.IN_PROGRESS;
+      case 'blocked': return BR_STATUS.DEFERRED;
+      case 'partial': return BR_STATUS.IN_PROGRESS;
       case 'done': return 'close';
       case 'cancelled': return 'close';
       case 'failed': return 'close';
-      default: return 'open';
+      default: return BR_STATUS.OPEN;
     }
   }
 
-  private toBrReadFilter(status: TaskStatusType): string {
+  private toBrReadFilter(status: TaskStatusType): BrStatus {
     switch (status) {
-      case 'pending': return 'open';
-      case 'in_progress': return 'in_progress';
-      case 'blocked': return 'deferred';
-      case 'done': return 'closed';
-      default: return 'open';
+      case 'pending': return BR_STATUS.OPEN;
+      case 'in_progress': return BR_STATUS.IN_PROGRESS;
+      case 'blocked': return BR_STATUS.DEFERRED;
+      case 'done': return BR_STATUS.CLOSED;
+      default: return BR_STATUS.OPEN;
     }
   }
 
@@ -391,13 +401,14 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   private toTaskInfo(issue: BrIssue, folder: string, mapping?: BrMapping): TaskInfo {
+    const decoded = this.decodeNotes(issue.notes);
     return {
       folder,
       name: folder.replace(/^\d+-/, ''),
       status: this.toMaestroStatus(issue),
       origin: 'plan',
       planTitle: issue.title,
-      summary: issue.notes?.replace(new RegExp(`^${PARTIAL_PREFIX}`), '') || undefined,
+      summary: decoded.content || undefined,
       dependsOn: issue.dependencies?.map(depId =>
         mapping?.idToFolder[String(depId)] || `unknown-${depId}`
       ),
@@ -410,15 +421,30 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   // --------------------------------------------------------------------------
-  // Notes metadata encoding
+  // Notes codec: all partial-prefix and metadata encoding in one place
   // --------------------------------------------------------------------------
 
-  private appendMetadata(notes: string, key: string, value: string): string {
-    const metaLine = `\n<!-- ${key}:${value} -->`;
-    return notes + metaLine;
+  /** Encode maestro state into br's notes field. */
+  private encodeNotes(opts: { isPartial: boolean; content: string; metadata?: Record<string, string> }): string {
+    let encoded = opts.isPartial ? `${PARTIAL_PREFIX}${opts.content}` : opts.content;
+    if (opts.metadata) {
+      for (const [key, value] of Object.entries(opts.metadata)) {
+        encoded += `\n<!-- ${key}:${value} -->`;
+      }
+    }
+    return encoded;
   }
 
-  private stripMetadata(notes: string): string {
-    return notes.replace(/\n<!-- \w+:.+ -->/g, '').trim();
+  /** Decode br's raw notes back into maestro state. */
+  private decodeNotes(raw: string | undefined): DecodedNotes {
+    if (!raw) return { content: '', isPartial: false, metadata: {} };
+    const metadata: Record<string, string> = {};
+    let stripped = raw.replace(METADATA_RE, (_, key, value) => {
+      metadata[key] = value;
+      return '';
+    }).trim();
+    const isPartial = stripped.startsWith(PARTIAL_PREFIX);
+    if (isPartial) stripped = stripped.slice(PARTIAL_PREFIX.length);
+    return { content: stripped, isPartial, metadata };
   }
 }

@@ -57,11 +57,11 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, featureAdapter, planAdapter, contextAdapter } = getServices();
+      const services = getServices();
 
       let featureName = args.feature;
       if (!featureName) {
-        const active = featureAdapter.getActive();
+        const active = services.featureAdapter.getActive();
         featureName = active?.name;
       }
       if (!featureName) {
@@ -70,7 +70,7 @@ export default defineCommand({
         ]);
       }
 
-      const result = await checkStatus(taskPort, featureAdapter, planAdapter, contextAdapter, featureName);
+      const result = await checkStatus(services, featureName);
       output(result, formatStatus);
     } catch (err) {
       handleCommandError('status', err);

@@ -3,6 +3,11 @@ import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { TaskStatusType } from '../types.ts';
 
+export interface CommitTaskServices {
+  taskPort: TaskPort;
+  worktreeAdapter: GitWorktreeAdapter;
+}
+
 export interface CommitTaskParams {
   feature: string;
   task: string;
@@ -20,10 +25,10 @@ export interface CommitTaskResult {
 }
 
 export async function commitTask(
-  taskPort: TaskPort,
-  worktreeAdapter: GitWorktreeAdapter,
+  services: CommitTaskServices,
   params: CommitTaskParams,
 ): Promise<CommitTaskResult> {
+  const { taskPort, worktreeAdapter } = services;
   const { feature, task, status, summary } = params;
 
   // Map user-facing status to TaskStatusType

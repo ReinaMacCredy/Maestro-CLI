@@ -11,11 +11,16 @@ import { buildSpecContent } from '../utils/spec-builder.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { TasksSyncResult } from '../types.ts';
 
+export interface SyncPlanServices {
+  taskPort: TaskPort;
+  planAdapter: FsPlanAdapter;
+}
+
 export async function syncPlan(
-  taskPort: TaskPort,
-  planAdapter: FsPlanAdapter,
+  services: SyncPlanServices,
   featureName: string,
 ): Promise<TasksSyncResult> {
+  const { taskPort, planAdapter } = services;
   const plan = planAdapter.read(featureName);
   if (!plan) throw new MaestroError(`No plan found for feature '${featureName}'`);
   if (plan.status !== 'approved') {

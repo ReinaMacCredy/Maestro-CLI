@@ -28,7 +28,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { planAdapter, featureAdapter } = getServices();
+      const services = getServices();
 
       let content = args.content;
       if (!content && args.file) {
@@ -40,7 +40,7 @@ export default defineCommand({
         ]);
       }
 
-      const result = await writePlan(planAdapter, featureAdapter, args.feature, content);
+      const result = await writePlan(services, args.feature, content);
       output(result, (r) => `[ok] plan written for '${r.feature}' (${r.taskCount} task headings)`);
     } catch (err) {
       handleCommandError('plan-write', err);

@@ -10,6 +10,13 @@ import type { FsContextAdapter } from '../adapters/fs-context.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
+export interface StatusServices {
+  taskPort: TaskPort;
+  featureAdapter: FsFeatureAdapter;
+  planAdapter: FsPlanAdapter;
+  contextAdapter: FsContextAdapter;
+}
+
 export interface StatusResult {
   feature: {
     name: string;
@@ -38,12 +45,10 @@ export interface StatusResult {
 }
 
 export async function checkStatus(
-  taskPort: TaskPort,
-  featureAdapter: FsFeatureAdapter,
-  planAdapter: FsPlanAdapter,
-  contextAdapter: FsContextAdapter,
+  services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
+  const { taskPort, featureAdapter, planAdapter, contextAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new Error(`Feature '${featureName}' not found`);

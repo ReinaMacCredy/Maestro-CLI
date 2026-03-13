@@ -42,7 +42,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, worktreeAdapter } = getServices();
+      const services = getServices();
       const validStatuses = ['completed', 'blocked', 'failed', 'partial'] as const;
       if (!validStatuses.includes(args.status as any)) {
         throw new MaestroError(
@@ -51,7 +51,7 @@ export default defineCommand({
         );
       }
 
-      const result = await commitTask(taskPort, worktreeAdapter, {
+      const result = await commitTask(services, {
         feature: args.feature,
         task: args.task,
         status: args.status as 'completed' | 'blocked' | 'failed' | 'partial',

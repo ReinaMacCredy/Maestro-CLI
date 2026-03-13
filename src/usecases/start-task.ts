@@ -12,6 +12,15 @@ import { prepareWorkerLaunch, type WorkerLaunchServices, type WorkerLaunchContex
 import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
 import type { FsContextAdapter } from '../adapters/fs-context.ts';
 
+export interface StartTaskServices {
+  taskPort: TaskPort;
+  featureAdapter: FsFeatureAdapter;
+  worktreeAdapter: GitWorktreeAdapter;
+  planAdapter: FsPlanAdapter;
+  contextAdapter: FsContextAdapter;
+  directory: string;
+}
+
 export interface StartTaskParams {
   feature: string;
   task: string;
@@ -28,14 +37,10 @@ export interface StartTaskResult {
 }
 
 export async function startTask(
-  taskPort: TaskPort,
-  featureAdapter: FsFeatureAdapter,
-  worktreeAdapter: GitWorktreeAdapter,
-  planAdapter: FsPlanAdapter,
-  contextAdapter: FsContextAdapter,
-  directory: string,
+  services: StartTaskServices,
   params: StartTaskParams,
 ): Promise<StartTaskResult> {
+  const { taskPort, featureAdapter, worktreeAdapter, planAdapter, contextAdapter, directory } = services;
   const { feature, task, continueFrom, decision } = params;
 
   // Validate feature exists
@@ -63,14 +68,14 @@ export async function startTask(
   const worktree = await worktreeAdapter.create(feature, task);
 
   // Prepare worker launch (updates task, builds prompt, writes prompt file)
-  const services: WorkerLaunchServices = {
+  const launchServices: WorkerLaunchServices = {
     taskPort,
     planAdapter,
     contextAdapter,
     directory,
   };
 
-  const launchCtx: WorkerLaunchContext = await prepareWorkerLaunch(services, {
+  const launchCtx: WorkerLaunchContext = await prepareWorkerLaunch(launchServices, {
     feature,
     task,
     taskInfo,

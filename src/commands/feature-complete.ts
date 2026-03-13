@@ -19,8 +19,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, featureAdapter } = getServices();
-      const result = await completeFeature(taskPort, featureAdapter, args.feature);
+      const services = getServices();
+      const result = await completeFeature(services, args.feature);
 
       output(result, (r) => {
         const { total, done, cancelled } = r.tasksSummary;

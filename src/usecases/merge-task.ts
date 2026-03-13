@@ -8,6 +8,11 @@ import type { GitWorktreeAdapter } from '../adapters/git-worktree.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { MergeResult } from '../types.ts';
 
+export interface MergeTaskServices {
+  taskPort: TaskPort;
+  worktreeAdapter: GitWorktreeAdapter;
+}
+
 export interface MergeTaskParams {
   feature: string;
   task: string;
@@ -24,10 +29,10 @@ export interface MergeTaskResult {
 }
 
 export async function mergeTask(
-  taskPort: TaskPort,
-  worktreeAdapter: GitWorktreeAdapter,
+  services: MergeTaskServices,
   params: MergeTaskParams,
 ): Promise<MergeTaskResult> {
+  const { taskPort, worktreeAdapter } = services;
   const { feature, task, strategy = 'merge', deleteBranch = true } = params;
 
   // Verify task is done

@@ -2,6 +2,11 @@ import type { FsPlanAdapter } from '../adapters/fs-plan.ts';
 import type { FsFeatureAdapter } from '../adapters/fs-feature.ts';
 import { MaestroError } from '../lib/errors.ts';
 
+export interface WritePlanServices {
+  planAdapter: FsPlanAdapter;
+  featureAdapter: FsFeatureAdapter;
+}
+
 export interface WritePlanResult {
   path: string;
   feature: string;
@@ -9,11 +14,11 @@ export interface WritePlanResult {
 }
 
 export async function writePlan(
-  planAdapter: FsPlanAdapter,
-  featureAdapter: FsFeatureAdapter,
+  services: WritePlanServices,
   featureName: string,
   content: string,
 ): Promise<WritePlanResult> {
+  const { planAdapter, featureAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) throw new MaestroError(`Feature '${featureName}' not found`);
   if (feature.status === 'completed') {

@@ -19,8 +19,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { planAdapter, featureAdapter } = getServices();
-      const result = await approvePlan(planAdapter, featureAdapter, args.feature);
+      const services = getServices();
+      const result = await approvePlan(services, args.feature);
       output(result, () => `[ok] plan approved for '${args.feature}'`);
     } catch (err) {
       handleCommandError('plan-approve', err);

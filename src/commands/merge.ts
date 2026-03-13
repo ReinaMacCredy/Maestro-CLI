@@ -34,8 +34,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { taskPort, worktreeAdapter } = getServices();
-      const result = await mergeTask(taskPort, worktreeAdapter, {
+      const services = getServices();
+      const result = await mergeTask(services, {
         feature: args.feature,
         task: args.task,
         strategy: args.strategy as 'merge' | 'squash' | 'rebase',
