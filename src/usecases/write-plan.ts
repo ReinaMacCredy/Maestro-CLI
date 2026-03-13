@@ -40,6 +40,10 @@ export async function writePlan(
   // Count task headings (### N. Task Name)
   const taskHeadings = content.match(/^###\s+\d+\.\s+.+$/gm) || [];
 
+  const wasApproved = planAdapter.isApproved(featureName);
   const planPath = planAdapter.write(featureName, content);
+  if (wasApproved) {
+    featureAdapter.updateStatus(featureName, 'planning');
+  }
   return { path: planPath, feature: featureName, taskCount: taskHeadings.length };
 }

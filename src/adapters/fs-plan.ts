@@ -6,11 +6,10 @@
 import {
   getPlanPath,
   getCommentsPath,
-  getFeatureJsonPath,
   getApprovedPath,
 } from '../utils/paths.ts';
 import { readJson, writeJson, readText, writeText, fileExists } from '../utils/fs-io.ts';
-import type { FeatureJson, CommentsJson, PlanComment, PlanReadResult } from '../types.ts';
+import type { CommentsJson, PlanComment, PlanReadResult } from '../types.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import * as fs from 'fs';
 
@@ -51,14 +50,6 @@ export class FsPlanAdapter implements PlanPort {
     const approvedPath = getApprovedPath(this.projectRoot, featureName);
     const timestamp = new Date().toISOString();
     fs.writeFileSync(approvedPath, `Approved at ${timestamp}\n`);
-
-    const featurePath = getFeatureJsonPath(this.projectRoot, featureName);
-    const feature = readJson<FeatureJson>(featurePath);
-    if (feature) {
-      feature.status = 'approved';
-      feature.approvedAt = timestamp;
-      writeJson(featurePath, feature);
-    }
   }
 
   isApproved(featureName: string): boolean {
@@ -69,14 +60,6 @@ export class FsPlanAdapter implements PlanPort {
     const approvedPath = getApprovedPath(this.projectRoot, featureName);
     if (fileExists(approvedPath)) {
       fs.unlinkSync(approvedPath);
-    }
-
-    const featurePath = getFeatureJsonPath(this.projectRoot, featureName);
-    const feature = readJson<FeatureJson>(featurePath);
-    if (feature && feature.status === 'approved') {
-      feature.status = 'planning';
-      delete feature.approvedAt;
-      writeJson(featurePath, feature);
     }
   }
 
