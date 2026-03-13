@@ -31,5 +31,6 @@ export async function approvePlan(
   }
 
   planAdapter.approve(featureName);
+  featureAdapter.updateStatus(featureName, 'approved');
   return { feature: featureName, commentCount: 0 };
 }

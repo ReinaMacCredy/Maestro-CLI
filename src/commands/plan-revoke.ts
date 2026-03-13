@@ -18,8 +18,12 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { planAdapter } = getServices();
+      const { planAdapter, featureAdapter } = getServices();
+      const wasApproved = planAdapter.isApproved(args.feature);
       planAdapter.revokeApproval(args.feature);
+      if (wasApproved) {
+        featureAdapter.updateStatus(args.feature, 'planning');
+      }
 
       output({ feature: args.feature }, () => `[ok] plan approval revoked`);
     } catch (err) {
