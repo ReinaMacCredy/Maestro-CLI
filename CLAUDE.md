@@ -85,7 +85,7 @@ A NEW worker spawns in the SAME worktree. Previous progress is preserved.
 
 ## Command Reference
 
-64 commands organized by domain:
+66 commands organized by domain:
 
 ### Feature (5)
 
@@ -136,7 +136,7 @@ A NEW worker spawns in the SAME worktree. Previous progress is preserved.
 | `subtask-report-read` | Read subtask report |
 | `subtask-report-write` | Write subtask report |
 
-### Worktree (8)
+### Worktree (10)
 
 | Command | Purpose |
 |---------|---------|
@@ -148,6 +148,8 @@ A NEW worker spawns in the SAME worktree. Previous progress is preserved.
 | `worktree-cleanup` | Clean up stale worktrees |
 | `worktree-discard` | Abort and discard worktree |
 | `worktree-create` | Resume blocked task / create worktree |
+| `worktree-patch-export` | Export worktree changes as patch file |
+| `worktree-patch-apply` | Apply worktree changes to main branch |
 
 ### Merge (1)
 

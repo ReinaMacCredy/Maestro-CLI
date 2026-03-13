@@ -43,6 +43,8 @@ import cmdWorktreeConflicts from './commands/worktree-conflicts.ts';
 import cmdWorktreeCleanup from './commands/worktree-cleanup.ts';
 import cmdWorktreeDiscard from './commands/worktree-discard.ts';
 import cmdWorktreeCreate from './commands/worktree-create.ts';
+import cmdWorktreePatchExport from './commands/worktree-patch-export.ts';
+import cmdWorktreePatchApply from './commands/worktree-patch-apply.ts';
 import cmdMerge from './commands/merge.ts';
 import cmdContextWrite from './commands/context-write.ts';
 import cmdContextRead from './commands/context-read.ts';
@@ -109,6 +111,8 @@ const subCommands = {
   'worktree-cleanup': cmdWorktreeCleanup,
   'worktree-discard': cmdWorktreeDiscard,
   'worktree-create': cmdWorktreeCreate,
+  'worktree-patch-export': cmdWorktreePatchExport,
+  'worktree-patch-apply': cmdWorktreePatchApply,
   'merge': cmdMerge,
   'context-write': cmdContextWrite,
   'context-read': cmdContextRead,
