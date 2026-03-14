@@ -24,3 +24,5 @@ Thumbs.db
 # Generated
 *.tsbuildinfo
 coverage/
+tmp/
+/hooks/

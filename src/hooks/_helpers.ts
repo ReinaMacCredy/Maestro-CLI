@@ -44,14 +44,20 @@ export const HOOK_EVENTS = {
 } as const;
 export type HookEventName = typeof HOOK_EVENTS[keyof typeof HOOK_EVENTS];
 
+/** Sessions directory path relative to project root. */
+export function getSessionsDir(projectDir: string): string {
+  return path.join(projectDir, '.maestro', 'sessions');
+}
+
+/** Events log filename within sessions directory. */
+export const EVENTS_FILE = 'events.jsonl';
+
 /** Log error to hook error log (best-effort). */
 export function logHookError(projectDir: string | null, hookName: string, error: unknown): void {
   try {
-    const logDir = projectDir
-      ? path.join(projectDir, '.maestro', 'sessions')
-      : null;
-    if (!logDir) return;
-    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+    if (!projectDir) return;
+    const logDir = getSessionsDir(projectDir);
+    fs.mkdirSync(logDir, { recursive: true });
     const logPath = path.join(logDir, 'hook-errors.log');
     const entry = `[${new Date().toISOString()}] ${hookName}: ${error instanceof Error ? error.message : String(error)}\n`;
     fs.appendFileSync(logPath, entry);

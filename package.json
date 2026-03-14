@@ -2,20 +2,38 @@
   "name": "maestro-orchestrator",
   "version": "0.2.0",
   "type": "module",
+  "description": "Agent-optimized development orchestrator with parallel task execution, worktree isolation, and workflow enforcement",
+  "keywords": ["mcp", "orchestration", "worktree", "tdd", "agent", "claude-code", "workflow"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/maestro"
+  },
+  "homepage": "https://github.com/user/maestro#readme",
+  "bugs": "https://github.com/user/maestro/issues",
+  "license": "MIT",
   "bin": {
     "maestro": "./dist/cli.js"
   },
   "main": "./dist/server.bundle.mjs",
+  "exports": {
+    ".": "./dist/server.bundle.mjs",
+    "./cli": "./dist/cli.js"
+  },
   "files": [
-    "dist",
+    "dist/server.bundle.mjs",
+    "dist/cli.js",
+    "hooks",
     "skills",
     ".claude-plugin",
-    "start.mjs"
+    ".mcp.json",
+    "start.mjs",
+    "README.md"
   ],
   "scripts": {
     "build": "bun run build.ts",
     "test": "bun test",
-    "dev": "bun src/cli.ts"
+    "dev": "bun src/cli.ts",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "simple-git": "^3.27.0"

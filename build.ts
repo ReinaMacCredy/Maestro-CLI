@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { $, type BuildOutput } from 'bun';
-import { cpSync } from 'node:fs';
+import { openSync, readSync, closeSync, readFileSync, writeFileSync, chmodSync, rmSync } from 'node:fs';
 
 function checkBuild(result: BuildOutput, label: string) {
   if (!result.success) {
@@ -12,6 +12,11 @@ function checkBuild(result: BuildOutput, label: string) {
 }
 
 async function build() {
+  // Clean leftover artifacts from previous builds
+  for (const p of ['dist/.claude-plugin', 'dist/skills', 'dist/start.mjs', 'dist/hooks']) {
+    try { rmSync(p, { recursive: true }); } catch {}
+  }
+
   // Step 0: Run generators (MUST run before server bundle -- loadSkill depends on registry.generated.ts)
   console.log('[build] Generating skills registry...');
   await $`bun src/skills/generate.ts`;
@@ -36,7 +41,7 @@ async function build() {
   const hooks = ['sessionstart', 'pretooluse', 'posttooluse', 'precompact'];
   const hookResults = await Promise.all(hooks.map(hook => Bun.build({
     entrypoints: [`./src/hooks/${hook}.ts`],
-    outdir: './dist/hooks',
+    outdir: './hooks',
     target: 'node',
     format: 'esm',
     minify: true,
@@ -56,11 +61,17 @@ async function build() {
     naming: { entry: 'cli.js' },
   }), 'CLI bundle');
 
-  // Step 4: Copy static assets
-  console.log('[build] Copying static assets...');
-  cpSync('.claude-plugin', 'dist/.claude-plugin', { recursive: true });
-  cpSync('skills', 'dist/skills', { recursive: true });
-  cpSync('start.mjs', 'dist/start.mjs');
+  // Step 4: Ensure CLI shebang + executable
+  const cliPath = './dist/cli.js';
+  const probe = Buffer.alloc(2);
+  const probeFd = openSync(cliPath, 'r');
+  readSync(probeFd, probe, 0, 2, 0);
+  closeSync(probeFd);
+  if (probe.toString('ascii') !== '#!') {
+    const content = readFileSync(cliPath, 'utf-8');
+    writeFileSync(cliPath, '#!/usr/bin/env node\n' + content);
+  }
+  chmodSync(cliPath, 0o755);
 
   // Step 5: Compile standalone binary (existing behavior)
   console.log('[build] Compiling to standalone binary...');
@@ -68,7 +79,7 @@ async function build() {
 
   console.log('[build] Done.');
   console.log('  dist/server.bundle.mjs  -- MCP server');
-  console.log('  dist/hooks/*.mjs        -- Hook scripts');
+  console.log('  hooks/*.mjs             -- Hook scripts');
   console.log('  dist/cli.js             -- npm CLI entry');
   console.log('  dist/maestro            -- Standalone binary');
 }

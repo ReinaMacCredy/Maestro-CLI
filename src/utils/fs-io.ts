@@ -27,8 +27,8 @@ export function readJson<T>(filePath: string): T | null {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(content) as T;
-  } catch (e: any) {
-    if (e.code === 'ENOENT') return null;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw e;
   }
 }
@@ -65,8 +65,8 @@ export function writeJsonAtomic<T>(filePath: string, data: T): void {
 export function readText(filePath: string): string | null {
   try {
     return fs.readFileSync(filePath, 'utf-8');
-  } catch (e: any) {
-    if (e.code === 'ENOENT') return null;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw e;
   }
 }

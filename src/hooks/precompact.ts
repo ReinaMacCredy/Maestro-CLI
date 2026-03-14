@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { readStdin, writeOutput, resolveProjectDir, logHookError } from './_helpers.ts';
+import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir, EVENTS_FILE } from './_helpers.ts';
+import { writeJsonAtomic } from '../utils/fs-io.ts';
 import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 
@@ -18,7 +19,7 @@ async function main(): Promise<void> {
   const services = initServices(projectDir);
   const activeFeature = services.featureAdapter.getActive();
 
-  const sessionsDir = path.join(projectDir, '.maestro', 'sessions');
+  const sessionsDir = getSessionsDir(projectDir);
   fs.mkdirSync(sessionsDir, { recursive: true });
 
   const snapshotPath = path.join(sessionsDir, 'compact-snapshot.json');
@@ -34,7 +35,7 @@ async function main(): Promise<void> {
       recentEvents: [],
       contextFiles: [],
     };
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
+    writeJsonAtomic(snapshotPath, snapshot);
     writeOutput({});
     return;
   }
@@ -43,16 +44,16 @@ async function main(): Promise<void> {
   const status = await checkStatus(services, featureName);
 
   // Read recent events (last 50 lines)
-  const eventsPath = path.join(sessionsDir, 'events.jsonl');
+  const eventsPath = path.join(sessionsDir, EVENTS_FILE);
   let recentEvents: unknown[] = [];
-  if (fs.existsSync(eventsPath)) {
-    // Read up to 64KB from the end to avoid unbounded memory on large files
-    const stat = fs.statSync(eventsPath);
+  let fd: number | undefined;
+  try {
+    // Open directly -- no existence check needed (ENOENT caught below)
+    fd = fs.openSync(eventsPath, 'r');
+    const stat = fs.fstatSync(fd);
     const maxTailBytes = 65536;
-    const buf = Buffer.alloc(Math.min(stat.size, maxTailBytes));
-    const fd = fs.openSync(eventsPath, 'r');
+    const buf = Buffer.allocUnsafe(Math.min(stat.size, maxTailBytes));
     fs.readSync(fd, buf, 0, buf.length, Math.max(0, stat.size - maxTailBytes));
-    fs.closeSync(fd);
     const lines = buf.toString('utf-8').split('\n').filter(Boolean);
     const lastLines = lines.slice(-50);
     recentEvents = lastLines.map((line) => {
@@ -62,6 +63,10 @@ async function main(): Promise<void> {
         return { raw: line };
       }
     });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
   }
 
   // Read context file names
@@ -86,7 +91,7 @@ async function main(): Promise<void> {
     contextFiles,
   };
 
-  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
+  writeJsonAtomic(snapshotPath, snapshot);
   writeOutput({});
 }
 
