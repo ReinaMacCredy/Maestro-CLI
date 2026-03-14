@@ -14,12 +14,12 @@
  * Folder-to-ID mapping stored in `.maestro/features/<name>/br-mapping.json`.
  */
 
-import type { TaskInfo, TaskStatusType } from '../types.ts';
+import type { TaskInfo, TaskStatusType, WorkerSession } from '../types.ts';
 import type { TaskPort, CreateOpts, UpdateFields, ListOpts } from '../ports/tasks.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { getFeaturePath } from '../utils/paths.ts';
-import { readJson, writeJson, ensureDir } from '../utils/fs-io.ts';
+import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
+import { readJson, writeJson, ensureDir, readText, writeText } from '../utils/fs-io.ts';
 import * as path from 'path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -98,12 +98,13 @@ export class BrTaskAdapter implements TaskPort {
 
   async update(feature: string, id: string, fields: UpdateFields): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
+    const currentIssue = await this.getBrIssue(brId);
+    const currentDecoded = this.decodeNotes(currentIssue?.notes);
 
     // Enforce state machine if status change requested
     if (fields.status) {
-      const issue = await this.getBrIssue(brId);
-      if (issue) {
-        const currentStatus = this.toMaestroStatus(issue);
+      if (currentIssue) {
+        const currentStatus = this.toMaestroStatus(currentIssue);
         if (!isValidTransition(currentStatus, fields.status)) {
           throw new MaestroError(
             `Invalid status transition: ${currentStatus} -> ${fields.status}`,
@@ -114,23 +115,54 @@ export class BrTaskAdapter implements TaskPort {
     }
 
     const args = ['update', String(brId)];
+    const nextIsPartial = fields.status
+      ? fields.status === 'partial'
+      : currentDecoded.isPartial;
+    const metadata = this.mergeMetadata(currentDecoded.metadata, fields);
+    const nextContent = fields.summary ?? fields.notes ?? currentDecoded.content;
+    const shouldWriteNotes =
+      fields.notes !== undefined ||
+      fields.summary !== undefined ||
+      fields.baseCommit !== undefined ||
+      fields.startedAt !== undefined ||
+      fields.completedAt !== undefined ||
+      fields.workerSession !== undefined ||
+      currentDecoded.isPartial !== nextIsPartial;
 
     if (fields.status) {
       const brStatus = this.toBrWriteStatus(fields.status);
       if (brStatus === 'close') {
-        return this.closeAndReturn(feature, id, fields.status === 'cancelled' ? 'cancelled' : fields.status === 'failed' ? 'failed' : undefined);
+        if (fields.description) args.push('--description', fields.description);
+        if (shouldWriteNotes) {
+          args.push('--notes', this.encodeNotes({
+            isPartial: nextIsPartial,
+            content: nextContent,
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+          }));
+        }
+        if (args.length > 2) {
+          args.push('--json');
+          await this.exec<BrIssue>(args);
+        }
+        return this.closeAndReturn(
+          feature,
+          id,
+          fields.status === 'cancelled'
+            ? 'cancelled'
+            : fields.status === 'failed'
+              ? 'failed'
+              : undefined,
+        );
       }
       args.push('-s', brStatus);
     }
 
     if (fields.description) args.push('--description', fields.description);
 
-    if (fields.status === 'partial' || fields.notes || fields.baseCommit) {
-      const metadata: Record<string, string> = {};
-      if (fields.baseCommit) metadata.baseCommit = fields.baseCommit;
+    if (shouldWriteNotes) {
       args.push('--notes', this.encodeNotes({
-        isPartial: fields.status === 'partial',
-        content: fields.notes || '',
+        isPartial: nextIsPartial,
+        content: nextContent,
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       }));
     }
@@ -221,14 +253,21 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   async readReport(feature: string, id: string): Promise<string | null> {
+    const reportPath = getTaskReportPath(this.projectRoot, feature, this.resolveTaskFolder(feature, id));
+    const sidecarReport = readText(reportPath);
+    if (sidecarReport !== null) {
+      return sidecarReport;
+    }
+
     const issue = await this.getBrIssue(this.resolveBrId(feature, id));
     if (!issue?.notes) return null;
-    return this.decodeNotes(issue.notes).content || null;
+    const legacyReport = this.decodeNotes(issue.notes).content || null;
+    return legacyReport?.startsWith('# Task Report:') ? legacyReport : null;
   }
 
   async writeReport(feature: string, id: string, content: string): Promise<void> {
-    const brId = this.resolveBrId(feature, id);
-    await this.exec(['update', String(brId), '--notes', content]);
+    const reportPath = getTaskReportPath(this.projectRoot, feature, this.resolveTaskFolder(feature, id));
+    writeText(reportPath, content);
   }
 
   async isAvailable(): Promise<boolean> {
@@ -391,6 +430,20 @@ export class BrTaskAdapter implements TaskPort {
     return brId;
   }
 
+  private resolveTaskFolder(feature: string, folderOrId: string): string {
+    const mapping = this.getMapping(feature);
+    if (mapping.folderToId[folderOrId] !== undefined) {
+      return folderOrId;
+    }
+
+    const asNum = parseInt(folderOrId, 10);
+    if (!isNaN(asNum)) {
+      return mapping.idToFolder[String(asNum)] || folderOrId;
+    }
+
+    return folderOrId;
+  }
+
   // --------------------------------------------------------------------------
   // Conversion helpers
   // --------------------------------------------------------------------------
@@ -406,6 +459,7 @@ export class BrTaskAdapter implements TaskPort {
 
   private toTaskInfo(issue: BrIssue, folder: string, mapping?: BrMapping): TaskInfo {
     const decoded = this.decodeNotes(issue.notes);
+    const workerSession = this.parseWorkerSession(decoded.metadata);
     return {
       folder,
       name: folder.replace(/^\d+-/, ''),
@@ -413,6 +467,10 @@ export class BrTaskAdapter implements TaskPort {
       origin: 'plan',
       planTitle: issue.title,
       summary: decoded.content || undefined,
+      startedAt: decoded.metadata.startedAt,
+      completedAt: decoded.metadata.completedAt,
+      baseCommit: decoded.metadata.baseCommit,
+      workerSession,
       dependsOn: issue.dependencies?.map(depId =>
         mapping?.idToFolder[String(depId)] || `unknown-${depId}`
       ),
@@ -450,5 +508,49 @@ export class BrTaskAdapter implements TaskPort {
     const isPartial = stripped.startsWith(PARTIAL_PREFIX);
     if (isPartial) stripped = stripped.slice(PARTIAL_PREFIX.length);
     return { content: stripped, isPartial, metadata };
+  }
+
+  private mergeMetadata(existing: Record<string, string>, fields: UpdateFields): Record<string, string> {
+    const metadata = { ...existing };
+
+    if (fields.baseCommit !== undefined) metadata.baseCommit = fields.baseCommit;
+    if (fields.startedAt !== undefined) metadata.startedAt = fields.startedAt;
+    if (fields.completedAt !== undefined) metadata.completedAt = fields.completedAt;
+
+    if (fields.workerSession) {
+      if (fields.workerSession.sessionId !== undefined) metadata.workerSessionId = fields.workerSession.sessionId;
+      if (fields.workerSession.launcher !== undefined) metadata.workerLauncher = fields.workerSession.launcher;
+      if (fields.workerSession.attempt !== undefined) metadata.workerAttempt = String(fields.workerSession.attempt);
+      if (fields.workerSession.exitCode !== undefined) metadata.workerExitCode = String(fields.workerSession.exitCode);
+      if (fields.workerSession.signal !== undefined) metadata.workerSignal = fields.workerSession.signal;
+      if (fields.workerSession.lastHeartbeatAt !== undefined) metadata.workerHeartbeatAt = fields.workerSession.lastHeartbeatAt;
+      if (fields.workerSession.workerPromptPath !== undefined) metadata.workerPromptPath = fields.workerSession.workerPromptPath;
+    }
+
+    return metadata;
+  }
+
+  private parseWorkerSession(metadata: Record<string, string>): WorkerSession | undefined {
+    const hasWorkerMetadata = metadata.workerSessionId ||
+      metadata.workerLauncher ||
+      metadata.workerAttempt ||
+      metadata.workerExitCode ||
+      metadata.workerSignal ||
+      metadata.workerHeartbeatAt ||
+      metadata.workerPromptPath;
+
+    if (!hasWorkerMetadata) {
+      return undefined;
+    }
+
+    return {
+      sessionId: metadata.workerSessionId || 'unknown-session',
+      launcher: metadata.workerLauncher as WorkerSession['launcher'] | undefined,
+      attempt: metadata.workerAttempt ? parseInt(metadata.workerAttempt, 10) : undefined,
+      exitCode: metadata.workerExitCode ? parseInt(metadata.workerExitCode, 10) : undefined,
+      signal: metadata.workerSignal,
+      lastHeartbeatAt: metadata.workerHeartbeatAt,
+      workerPromptPath: metadata.workerPromptPath,
+    };
   }
 }
