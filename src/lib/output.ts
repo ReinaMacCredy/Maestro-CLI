@@ -61,3 +61,10 @@ export function renderStatusLine(label: string, value: string): string {
 export function renderList(items: string[]): string {
   return items.map((item) => `- ${item}`).join("\n");
 }
+
+/** Render a task/subtask list as a table with standard columns. */
+export function renderTaskTable(tasks: { folder: string; name: string; status: string; origin: string }[]): string {
+  const headers = ["Folder", "Name", "Status", "Origin"];
+  const rows = tasks.map((t) => [t.folder, t.name, t.status, t.origin]);
+  return renderTable(headers, rows);
+}

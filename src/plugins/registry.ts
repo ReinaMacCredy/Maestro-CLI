@@ -110,11 +110,11 @@ export async function checkTool(
  */
 export async function checkAllTools(pluginDir?: string): Promise<ToolStatus[]> {
   const registry = getToolRegistry(pluginDir);
-  const pluginNames = new Set(loadPlugins(pluginDir).map((p) => p.name));
+  const builtinNames = new Set(BUILTIN_TOOLS.map((b) => b.name));
 
   const results = await Promise.all(
     registry.map((tool) =>
-      checkTool(tool, pluginNames.has(tool.name) ? "plugin" : "builtin"),
+      checkTool(tool, builtinNames.has(tool.name) ? "builtin" : "plugin"),
     ),
   );
 

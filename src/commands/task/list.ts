@@ -4,10 +4,9 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output, renderTable } from '../../lib/output.ts';
+import { output, renderTaskTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 import { parseStatus } from '../_task-factory.ts';
-import type { TaskInfo } from '../../types.ts';
 
 export default defineCommand({
   meta: { name: 'task-list', description: 'List tasks for a feature' },
@@ -38,9 +37,7 @@ export default defineCommand({
 
       output(tasks, (list) => {
         if (list.length === 0) return 'No tasks found.';
-        const headers = ['Folder', 'Name', 'Status', 'Origin'];
-        const rows = (list as TaskInfo[]).map((t) => [t.folder, t.name, t.status, t.origin]);
-        return renderTable(headers, rows);
+        return renderTaskTable(list as { folder: string; name: string; status: string; origin: string }[]);
       });
     } catch (err) {
       handleCommandError('task-list', err);
