@@ -2,7 +2,8 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { BUILTIN_TOOLS, getToolRegistry, getActiveAdapter, sanitizeTemplateVar } from "../../plugins/registry";
+import { BUILTIN_TOOLS, getToolRegistry, getActiveAdapter, sanitizeTemplateVar, checkTool, checkAllTools } from "../../plugins/registry";
+import type { ToolDefinition } from "../../plugins/types";
 import { parseFrontmatter, loadPlugins } from "../../plugins/loader";
 
 // ============================================================================
@@ -197,5 +198,162 @@ describe("sanitizeTemplateVar", () => {
 
   test("leaves safe strings unchanged", () => {
     expect(sanitizeTemplateVar("hello-world_123")).toBe("hello-world_123");
+  });
+});
+
+// ============================================================================
+// checkTool
+// ============================================================================
+
+describe("checkTool", () => {
+  test("detects an installed tool with a detect command", async () => {
+    const tool: ToolDefinition = {
+      name: "echo-tool",
+      binary: "echo",
+      detect: "echo hello 1.2.3",
+    };
+    const status = await checkTool(tool);
+    expect(status.installed).toBe(true);
+    expect(status.name).toBe("echo-tool");
+    expect(status.binary).toBe("echo");
+    expect(status.detectError).toBeUndefined();
+  });
+
+  test("reports not installed for a nonexistent binary", async () => {
+    const tool: ToolDefinition = {
+      name: "no-such-tool",
+      binary: "maestro_nonexistent_binary_xyz_999",
+      detect: "maestro_nonexistent_binary_xyz_999 --version",
+    };
+    const status = await checkTool(tool);
+    expect(status.installed).toBe(false);
+    expect(status.detectError).toBeDefined();
+    expect(typeof status.detectError).toBe("string");
+    expect(status.detectError!.length).toBeGreaterThan(0);
+  });
+
+  test("falls back to command -v when no detect command is set", async () => {
+    // 'true' is a shell built-in available on all POSIX systems
+    const tool: ToolDefinition = {
+      name: "true-tool",
+      binary: "true",
+    };
+    const status = await checkTool(tool);
+    expect(status.installed).toBe(true);
+    expect(status.detectError).toBeUndefined();
+  });
+
+  test("falls back to command -v and reports missing for nonexistent binary", async () => {
+    const tool: ToolDefinition = {
+      name: "missing-fallback",
+      binary: "maestro_nonexistent_fallback_xyz_999",
+    };
+    const status = await checkTool(tool);
+    expect(status.installed).toBe(false);
+    expect(status.detectError).toBeDefined();
+  });
+
+  test("extracts version from detect output", async () => {
+    const tool: ToolDefinition = {
+      name: "versioned-tool",
+      binary: "echo",
+      detect: "echo 'tool version 3.14.159'",
+    };
+    const status = await checkTool(tool);
+    expect(status.installed).toBe(true);
+    expect(status.version).toBe("3.14.159");
+  });
+
+  test("respects source parameter", async () => {
+    const tool: ToolDefinition = {
+      name: "src-tool",
+      binary: "echo",
+      detect: "echo ok",
+    };
+    const asBuiltin = await checkTool(tool, "builtin");
+    expect(asBuiltin.source).toBe("builtin");
+
+    const asPlugin = await checkTool(tool, "plugin");
+    expect(asPlugin.source).toBe("plugin");
+  });
+
+  test("defaults source to builtin", async () => {
+    const tool: ToolDefinition = {
+      name: "default-src",
+      binary: "echo",
+      detect: "echo ok",
+    };
+    const status = await checkTool(tool);
+    expect(status.source).toBe("builtin");
+  });
+
+  test("preserves provides field in status", async () => {
+    const tool: ToolDefinition = {
+      name: "port-tool",
+      binary: "echo",
+      detect: "echo ok",
+      provides: "search",
+    };
+    const status = await checkTool(tool);
+    expect(status.provides).toBe("search");
+  });
+});
+
+// ============================================================================
+// checkAllTools
+// ============================================================================
+
+describe("checkAllTools", () => {
+  test("returns statuses for all built-in tools", async () => {
+    // Use a nonexistent plugin dir so only built-ins are checked
+    const noPlugins = join(tmpdir(), "maestro-no-plugins-check-" + Date.now());
+    const statuses = await checkAllTools(noPlugins);
+    expect(statuses).toHaveLength(BUILTIN_TOOLS.length);
+
+    const names = statuses.map((s) => s.name);
+    for (const builtin of BUILTIN_TOOLS) {
+      expect(names).toContain(builtin.name);
+    }
+  });
+
+  test("each status has required fields", async () => {
+    const noPlugins = join(tmpdir(), "maestro-no-plugins-fields-" + Date.now());
+    const statuses = await checkAllTools(noPlugins);
+
+    for (const status of statuses) {
+      expect(typeof status.name).toBe("string");
+      expect(typeof status.binary).toBe("string");
+      expect(typeof status.installed).toBe("boolean");
+      expect(["builtin", "plugin"]).toContain(status.source);
+    }
+  });
+
+  test("includes user plugins with source 'plugin'", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "maestro-check-all-"));
+    try {
+      const pluginDir = join(tmpDir, "my-tool");
+      mkdirSync(pluginDir);
+      writeFileSync(
+        join(pluginDir, "TOOL.md"),
+        [
+          "---",
+          "name: my-checker",
+          "binary: echo",
+          "detect: echo 'checker 2.0.0'",
+          "provides: lint",
+          "description: a test checker",
+          "---",
+        ].join("\n"),
+      );
+
+      const statuses = await checkAllTools(tmpDir);
+      const pluginStatus = statuses.find((s) => s.name === "my-checker");
+      expect(pluginStatus).toBeDefined();
+      expect(pluginStatus!.source).toBe("plugin");
+      expect(pluginStatus!.installed).toBe(true);
+      expect(pluginStatus!.version).toBe("2.0.0");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
