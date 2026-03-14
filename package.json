@@ -31,9 +31,11 @@
   ],
   "scripts": {
     "build": "bun run build.ts",
-    "test": "bun test",
+    "test": "bun test src/",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run test",
     "dev": "bun src/cli.ts",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run check && bun run build"
   },
   "dependencies": {
     "simple-git": "^3.27.0"
