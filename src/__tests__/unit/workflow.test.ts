@@ -89,18 +89,18 @@ describe("getNextAction", () => {
       { status: "pending", folder: "02-core" },
     ];
     const action = getNextAction("approved", tasks, ["02-core"]);
-    expect(action).toContain("worktree-start");
+    expect(action).toContain("task-start");
     expect(action).toContain("02-core");
   });
 
-  test("reports multiple parallel runnable tasks", () => {
+  test("reports multiple sequential runnable tasks", () => {
     const tasks = [
       { status: "pending", folder: "01-a" },
       { status: "pending", folder: "02-b" },
     ];
     const action = getNextAction("approved", tasks, ["01-a", "02-b"]);
     expect(action).toContain("2 tasks");
-    expect(action).toContain("parallel");
+    expect(action).toContain("one at a time");
     expect(action).toContain("01-a");
     expect(action).toContain("02-b");
   });
@@ -121,5 +121,33 @@ describe("getNextAction", () => {
     const action = getNextAction("approved", tasks, []);
     expect(action).toContain("blocked");
     expect(action).toContain("dependencies");
+  });
+
+  test("surfaces partial tasks before claiming the feature is complete", () => {
+    const tasks = [
+      { status: "done", folder: "01-setup" },
+      { status: "partial", folder: "02-core" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("partial");
+    expect(action).toContain("02-core");
+  });
+
+  test("surfaces blocked tasks before claiming the feature is complete", () => {
+    const tasks = [
+      { status: "blocked", folder: "03-waiting" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("blocked");
+    expect(action).toContain("03-waiting");
+  });
+
+  test("surfaces failed tasks before claiming the feature is complete", () => {
+    const tasks = [
+      { status: "failed", folder: "04-retry" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("task-update");
+    expect(action).toContain("04-retry");
   });
 });
