@@ -264,7 +264,7 @@ export class BrTaskAdapter implements TaskPort {
       } catch (err) {
         if (err instanceof MaestroError) throw err;
 
-        const error = err as NodeJS.ErrnoException & { code?: string; exitCode?: number; stdout?: string; stderr?: string };
+        const error = err as NodeJS.ErrnoException & { code?: string; exitCode?: number; status?: number; stdout?: string; stderr?: string };
 
         if (error.code === 'ENOENT') {
           throw new MaestroError(
@@ -274,7 +274,7 @@ export class BrTaskAdapter implements TaskPort {
         }
 
         // execFile rejects on non-zero exit -- extract exit code from error
-        const exitCode = error.exitCode ?? (error as any).status ?? 1;
+        const exitCode = error.exitCode ?? error.status ?? 1;
         const stdout = error.stdout || '';
         const stderr = error.stderr || '';
 

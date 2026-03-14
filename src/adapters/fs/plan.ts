@@ -61,8 +61,8 @@ export class FsPlanAdapter implements PlanPort {
     const approvedPath = getApprovedPath(this.projectRoot, featureName);
     try {
       fs.unlinkSync(approvedPath);
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') throw e;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
     }
   }
 

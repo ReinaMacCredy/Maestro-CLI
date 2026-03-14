@@ -85,8 +85,8 @@ export async function checkTool(
       const safeBinary = tool.binary.replace(/'/g, "'\\''");
       execSync(`command -v '${safeBinary}'`, { stdio: "pipe" });
       status.installed = true;
-    } catch {
-      // not found
+    } catch (err) {
+      status.detectError = err instanceof Error ? err.message : "not found";
     }
     return status;
   }
@@ -98,8 +98,8 @@ export async function checkTool(
     const firstLine = output.split("\n")[0];
     const versionMatch = firstLine.match(/(\d+\.\d+[\w.-]*)/);
     if (versionMatch) status.version = versionMatch[1];
-  } catch {
-    // detect command failed -- tool not installed
+  } catch (err) {
+    status.detectError = err instanceof Error ? err.message : "detect command failed";
   }
 
   return status;

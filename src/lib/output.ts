@@ -23,7 +23,7 @@ function autoDetect(): void {
   mode = process.argv.includes("--json") ? "json" : "text";
 }
 
-export function output(data: unknown, textFormatter: (data: any) => string): void {
+export function output<T = unknown>(data: T, textFormatter: (data: T) => string): void {
   autoDetect();
   if (mode === "json") {
     console.log(JSON.stringify(data));

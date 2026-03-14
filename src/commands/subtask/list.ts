@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import type { TaskInfo } from '../../types.ts';
 
 export default defineCommand({
   meta: { name: 'subtask-list', description: 'List subtasks for a parent task' },
@@ -30,7 +31,7 @@ export default defineCommand({
       output(subtasks, (list) => {
         if (list.length === 0) return `No subtasks found for parent '${args.parent}'.`;
         const headers = ['Folder', 'Name', 'Status', 'Origin'];
-        const rows = list.map((t: any) => [t.folder, t.name, t.status, t.origin]);
+        const rows = (list as TaskInfo[]).map((t) => [t.folder, t.name, t.status, t.origin]);
         return renderTable(headers, rows);
       });
     } catch (err) {

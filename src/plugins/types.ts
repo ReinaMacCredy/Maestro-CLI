@@ -18,4 +18,6 @@ export interface ToolStatus {
   version?: string;
   provides?: string;
   source: 'builtin' | 'plugin';
+  /** When installed is false, explains why detection failed (e.g. "not found", "timeout", "permission denied") */
+  detectError?: string;
 }
