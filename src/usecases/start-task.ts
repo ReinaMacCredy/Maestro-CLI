@@ -10,16 +10,25 @@ import { getOutputMode } from '../lib/output.ts';
 import { checkDependencies } from '../utils/dependency-check.ts';
 import { deriveTaskNextAction } from '../utils/workflow.ts';
 import { prepareWorkerLaunch, type WorkerLaunchServices } from '../utils/worker/launch.ts';
-import { createTaskSession, finalizeTaskSession, isTaskSessionStale, readTaskSession, updateTaskSessionHeartbeat } from '../utils/task-session.ts';
+import {
+  createTaskSession,
+  finalizeTaskSession,
+  hasManagedWorkerAttempt,
+  isManagedTaskSessionStale,
+  readTaskSession,
+  updateTaskSessionHeartbeat,
+} from '../utils/task-session.ts';
 import { finishTask } from './finish-task.ts';
 import { getHeadCommit } from '../utils/git.ts';
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import type { ContextPort } from '../ports/context.ts';
-import type { WorkerCliName, TaskInfo, TaskStatusType } from '../types.ts';
+import type { ContinueFromStatus } from '../utils/worker/prompt.ts';
+import type { WorkerCliName, TaskStatusType } from '../types.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
 import type { CliWorkerRunner } from '../adapters/worker-runner.ts';
+import { isProcessAlive } from '../utils/process.ts';
 import { getTaskSessionPath, normalizePath } from '../utils/paths.ts';
 
 export interface StartTaskServices {
@@ -35,7 +44,7 @@ export interface StartTaskServices {
 export interface StartTaskParams {
   feature: string;
   task: string;
-  continueFrom?: 'blocked' | 'partial';
+  continueFrom?: ContinueFromStatus;
   decision?: string;
   force?: boolean;
 }
@@ -59,20 +68,15 @@ interface ChildExitResult {
   signal: string | null;
 }
 
-function isRecordedWorkerAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ESRCH') {
-      return false;
-    }
-    if (code === 'EPERM') {
-      return true;
-    }
-    throw error;
-  }
+function describeWorkerExit(
+  launcher: WorkerCliName,
+  launchError?: Error,
+  exit?: ChildExitResult,
+): string {
+  if (launchError) return `Worker '${launcher}' failed to start: ${launchError.message}`;
+  if (exit?.signal) return `Worker '${launcher}' killed by signal ${exit.signal} before task-finish.`;
+  if (exit?.code === 0) return `Worker '${launcher}' exited cleanly without calling task-finish.`;
+  return `Worker '${launcher}' exited with code ${exit?.code ?? 'unknown'} before task-finish.`;
 }
 
 function childStdioForCurrentOutputMode(): StdioOptions {
@@ -119,10 +123,10 @@ export async function startTask(
 
   const config = configAdapter.get();
   const launcher = config.workerCli ?? 'codex';
-  const staleTaskThresholdMinutes = config.staleTaskThresholdMinutes!;
+  const staleTaskThresholdMinutes = config.staleTaskThresholdMinutes;
 
   const allTasks = await taskPort.list(feature, { includeAll: true });
-  const currentTask = allTasks.find((candidate) => candidate.folder === task);
+  let currentTask = allTasks.find((candidate) => candidate.folder === task);
   if (!currentTask) {
     throw new MaestroError(`Task '${task}' not found in feature '${feature}'`);
   }
@@ -138,10 +142,18 @@ export async function startTask(
   }
 
   const existingSession = readTaskSession(directory, feature, task);
+  const hasManagedAttempt = currentTask.status === 'in_progress' &&
+    (Boolean(existingSession) || hasManagedWorkerAttempt(currentTask));
   const isStale = currentTask.status === 'in_progress' &&
-    isTaskSessionStale(existingSession, staleTaskThresholdMinutes);
+    isManagedTaskSessionStale(currentTask, existingSession, staleTaskThresholdMinutes);
 
   if (currentTask.status === 'in_progress') {
+    if (!hasManagedAttempt) {
+      throw new MaestroError(
+        `Task '${task}' is already in progress`,
+        ['Reset or finish manually managed tasks before restarting them with task-start'],
+      );
+    }
     if (!isStale) {
       throw new MaestroError(
         `Task '${task}' is already in progress`,
@@ -154,7 +166,7 @@ export async function startTask(
         [`Restart it with: maestro task-start --feature ${feature} --task ${task} --force`],
       );
     }
-    if (existingSession?.pid && isRecordedWorkerAlive(existingSession.pid)) {
+    if (existingSession?.pid && isProcessAlive(existingSession.pid)) {
       throw new MaestroError(
         `Task '${task}' still has a live worker process (${existingSession.pid})`,
         ['Stop the existing worker before using --force to recover the task'],
@@ -172,8 +184,7 @@ export async function startTask(
       },
     );
     await taskPort.update(feature, task, { status: 'pending' });
-    currentTask.status = 'pending';
-    currentTask.summary = undefined;
+    currentTask = { ...currentTask, status: 'pending', summary: undefined };
   }
 
   if (continueFrom === 'blocked') {
@@ -204,7 +215,7 @@ export async function startTask(
   }
 
   if (!continueFrom) {
-    const depCheck = await checkDependencies(taskPort, feature, task);
+    const depCheck = await checkDependencies(taskPort, feature, task, allTasks);
     if (!depCheck.allowed) {
       throw new MaestroError(depCheck.error, [
         'Complete dependency tasks first, or use maestro task-update to skip',
@@ -320,13 +331,7 @@ export async function startTask(
   }
 
   if (finalTask.status === 'in_progress') {
-    const reason = launchError
-      ? `Worker launcher '${launcher}' failed to start: ${launchError.message}`
-      : childExit.signal
-      ? `Worker launcher '${launcher}' exited from signal ${childExit.signal} before task-finish completed.`
-      : childExit.code === 0
-        ? `Worker launcher '${launcher}' exited cleanly without calling task-finish.`
-        : `Worker launcher '${launcher}' exited with code ${childExit.code ?? 'unknown'} before task-finish completed.`;
+    const reason = describeWorkerExit(launcher, launchError, childExit);
 
     const autoFinish = await finishTask(
       { taskPort, directory },

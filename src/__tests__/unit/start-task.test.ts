@@ -80,6 +80,10 @@ describe('startTask', () => {
 
   test('treats in_progress tasks with missing session.json as stale', async () => {
     taskPort.setStatus('feat', '01-task', 'in_progress');
+    await taskPort.update('feat', '01-task', {
+      startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      baseCommit: 'abc123',
+    });
 
     await expect(
       startTask(services(), {
@@ -87,6 +91,17 @@ describe('startTask', () => {
         task: '01-task',
       }),
     ).rejects.toThrow("appears stale");
+  });
+
+  test('does not treat manually managed in_progress tasks as stale', async () => {
+    taskPort.setStatus('feat', '01-task', 'in_progress');
+
+    await expect(
+      startTask(services(), {
+        feature: 'feat',
+        task: '01-task',
+      }),
+    ).rejects.toThrow("already in progress");
   });
 
   test('uses piped stdio when running without an interactive terminal', async () => {

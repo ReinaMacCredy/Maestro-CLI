@@ -7,9 +7,9 @@ description: Use when you have a written implementation plan to execute in a sep
 
 ## Overview
 
-Load plan, review critically, execute tasks in batches, report for review between batches.
+Load the plan, review it critically, execute one runnable task at a time, and report for review between checkpoints.
 
-**Core principle:** Batch execution with checkpoints for architect review.
+**Core principle:** Single-checkout execution with checkpoints for architect review.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
@@ -23,39 +23,39 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 
 ### Step 2: Identify Runnable Tasks
 
-Use `hive_status()` to get the **runnable** list — tasks with all dependencies satisfied.
+Use `maestro_status` (or `maestro status`) to get the **runnable** list — tasks with all dependencies satisfied.
 
 Only `done` satisfies dependencies (not `blocked`, `failed`, `partial`, `cancelled`).
 
 **When 2+ tasks are runnable:**
-- **Ask the operator** via `question()`: "Multiple tasks are runnable: [list]. Run in parallel, sequential, or a specific subset?"
-- Record the decision with `hive_context_write({ name: "execution-decisions", content: "..." })` for future reference
+- Ask the operator which runnable task to take next.
+- Record the decision with `maestro_context_write` (or `maestro context-write`) if the ordering matters for later work.
 
 **When 1 task is runnable:** Proceed directly.
 
-### Step 3: Execute Batch
+### Step 3: Execute The Next Task
 
-For each task in the batch:
-1. Mark as in_progress via `hive_worktree_start()`
-2. Follow each step exactly (plan has bite-sized steps)
-3. Run verifications as specified
-4. Mark as completed
+For the selected task:
+1. Start it via `maestro_task_start` (or `maestro task-start`)
+2. Follow each step exactly (the plan has bite-sized steps)
+3. Let the worker complete with `maestro_task_finish` (or `maestro task-finish`)
+4. Re-run `maestro_status` before choosing the next task
 
 ### Step 4: Report
-When batch complete:
+When the task checkpoint is complete:
 - Show what was implemented
 - Show verification output
 - Say: "Ready for feedback."
 
 ### Step 4.5: Post-Batch Hygienic Review
 
-After the batch report, ask the operator if they want a Hygienic code review for the batch.
+After the checkpoint report, ask the operator if they want a Hygienic code review for the latest task.
 If yes, run `task({ subagent_type: "hygienic", prompt: "Review implementation changes from the latest batch." })` and apply feedback before starting the next batch.
 
 ### Step 5: Continue
 Based on feedback:
 - Apply changes if needed
-- Execute next batch
+- Execute the next runnable task
 - Repeat until complete
 
 ### Step 6: Complete Development

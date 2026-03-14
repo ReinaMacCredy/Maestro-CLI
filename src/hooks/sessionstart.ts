@@ -70,7 +70,7 @@ async function main(): Promise<void> {
 
   if (status.zombies.length > 0) {
     lines.push('');
-    lines.push('Zombie tasks (in_progress but no worktree):');
+    lines.push('Stale tasks (in_progress with stale or missing session):');
     for (const z of status.zombies) {
       lines.push(`  - ${z}`);
     }
@@ -84,17 +84,13 @@ async function main(): Promise<void> {
   if (!status.plan.approved) {
     skills.push('writing-plans');
   }
-  if (status.tasks.total > 0 && status.runnable.length > 0) {
-    skills.push('executing-plans');
-    skills.push('dispatching-parallel-agents');
-  }
   if (skills.length > 0) {
     lines.push('');
     lines.push(`Recommended skills: ${skills.join(', ')}`);
   }
 
   lines.push('');
-  lines.push('Use maestro MCP tools (maestro_status, maestro_worktree_start, etc.) for workflow orchestration.');
+  lines.push('Use maestro MCP tools (maestro_status, maestro_task_start, maestro_task_finish, etc.) for workflow orchestration.');
 
   writeOutput({
     hookSpecificOutput: {

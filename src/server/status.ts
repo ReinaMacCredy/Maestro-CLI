@@ -29,8 +29,6 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         skills.recommended.push('writing-plans', 'parallel-exploration', 'brainstorming');
       } else if (!result.plan.approved) {
         skills.recommended.push('writing-plans');
-      } else if (result.tasks.total > 0) {
-        skills.recommended.push('executing-plans', 'dispatching-parallel-agents');
       }
 
       return respond({

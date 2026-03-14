@@ -1,22 +1,24 @@
 /**
  * check-status use case.
- * Composite query: tasks, features, plan, context, runnable/blocked.
+ * Composite query for feature, plan, tasks, context, and stale sessions.
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import type { ContextPort } from '../ports/context.ts';
-import type { WorktreePort } from '../ports/worktree.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
+import { isManagedTaskSessionStale, readTaskSession } from '../utils/task-session.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
+import type { FsConfigAdapter } from '../adapters/fs/config.ts';
 
 export interface StatusServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   contextAdapter: ContextPort;
-  worktreeAdapter?: WorktreePort;
+  configAdapter: FsConfigAdapter;
+  directory: string;
 }
 
 export interface StatusResult {
@@ -51,7 +53,7 @@ export async function checkStatus(
   services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
-  const { taskPort, featureAdapter, planAdapter, contextAdapter, worktreeAdapter } = services;
+  const { taskPort, featureAdapter, planAdapter, contextAdapter, configAdapter, directory } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new Error(`Feature '${featureName}' not found`);
@@ -65,28 +67,25 @@ export async function checkStatus(
   ]);
   const contextStats = contextAdapter.stats(featureName);
   const comments = plan?.comments || [];
+  const staleTaskThresholdMinutes = configAdapter.get().staleTaskThresholdMinutes;
 
-  // Detect zombie tasks: in_progress but worktree no longer exists
-  let zombies: string[] = [];
-  if (worktreeAdapter) {
-    const inProgress = tasks.filter(t => t.status === 'in_progress');
-    const checks = await Promise.all(
-      inProgress.map(async (t) => {
-        const wt = await worktreeAdapter.get(featureName, t.folder);
-        return wt ? null : t.folder;
-      }),
-    );
-    zombies = checks.filter((f): f is string => f !== null);
-  }
+  const zombies = tasks
+    .filter((task) => task.status === 'in_progress')
+    .filter((task) => {
+      const session = readTaskSession(directory, featureName, task.folder);
+      return isManagedTaskSessionStale(task, session, staleTaskThresholdMinutes);
+    })
+    .map((task) => task.folder);
 
   const counts = countTaskStatuses(tasks);
-  const runnableFolders = runnable.map(t => t.folder);
+  const runnableFolders = runnable.map((task) => task.folder);
 
   const planStatus = plan ? (plan.status === 'approved' ? 'approved' : 'draft') : null;
   const nextAction = getNextAction(
     planStatus,
-    tasks.map(t => ({ status: t.status, folder: t.folder })),
+    tasks.map((task) => ({ status: task.status, folder: task.folder })),
     runnableFolders,
+    zombies,
   );
 
   return {
