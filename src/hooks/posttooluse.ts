@@ -10,13 +10,17 @@ async function main(): Promise<void> {
   if (!projectDir) return;
 
   const toolName = (input.tool_name as string) || 'unknown';
+  const toolInput = (input.tool_input as Record<string, unknown>) || {};
 
   const sessionsDir = getSessionsDir(projectDir);
   fs.mkdirSync(sessionsDir, { recursive: true });
 
   const eventsPath = path.join(sessionsDir, EVENTS_FILE);
-  const entry = JSON.stringify({ ts: new Date().toISOString(), tool: toolName }) + '\n';
-  fs.appendFileSync(eventsPath, entry, { flag: 'a' });
+  const entry: Record<string, unknown> = { ts: new Date().toISOString(), tool: toolName };
+  if (toolInput.feature) entry.feature = toolInput.feature;
+  if (toolInput.task) entry.task = toolInput.task;
+  if (toolInput.status) entry.status = toolInput.status;
+  fs.appendFileSync(eventsPath, JSON.stringify(entry) + '\n');
 
   // Pure side effect -- no stdout output
 }
