@@ -20,7 +20,6 @@ import cmdFeatureCreate from './feature/create.ts';
 import cmdFeatureInfo from './feature/info.ts';
 import cmdFeatureList from './feature/list.ts';
 import cmdInit from './init.ts';
-import cmdMerge from './merge.ts';
 import cmdPlanApprove from './plan/approve.ts';
 import cmdPlanComment from './plan/comment.ts';
 import cmdPlanCommentsClear from './plan/comments-clear.ts';
@@ -50,25 +49,17 @@ import cmdSubtaskSpecRead from './subtask/spec-read.ts';
 import cmdSubtaskSpecWrite from './subtask/spec-write.ts';
 import cmdSubtaskUpdate from './subtask/update.ts';
 import cmdTaskCreate from './task/create.ts';
+import cmdTaskFinish from './task/finish.ts';
 import cmdTaskInfo from './task/info.ts';
 import cmdTaskList from './task/list.ts';
 import cmdTaskReportRead from './task/report-read.ts';
 import cmdTaskReportWrite from './task/report-write.ts';
 import cmdTaskSpecRead from './task/spec-read.ts';
 import cmdTaskSpecWrite from './task/spec-write.ts';
+import cmdTaskStart from './task/start.ts';
 import cmdTaskSync from './task/sync.ts';
 import cmdTaskUpdate from './task/update.ts';
 import cmdUpdate from './update.ts';
-import cmdWorktreeCleanup from './worktree/cleanup.ts';
-import cmdWorktreeCommit from './worktree/commit.ts';
-import cmdWorktreeConflicts from './worktree/conflicts.ts';
-import cmdWorktreeCreate from './worktree/create.ts';
-import cmdWorktreeDiff from './worktree/diff.ts';
-import cmdWorktreeDiscard from './worktree/discard.ts';
-import cmdWorktreeList from './worktree/list.ts';
-import cmdWorktreePatchApply from './worktree/patch-apply.ts';
-import cmdWorktreePatchExport from './worktree/patch-export.ts';
-import cmdWorktreeStart from './worktree/start.ts';
 
 export const subCommands = {
   'agents-md': cmdAgentsMd,
@@ -92,7 +83,6 @@ export const subCommands = {
   'feature-info': cmdFeatureInfo,
   'feature-list': cmdFeatureList,
   'init': cmdInit,
-  'merge': cmdMerge,
   'plan-approve': cmdPlanApprove,
   'plan-comment': cmdPlanComment,
   'plan-comments-clear': cmdPlanCommentsClear,
@@ -122,23 +112,15 @@ export const subCommands = {
   'subtask-spec-write': cmdSubtaskSpecWrite,
   'subtask-update': cmdSubtaskUpdate,
   'task-create': cmdTaskCreate,
+  'task-finish': cmdTaskFinish,
   'task-info': cmdTaskInfo,
   'task-list': cmdTaskList,
   'task-report-read': cmdTaskReportRead,
   'task-report-write': cmdTaskReportWrite,
   'task-spec-read': cmdTaskSpecRead,
   'task-spec-write': cmdTaskSpecWrite,
+  'task-start': cmdTaskStart,
   'task-sync': cmdTaskSync,
   'task-update': cmdTaskUpdate,
   'update': cmdUpdate,
-  'worktree-cleanup': cmdWorktreeCleanup,
-  'worktree-commit': cmdWorktreeCommit,
-  'worktree-conflicts': cmdWorktreeConflicts,
-  'worktree-create': cmdWorktreeCreate,
-  'worktree-diff': cmdWorktreeDiff,
-  'worktree-discard': cmdWorktreeDiscard,
-  'worktree-list': cmdWorktreeList,
-  'worktree-patch-apply': cmdWorktreePatchApply,
-  'worktree-patch-export': cmdWorktreePatchExport,
-  'worktree-start': cmdWorktreeStart,
 } as const;

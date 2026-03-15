@@ -1,7 +1,6 @@
 /**
  * Worker prompt builder for maestroCLI.
- * Forked from hive-core/src/utils/worker-prompt.ts.
- * Rewritten: all MCP function-call syntax changed to CLI syntax.
+ * All workflow references use direct CLI commands.
  */
 
 export interface WorkerContextFile {
@@ -20,46 +19,44 @@ export interface ContinueFromBlocked {
   decision: string;
 }
 
+export interface ContinueFromPartial {
+  status: 'partial';
+  previousSummary: string;
+}
+
+export type ContinueFrom = ContinueFromBlocked | ContinueFromPartial;
+export type ContinueFromStatus = ContinueFrom['status'];
+
 export interface WorkerPromptParams {
   feature: string;
   task: string;
   taskOrder: number;
-  worktreePath: string;
-  branch: string;
+  workspacePath: string;
   plan: string;
   contextFiles: WorkerContextFile[];
   spec: string;
   previousTasks?: CompletedTask[];
-  continueFrom?: ContinueFromBlocked;
+  continueFrom?: ContinueFrom;
   droppedTaskCount?: number;
   droppedTasksHint?: string;
 }
 
-/** Escape characters that could break double-quoted shell arguments. */
-function sanitizeShellArg(s: string): string {
-  return s.replace(/["$`\\!]/g, '\\$&');
+function sanitizeShellArg(value: string): string {
+  return value.replace(/["$`\\!]/g, '\\$&');
 }
 
-/**
- * Build a context-rich prompt for a worker agent.
- *
- * All tool references use CLI syntax (maestro worktree-commit, etc.)
- * instead of MCP function calls (maestro_worktree_commit, etc.).
- */
 export function buildWorkerPrompt(params: WorkerPromptParams): string {
   const {
     feature,
     task,
     taskOrder,
-    worktreePath,
-    branch,
+    workspacePath,
     spec,
     continueFrom,
     droppedTaskCount,
     droppedTasksHint,
   } = params;
 
-  // Sanitize values used in bash command examples to prevent injection
   const safeTask = sanitizeShellArg(task);
   const safeFeature = sanitizeShellArg(feature);
 
@@ -72,22 +69,30 @@ If your task depends on earlier work not shown above, read the task reports dire
 \`maestro task-report-read --feature "${safeFeature}" --task <task-folder>\`
 ` : '';
 
-  const continuationSection = continueFrom ? `
-## Continuation from Blocked State
+  let continuationSection = '';
+  if (continueFrom?.status === 'blocked') {
+    continuationSection = `
+## Continuation From Blocked State
 
-Previous worker was blocked and exited. Here's the context:
+Previous worker summary: ${continueFrom.previousSummary}
 
-**Previous Progress**: ${continueFrom.previousSummary}
+User decision: ${continueFrom.decision}
 
-**User Decision**: ${continueFrom.decision}
+Continue from the current files on disk. Do not restart from scratch unless the current checkout is clearly unusable.
+`;
+  } else if (continueFrom?.status === 'partial') {
+    continuationSection = `
+## Continuation From Partial State
 
-Continue from where the previous worker left off, incorporating the user's decision.
-The worktree already contains the previous worker's progress.
-` : '';
+Previous worker summary: ${continueFrom.previousSummary}
+
+Continue from the current files on disk. Review what already changed before making new edits.
+`;
+  }
 
   return `# Maestro Worker Assignment
 
-You are a worker agent executing a task in an isolated git worktree.
+You are a worker agent executing task ${task} for feature ${feature}.
 
 ## Assignment Details
 
@@ -96,13 +101,12 @@ You are a worker agent executing a task in an isolated git worktree.
 | Feature | ${feature} |
 | Task | ${task} |
 | Task # | ${taskOrder} |
-| Branch | ${branch} |
-| Worktree | ${worktreePath} |
+| Workspace | ${workspacePath} |
 
-**CRITICAL**: All file operations MUST be within this worktree path:
-\`${worktreePath}\`
+**CRITICAL**: Operate only inside this project checkout:
+\`${workspacePath}\`
 
-Do NOT modify files outside this directory.
+Do not create worktrees, do not spawn sub-workers, and do not hand work back without calling \`maestro task-finish\`.
 ${continuationSection}${contextBudgetSection}
 ---
 
@@ -116,134 +120,90 @@ ${spec}
 
 Before writing code, confirm:
 1. Dependencies are satisfied and required context is present.
-2. The exact files/sections to touch (from references) are identified.
-3. The first failing test to write is clear (TDD).
+2. The exact files/sections to touch are identified.
+3. The first failing test to write is clear.
 4. The minimal change needed to reach green is planned.
 
 ---
 
 ## Blocker Protocol
 
-If you hit a blocker requiring human decision, **DO NOT** use the question tool directly.
-Instead, escalate via the blocker protocol:
+If you hit a blocker requiring human decision, do **not** ask the user directly from this worker.
 
-1. **Save your progress** to the worktree (commit if appropriate)
-2. **Run maestro worktree-commit** with blocker info:
+Instead, run:
 
 \`\`\`bash
-maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status blocked --summary "What you accomplished so far" --blocker-reason "Why you're blocked" --blocker-recommendation "Your suggested choice"
+maestro task-finish --task "${safeTask}" --feature "${safeFeature}" --status blocked --summary "What you accomplished so far" --blocker-reason "Why you're blocked" --blocker-recommendation "Your suggested choice"
 \`\`\`
 
-**After running maestro worktree-commit with blocked status, STOP IMMEDIATELY.**
-
-The orchestrator will:
-1. Receive your blocker info
-2. Ask the user for a decision
-3. Spawn a NEW worker to continue with the decision
-
-This keeps the user focused on ONE conversation instead of multiple worker panes.
+After \`maestro task-finish\` with blocked status, stop immediately.
 
 ---
 
 ## Completion Protocol
 
-When your task is **fully complete**:
+When the task is fully complete:
 
 \`\`\`bash
-maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status completed --summary "Concise summary of what you accomplished"
+maestro task-finish --task "${safeTask}" --feature "${safeFeature}" --status completed --summary "Concise summary of what you accomplished"
 \`\`\`
 
-Then inspect the command output:
-- If \`success=true\` and \`terminal=true\`: stop the session
-- Otherwise: **DO NOT STOP**. Follow the \`nextAction\` guidance, remediate, and retry
-
-**CRITICAL: Stop only on terminal commit result (success=true and terminal=true).**
-If commit returns non-terminal (for example verification_required), DO NOT STOP.
-Follow the nextAction, fix the issue, and run maestro worktree-commit again.
-
-Only when commit result is terminal should you stop.
-Do NOT continue working after a terminal result. Your session is DONE.
-The orchestrator will take over from here.
-
-**Summary Guidance** (used verbatim as context for downstream workers -- accuracy is critical):
-1. Start with **what changed** -- cite specific file paths, not vague descriptions.
-2. Mention **why** if it affects future tasks.
-3. Note **verification evidence** -- cite the exact command run and its outcome.
-   If you did NOT run tests/build/lint, say "Not verified" explicitly. Never claim "all tests pass" without running them.
-4. Keep it **2-4 sentences** max.
-5. **Grounding rule**: Only state facts you directly observed. Hallucinated summaries propagate as "facts" to subsequent workers.
-
-If you encounter an **unrecoverable error**:
+If you encounter an unrecoverable error:
 
 \`\`\`bash
-maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status failed --summary "What went wrong and what was attempted"
+maestro task-finish --task "${safeTask}" --feature "${safeFeature}" --status failed --summary "What went wrong and what was attempted"
 \`\`\`
 
-If you made **partial progress** but can't continue:
+If you made partial progress but cannot finish:
 
 \`\`\`bash
-maestro worktree-commit --task "${safeTask}" --feature "${safeFeature}" --status partial --summary "What was completed and what remains"
+maestro task-finish --task "${safeTask}" --feature "${safeFeature}" --status partial --summary "What was completed and what remains"
 \`\`\`
+
+After \`maestro task-finish\`, stop. The orchestrator will interpret the result and decide the next step.
+
+**Summary guidance**:
+1. Start with what changed, citing concrete file paths.
+2. Mention why only if it matters to later tasks.
+3. Include exact verification performed, or say "Not verified".
+4. Keep it to 2-4 sentences.
+5. Only state facts you directly observed.
 
 ---
 
-## TDD Protocol (Required)
+## TDD Protocol
 
-1. **Red**: Write failing test first
-2. **Green**: Minimal code to pass
-3. **Refactor**: Clean up, keep tests green
+1. Red: write or update the failing test first
+2. Green: make the minimal code change to pass
+3. Refactor: clean up while keeping tests green
 
-Never write implementation before test exists.
-Exception: Pure refactoring of existing tested code.
+Do not skip tests unless the task is a pure refactor of already-tested code.
 
-## Debugging Protocol (When stuck)
+## Debugging Protocol
 
-1. **Reproduce**: Get consistent failure
-2. **Isolate**: Binary search to find cause
-3. **Hypothesize**: Form theory, test it
-4. **Fix**: Minimal change that resolves
+1. Reproduce
+2. Isolate
+3. Hypothesize
+4. Fix
 
-**HARD LIMIT: After 3 failed attempts at the same fix, you MUST escalate as blocker.**
-DO NOT continue retrying. Each retry burns context window budget.
-Use the blocker protocol above with \`--status blocked\` and explain what you tried.
+After 3 failed attempts at the same fix, stop and use the blocker protocol.
 
 ---
 
 ## Tool Access
 
-**CRITICAL -- Tool Semantics (do not confuse these):**
+Use the normal coding tools plus:
+- \`maestro plan-read\`
+- \`maestro context-write\`
+- \`maestro task-report-read\`
+- \`maestro task-finish\`
 
-| Tool | Action | Reversible? |
-|------|--------|-------------|
-| \`maestro worktree-commit\` | **SAVES** your work, updates task status, reports to orchestrator | Yes |
-| \`maestro worktree-discard\` | **DESTROYS** the entire worktree, **LOSES ALL CHANGES** permanently | No |
-
-ALWAYS use \`worktree-commit\` to complete your task (even for failures/blockers).
-Only use \`worktree-discard\` if explicitly instructed to abandon the entire task.
-
-**Other tools available:**
-- All standard tools (read, write, edit, bash, glob, grep)
-- \`maestro plan-read\` -- Re-read plan if needed
-- \`maestro context-write\` -- Save learnings for future tasks
-
-**You do NOT have access to (or should not use):**
-- \`question\` -- Escalate via blocker protocol instead
-- \`maestro worktree-create\` -- No spawning sub-workers
-- \`maestro merge\` -- Only the orchestrator merges
-- Recursive delegation of any kind
+Do not use:
+- recursive delegation of any kind
+- any \`maestro worktree-*\` command
 
 ---
 
-## Guidelines
-
-1. **Work methodically** -- Break down the mission into steps
-2. **Stay in scope** -- Only do what the spec asks
-3. **Escalate blockers** -- Don't guess on important decisions
-4. **Save context** -- Use \`maestro context-write\` for discoveries
-5. **Complete cleanly** -- Always call \`maestro worktree-commit\` when done
-
----
-
-Begin your task now.
+Begin the task now.
 `;
 }

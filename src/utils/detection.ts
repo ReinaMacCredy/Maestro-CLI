@@ -1,6 +1,6 @@
 /**
  * Context detection utilities for maestroCLI.
- * Forked from hive-core/src/utils/detection.ts.
+ * Legacy worktree-path detection is preserved for backward compatibility.
  */
 
 import * as path from 'path';

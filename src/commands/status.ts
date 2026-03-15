@@ -40,9 +40,9 @@ function formatStatus(result: StatusResult): string {
 
   if (result.zombies.length > 0) {
     lines.push('');
-    lines.push(renderStatusLine('zombies', `${result.zombies.length} task(s) in_progress with no worktree`));
+    lines.push(renderStatusLine('zombies', `${result.zombies.length} stale task(s) in_progress`));
     for (const z of result.zombies) {
-      lines.push(`  [!] ${z} -- worktree missing, task stuck`);
+      lines.push(`  [!] ${z} -- session stale or missing, recover with task-start --force`);
     }
   }
 

@@ -6,6 +6,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { ensureDir, writeJsonAtomic, readJson, deepMerge } from './fs-io.ts';
+import { isProcessAlive } from './process.ts';
 
 /** Node-compatible synchronous sleep (replaces Bun.sleepSync). */
 function sleepSync(ms: number): void {
@@ -26,15 +27,6 @@ const DEFAULT_LOCK_OPTIONS: Required<LockOptions> = {
 
 export function getLockPath(filePath: string): string {
   return `${filePath}.lock`;
-}
-
-function isProcessAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function isLockStale(lockPath: string, staleTTL: number): boolean {

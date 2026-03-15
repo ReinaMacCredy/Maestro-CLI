@@ -4,6 +4,7 @@
 
 import { buildEffectiveDependencies } from './task-dependency-graph.ts';
 import type { TaskPort } from '../ports/tasks.ts';
+import type { TaskInfo } from '../types.ts';
 
 /**
  * Check if a task's dependencies are satisfied.
@@ -12,8 +13,9 @@ export async function checkDependencies(
   taskPort: TaskPort,
   feature: string,
   taskFolder: string,
+  existingTasks?: TaskInfo[],
 ): Promise<{ allowed: true; error?: undefined } | { allowed: false; error: string }> {
-  const tasks = await taskPort.list(feature, { includeAll: true });
+  const tasks = existingTasks ?? await taskPort.list(feature, { includeAll: true });
 
   const tasksWithDeps = tasks.map(task => ({
     folder: task.folder,

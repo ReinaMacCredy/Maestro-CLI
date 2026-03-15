@@ -18,6 +18,7 @@ const REPORT_FILE = 'report.md';
 const APPROVED_FILE = 'APPROVED';
 const SUBTASKS_DIR = 'subtasks';
 const SPEC_FILE = 'spec.md';
+const SESSION_FILE = 'session.json';
 
 export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
@@ -69,6 +70,10 @@ export function getTaskReportPath(projectRoot: string, featureName: string, task
 
 export function getTaskSpecPath(projectRoot: string, featureName: string, taskFolder: string): string {
   return path.join(getTaskPath(projectRoot, featureName, taskFolder), SPEC_FILE);
+}
+
+export function getTaskSessionPath(projectRoot: string, featureName: string, taskFolder: string): string {
+  return path.join(getTaskPath(projectRoot, featureName, taskFolder), SESSION_FILE);
 }
 
 export function getApprovedPath(projectRoot: string, featureName: string): string {

@@ -2,8 +2,8 @@
   "name": "maestro-orchestrator",
   "version": "0.2.0",
   "type": "module",
-  "description": "Agent-optimized development orchestrator with parallel task execution, worktree isolation, and workflow enforcement",
-  "keywords": ["mcp", "orchestration", "worktree", "tdd", "agent", "claude-code", "workflow"],
+  "description": "Agent-optimized development orchestrator with direct worker CLI execution and workflow enforcement",
+  "keywords": ["mcp", "orchestration", "tdd", "agent", "claude-code", "workflow", "codex"],
   "repository": {
     "type": "git",
     "url": "https://github.com/user/maestro"

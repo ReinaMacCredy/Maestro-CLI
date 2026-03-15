@@ -15,15 +15,13 @@ import { FsSessionAdapter } from './adapters/fs/session.ts';
 import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { FsAskAdapter } from './adapters/fs/ask.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
-import { GitWorktreeAdapter } from './adapters/git-worktree.ts';
-import { getMaestroPath } from './utils/paths.ts';
+import { CliWorkerRunner } from './adapters/worker-runner.ts';
 import { MaestroError } from './lib/errors.ts';
 import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { ContextPort } from './ports/context.ts';
 import type { SessionPort } from './ports/sessions.ts';
-import type { WorktreePort } from './ports/worktree.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
@@ -34,7 +32,7 @@ export interface MaestroServices {
   configAdapter: FsConfigAdapter;
   askAdapter: FsAskAdapter;
   agentsMdAdapter: AgentsMdAdapter;
-  worktreeAdapter: WorktreePort;
+  workerRunner: CliWorkerRunner;
   directory: string;
 }
 
@@ -52,10 +50,7 @@ export function initServices(directory: string): MaestroServices {
     configAdapter: new FsConfigAdapter(),
     askAdapter: new FsAskAdapter(directory),
     agentsMdAdapter: new AgentsMdAdapter(directory, contextAdapter),
-    worktreeAdapter: new GitWorktreeAdapter({
-      baseDir: directory,
-      maestroDir: getMaestroPath(directory),
-    }),
+    workerRunner: new CliWorkerRunner(),
     directory,
   };
 

@@ -117,13 +117,9 @@ describe('writeOutput', () => {
 });
 
 // ---------------------------------------------------------------------------
-// pretooluse.ts -- detectGitContext (tested via subprocess)
-//
-// detectGitContext is not exported, so we test it indirectly by running the
-// pretooluse module as a subprocess with controlled cwd and stdin, then
-// inspecting stdout for the expected JSON output.
+// pretooluse.ts (tested via subprocess)
 // ---------------------------------------------------------------------------
-describe('detectGitContext (via pretooluse subprocess)', () => {
+describe('pretooluse hook (via subprocess)', () => {
   let tmpDir: string;
   const pretoolPath = path.resolve(
     import.meta.dir,
@@ -154,11 +150,8 @@ describe('detectGitContext (via pretooluse subprocess)', () => {
     return stdout.trim();
   }
 
-  test('git commit outside worktree emits advisory', async () => {
-    // Set up a fake .git directory with a HEAD pointing to a non-maestro branch
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/main\n');
+  test('git commit in maestro project emits task-finish advisory', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.maestro'), { recursive: true });
 
     const output = await runPretool(
       { tool_name: 'Bash', tool_input: { command: 'git commit -m "test"' } },
@@ -169,15 +162,11 @@ describe('detectGitContext (via pretooluse subprocess)', () => {
     const parsed = JSON.parse(output);
     expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
     expect(parsed.hookSpecificOutput.additionalContext).toContain(
-      'maestro_worktree_commit',
+      'maestro_task_finish',
     );
   });
 
-  test('git commit on maestro branch emits no output', async () => {
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/maestro/feature-1\n');
-
+  test('git commit outside maestro project emits no output', async () => {
     const output = await runPretool(
       { tool_name: 'Bash', tool_input: { command: 'git commit -m "test"' } },
       tmpDir,
@@ -186,65 +175,21 @@ describe('detectGitContext (via pretooluse subprocess)', () => {
     expect(output).toBe('');
   });
 
-  test('git push in worktree emits worktree advisory', async () => {
-    // Create .maestro-worktree marker and a .git dir
-    fs.writeFileSync(path.join(tmpDir, '.maestro-worktree'), '');
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/maestro/task-1\n');
-
+  test('git push emits no output', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.maestro'), { recursive: true });
     const output = await runPretool(
       { tool_name: 'Bash', tool_input: { command: 'git push origin main' } },
       tmpDir,
     );
-
-    expect(output).not.toBe('');
-    const parsed = JSON.parse(output);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain(
-      'maestro_worktree_commit',
-    );
+    expect(output).toBe('');
   });
 
-  test('git push on maestro branch (not worktree) emits merge advisory', async () => {
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/maestro/feature-2\n');
-
-    const output = await runPretool(
-      { tool_name: 'Bash', tool_input: { command: 'git push origin maestro/feature-2' } },
-      tmpDir,
-    );
-
-    expect(output).not.toBe('');
-    const parsed = JSON.parse(output);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('maestro_merge');
-  });
-
-  test('git merge on maestro branch emits merge advisory', async () => {
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/maestro/feature-3\n');
-
+  test('git merge emits no output', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.maestro'), { recursive: true });
     const output = await runPretool(
       { tool_name: 'Bash', tool_input: { command: 'git merge some-branch' } },
       tmpDir,
     );
-
-    expect(output).not.toBe('');
-    const parsed = JSON.parse(output);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('maestro_merge');
-  });
-
-  test('git merge outside maestro context emits no output', async () => {
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/main\n');
-
-    const output = await runPretool(
-      { tool_name: 'Bash', tool_input: { command: 'git merge some-branch' } },
-      tmpDir,
-    );
-
     expect(output).toBe('');
   });
 
@@ -264,46 +209,5 @@ describe('detectGitContext (via pretooluse subprocess)', () => {
     );
 
     expect(output).toBe('');
-  });
-
-  test('detects .maestro-worktree marker in parent directory', async () => {
-    // Create a nested directory structure where the marker is in the parent
-    const subDir = path.join(tmpDir, 'sub', 'dir');
-    fs.mkdirSync(subDir, { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, '.maestro-worktree'), '');
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/maestro/task-x\n');
-
-    const output = await runPretool(
-      { tool_name: 'Bash', tool_input: { command: 'git push origin task-x' } },
-      subDir,
-    );
-
-    expect(output).not.toBe('');
-    const parsed = JSON.parse(output);
-    // In worktree, so should get the worktree advisory (not the branch one)
-    expect(parsed.hookSpecificOutput.additionalContext).toContain(
-      'maestro_worktree_commit',
-    );
-  });
-
-  test('detached HEAD (no ref:) reports onMaestroBranch as false', async () => {
-    const gitDir = path.join(tmpDir, '.git');
-    fs.mkdirSync(gitDir, { recursive: true });
-    // Detached HEAD -- just a commit SHA, no ref: prefix
-    fs.writeFileSync(path.join(gitDir, 'HEAD'), 'abc123def456\n');
-
-    const output = await runPretool(
-      { tool_name: 'Bash', tool_input: { command: 'git commit -m "detached"' } },
-      tmpDir,
-    );
-
-    // Not on maestro branch, not in worktree -> should emit advisory
-    expect(output).not.toBe('');
-    const parsed = JSON.parse(output);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain(
-      'maestro_worktree_commit',
-    );
   });
 });

@@ -2,145 +2,97 @@
 
 ## Core Concept
 
-Context-Driven Development for AI coding assistants.
+Context-driven development for AI coding assistants.
 
-```
+```text
 PROBLEM  -->  CONTEXT  -->  EXECUTION  -->  REPORT
 (why)         (what)        (how)           (shape)
 ```
 
-Every decision, constraint, and finding is persisted to `.maestro/` so agents can resume with full context across sessions.
+All durable state lives under `.maestro/`.
 
 ## Data Structure
 
-```
+```text
 .maestro/
   features/
     {feature}/
-      feature.json          # metadata and state
-      plan.md               # approved execution plan
-      tasks.json            # task list with status
-      contexts/             # persistent knowledge files
+      feature.json
+      plan.md
+      comments.json
+      context/
         research.md
         decisions.md
       tasks/
         {task}/
-          status.json       # task state
-          spec.md           # task context and requirements
-          worker-prompt.md  # full worker prompt (generated)
-          report.md         # execution summary and results
-  .worktrees/
-    {feature}/{task}/       # isolated git worktrees per task
+          spec.md
+          worker-prompt.md
+          session.json
+          report.md
 ```
 
 ## Architecture
 
-Clean architecture with explicit dependency direction:
-
-```
+```text
 commands/  -->  usecases/  -->  ports/  <--  adapters/
 (CLI I/O)       (rules)        (interfaces)  (implementations)
 ```
 
-### Layers
-
-**Commands** (64 files) -- CLI entry points using citty's `defineCommand`. Parse args, call use cases or adapters, format output. No business logic.
-
-**Use Cases** (8 files) -- Business rules: merge-task, start-task, write-plan, sync-plan, approve-plan, complete-feature, commit-task, check-status. Depend on ports, never on adapters.
-
-**Ports** (1 interface) -- Boundaries: `TaskPort` (task CRUD). Defined as a TypeScript interface.
-
-**Adapters** (10 files) -- Implementations: filesystem-based feature/plan/context/session/config/ask adapters, git worktree adapter, br task adapter, agents-md adapter, docker sandbox adapter.
-
-### Module Wiring
-
-`services.ts` provides a module-level singleton (`initServices` / `getServices`). The root CLI command calls `initServices(projectRoot)` in its `setup()` hook. Subcommands call `getServices()` to access adapters.
-
-This pattern works around citty's limitation of not propagating parent context to subcommands.
+- Commands parse args and format output.
+- Use cases own workflow rules.
+- Ports define task storage boundaries.
+- Adapters implement filesystem, br, worker runner, sandbox, and AGENTS.md behavior.
 
 ## Task Lifecycle
 
-```
+```text
 pending --> in_progress --> done
-                       \-> blocked --> (resume) --> done
-                       \-> failed
-                       \-> partial
-                       \-> cancelled
+                       \-> blocked --> in_progress
+                       \-> partial --> in_progress
+                       \-> failed --> pending
+                       \-> cancelled --> pending
 ```
 
-### Status Vocabulary
+## Direct Worker Execution
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Not started |
-| `in_progress` | Currently being worked on |
-| `done` | Completed successfully |
-| `blocked` | Waiting for user decision (blocker protocol) |
-| `failed` | Execution failed |
-| `partial` | Partially completed |
-| `cancelled` | Cancelled by user |
+- `task-start` generates `spec.md` and `worker-prompt.md`, records `baseCommit`, creates `session.json`, and launches the configured worker CLI in the main repo checkout.
+- `session.json` is the live session sidecar for heartbeat, attempt count, pid, launcher, and exit information.
+- `task-finish` writes `report.md`, updates task state, and records git audit data (`baseCommit`, `HEAD`, dirty state, changed files, uncommitted files).
+- Only one task may be `in_progress` at a time.
 
-### Blocker Protocol
+## Stale Detection
 
-When a worker encounters a decision it cannot make:
-
-1. Worker calls `maestro worktree-commit --status blocked --blocker "..."` with reason, options, recommendation
-2. Orchestrator sees blocker in `maestro status`
-3. Orchestrator asks user for decision
-4. Orchestrator resumes: `maestro worktree-create --continueFrom blocked --decision "answer"`
-5. New worker spawns in the same worktree with previous progress preserved
-
-## Feature Resolution
-
-All commands use detection-based feature resolution:
-
-1. **Explicit parameter** -- `--feature <name>` always wins
-2. **Worktree detection** -- detect from cwd path (`.maestro/.worktrees/{feature}/{task}/`)
-3. **Single-feature fallback** -- if only one feature exists, use it
-4. **Error** -- if multiple features exist, require explicit `--feature`
-
-This enables multi-session support (parallel agents on different features) and worktree detection (agent knows its feature from its working directory).
+- `status` treats an `in_progress` task with a stale heartbeat as a zombie/stale task.
+- Missing `session.json` on an `in_progress` task is treated as stale.
+- Recovery path: `task-start --force` marks the stale attempt failed and starts a new attempt from the current checkout state.
 
 ## Worker Prompt Building
 
-`maestro worktree-start` generates a complete worker prompt at `.maestro/features/{feature}/tasks/{task}/worker-prompt.md` containing:
+`task-start` generates a worker prompt at `.maestro/features/{feature}/tasks/{task}/worker-prompt.md` containing:
 
-- Task spec (name, description, dependencies)
-- Prior task summaries (what came before)
-- Upcoming tasks (what comes after)
-- Relevant context files
-- Workflow protocols and guidelines
+- task spec and dependency context
+- prior completed-task summaries
+- relevant context files
+- blocker/completion protocol using `task-finish`
 
-### Prompt Budgeting
+Prompt budgeting still caps prior-task and context payloads to keep workers within context limits.
 
-Defaults: last 10 tasks, 2000 chars per summary, 20KB per context file, 60KB total budget. The `promptMeta`, `payloadMeta`, and `warnings` fields in the response report actual sizes and any truncation applied.
+## Source Of Truth
 
-## Worktree Isolation
-
-Each task executes in an isolated git worktree:
-
-- Full repo copy at `.maestro/.worktrees/{feature}/{task}/`
-- Agent makes changes freely without affecting main branch
-- On `worktree-commit`: changes committed to task branch
-- On `merge`: task branch merged into main
-- On `worktree-discard`: worktree removed, no changes applied
-
-## Source of Truth
-
-| File | Owner | Other Access |
-|------|-------|-------------|
-| `feature.json` | Orchestrator | Read-only |
-| `tasks.json` | Orchestrator | Read-only |
-| `status.json` | Worker | Orchestrator (read) |
-| `plan.md` | Orchestrator | Read + comment |
-| `spec.md` | `worktree-start` / `worktree-create` | Worker (read-only) |
-| `report.md` | Worker | All (read-only) |
+| File | Purpose |
+|------|---------|
+| `feature.json` | feature metadata and lifecycle |
+| `plan.md` | approved execution plan |
+| `comments.json` | plan review comments |
+| `spec.md` | generated task context |
+| `worker-prompt.md` | worker instructions |
+| `session.json` | live worker session sidecar |
+| `report.md` | completion summary and audit trail |
 
 ## Key Principles
 
-- **No global state** -- all commands accept explicit feature parameter
-- **Detection-first** -- worktree path reveals feature context
-- **Isolation** -- each task in its own worktree, safe to discard
-- **Audit trail** -- every action logged to `.maestro/`
-- **Agent-friendly** -- minimal overhead during execution
-- **Context persists** -- write to `.maestro/` files; memory is ephemeral
+- No worktree isolation
+- Single-writer execution in the main checkout
+- Durable prompt, report, and session artifacts
+- Direct launcher abstraction for `codex` and `claude`
+- Feature/task context must survive agent restarts

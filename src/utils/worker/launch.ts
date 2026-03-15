@@ -1,12 +1,16 @@
 /**
- * Worker launch orchestration for maestroCLI.
- * Forked from hive-core/src/utils/worker-launch.ts.
- * Adapted: TaskService -> TaskPort, buildSpecContent imported from spec-builder.ts.
- * PlanService and ContextService kept as concrete types (pragmatic).
+ * Worker prompt preparation for maestroCLI.
+ * Builds spec and prompt artifacts before a direct worker launch.
  */
 
 import * as path from 'path';
-import { buildWorkerPrompt, type WorkerContextFile, type CompletedTask, type ContinueFromBlocked } from './prompt.ts';
+import {
+  buildWorkerPrompt,
+  type WorkerContextFile,
+  type CompletedTask,
+  type ContinueFrom,
+  type ContinueFromStatus,
+} from './prompt.ts';
 import { applyTaskBudget, applyContextBudget, DEFAULT_BUDGET, type TruncationEvent } from './budgeting.ts';
 import { writeWorkerPromptFile } from './file.ts';
 import { normalizePath } from '../paths.ts';
@@ -14,7 +18,7 @@ import { buildSpecContent } from './spec.ts';
 import type { TaskPort } from '../../ports/tasks.ts';
 import type { PlanPort } from '../../ports/plans.ts';
 import type { ContextPort } from '../../ports/context.ts';
-import type { WorktreeInfo, TaskInfo } from '../../types.ts';
+import type { TaskInfo } from '../../types.ts';
 
 export interface WorkerLaunchServices {
   taskPort: TaskPort;
@@ -27,8 +31,8 @@ export interface WorkerLaunchParams {
   feature: string;
   task: string;
   taskInfo: TaskInfo;
-  worktree: WorktreeInfo;
-  continueFrom?: 'blocked';
+  allTasks?: TaskInfo[];
+  continueFrom?: ContinueFromStatus;
   decision?: string;
 }
 
@@ -40,8 +44,7 @@ export interface WorkerLaunchContext {
   contextFiles: WorkerContextFile[];
   previousTasks: CompletedTask[];
   taskOrder: number;
-  worktreePath: string;
-  branch: string;
+  workspacePath: string;
   truncationEvents: TruncationEvent[];
   droppedTasksHint?: string;
   droppedTaskCount: number;
@@ -51,37 +54,30 @@ export async function prepareWorkerLaunch(
   services: WorkerLaunchServices,
   params: WorkerLaunchParams,
 ): Promise<WorkerLaunchContext> {
-  const { feature, task, taskInfo, worktree, continueFrom, decision } = params;
+  const { feature, task, taskInfo, continueFrom, decision } = params;
   const dependsOn = taskInfo.dependsOn ?? [];
 
-  await services.taskPort.update(feature, task, {
-    status: 'in_progress',
-    baseCommit: worktree.commit,
-  });
-
   const planResult = services.planAdapter.read(feature);
-  const allTasks = await services.taskPort.list(feature);
+  const allTasks = params.allTasks ?? await services.taskPort.list(feature, { includeAll: true });
 
-  const rawContextFiles = services.contextAdapter.list(feature).map(f => ({
-    name: f.name,
-    content: f.content,
+  const rawContextFiles = services.contextAdapter.list(feature).map((file) => ({
+    name: file.name,
+    content: file.content,
   }));
 
   const rawPreviousTasks = allTasks
-    .filter(t => t.status === 'done' && t.summary)
-    .map(t => ({ name: t.folder, summary: t.summary! }));
+    .filter((currentTask) => currentTask.status === 'done' && currentTask.summary)
+    .map((currentTask) => ({ name: currentTask.folder, summary: currentTask.summary! }));
 
   const taskBudgetResult = applyTaskBudget(rawPreviousTasks, { ...DEFAULT_BUDGET, feature });
   const contextBudgetResult = applyContextBudget(rawContextFiles, { ...DEFAULT_BUDGET, feature });
 
   const contextFiles: WorkerContextFile[] = contextBudgetResult.files;
   const previousTasks: CompletedTask[] = taskBudgetResult.tasks;
-
   const truncationEvents: TruncationEvent[] = [
     ...taskBudgetResult.truncationEvents,
     ...contextBudgetResult.truncationEvents,
   ];
-
   const droppedTasksHint = taskBudgetResult.droppedTasksHint;
   const droppedTaskCount = rawPreviousTasks.length - previousTasks.length;
 
@@ -95,10 +91,10 @@ export async function prepareWorkerLaunch(
       description: undefined,
     },
     dependsOn,
-    allTasks: allTasks.map(t => ({
-      folder: t.folder,
-      name: t.name,
-      order: parseInt(t.folder.match(/^(\d+)/)?.[1] || '0', 10),
+    allTasks: allTasks.map((currentTask) => ({
+      folder: currentTask.folder,
+      name: currentTask.name,
+      order: parseInt(currentTask.folder.match(/^(\d+)/)?.[1] || '0', 10),
     })),
     planContent: planResult?.content ?? null,
     contextFiles,
@@ -107,18 +103,26 @@ export async function prepareWorkerLaunch(
 
   await services.taskPort.writeSpec(feature, task, specContent);
 
-  const continueFromParam: ContinueFromBlocked | undefined = continueFrom === 'blocked' ? {
-    status: 'blocked',
-    previousSummary: taskInfo.summary || 'No previous summary',
-    decision: decision || 'No decision provided',
-  } : undefined;
+  const previousSummary = taskInfo.summary || 'No previous summary';
+  let continueFromParam: ContinueFrom | undefined;
+  if (continueFrom === 'blocked') {
+    continueFromParam = {
+      status: 'blocked',
+      previousSummary,
+      decision: decision || 'No decision provided',
+    };
+  } else if (continueFrom === 'partial') {
+    continueFromParam = {
+      status: 'partial',
+      previousSummary,
+    };
+  }
 
   const workerPrompt = buildWorkerPrompt({
     feature,
     task,
     taskOrder,
-    worktreePath: worktree.path,
-    branch: worktree.branch,
+    workspacePath: services.directory,
     plan: planResult?.content || 'No plan available',
     contextFiles,
     spec: specContent,
@@ -140,8 +144,7 @@ export async function prepareWorkerLaunch(
     contextFiles,
     previousTasks,
     taskOrder,
-    worktreePath: worktree.path,
-    branch: worktree.branch,
+    workspacePath: services.directory,
     truncationEvents,
     droppedTasksHint,
     droppedTaskCount,

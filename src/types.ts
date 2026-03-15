@@ -27,6 +27,7 @@ export interface FeatureJson {
 export type TaskStatusType = 'pending' | 'in_progress' | 'done' | 'cancelled' | 'blocked' | 'failed' | 'partial';
 export type TaskOrigin = 'plan' | 'manual';
 export type SubtaskType = 'test' | 'implement' | 'review' | 'verify' | 'research' | 'debug' | 'custom';
+export type WorkerCliName = 'codex' | 'claude';
 
 export interface Subtask {
   id: string;
@@ -48,12 +49,14 @@ export interface SubtaskStatus {
 export interface WorkerSession {
   taskId?: string;
   sessionId: string;
-  workerId?: string;
-  agent?: string;
-  mode?: 'inline' | 'delegate';
+  startedAt?: string;
   lastHeartbeatAt?: string;
   attempt?: number;
-  messageCount?: number;
+  pid?: number;
+  launcher?: WorkerCliName;
+  exitCode?: number;
+  signal?: string;
+  workerPromptPath?: string;
 }
 
 export interface TaskStatus {
@@ -78,6 +81,10 @@ export interface TaskInfo {
   origin: TaskOrigin;
   planTitle?: string;
   summary?: string;
+  startedAt?: string;
+  completedAt?: string;
+  baseCommit?: string;
+  workerSession?: WorkerSession;
   /** Task dependencies -- extended for TaskPort integration */
   dependsOn?: string[];
 }
@@ -189,6 +196,10 @@ export interface HiveConfig {
     'forager-worker'?: AgentModelConfig;
     'hygienic-reviewer'?: AgentModelConfig;
   };
+  workerCli?: WorkerCliName;
+  workerCliArgs?: string[];
+  workerCliModel?: string;
+  staleTaskThresholdMinutes: number;
   sandbox?: 'none' | 'docker';
   dockerImage?: string;
   persistentContainers?: boolean;
@@ -213,6 +224,9 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   disableSkills: [],
   disableMcps: [],
   agentMode: 'unified',
+  workerCli: 'codex',
+  workerCliArgs: [],
+  staleTaskThresholdMinutes: 120,
   sandbox: 'none',
   agents: {
     'hive-master': {
@@ -252,52 +266,6 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
     },
   },
 };
-
-// ============================================================================
-// Worktree Types (moved from worktreeService to avoid cross-adapter import)
-// ============================================================================
-
-export interface WorktreeInfo {
-  path: string;
-  branch: string;
-  commit: string;
-  feature: string;
-  step: string;
-}
-
-export interface DiffResult {
-  hasDiff: boolean;
-  diffContent: string;
-  filesChanged: string[];
-  insertions: number;
-  deletions: number;
-}
-
-export interface ApplyResult {
-  success: boolean;
-  error?: string;
-  filesAffected: string[];
-}
-
-export interface CommitResult {
-  committed: boolean;
-  sha: string;
-  message?: string;
-}
-
-export interface MergeResult {
-  success: boolean;
-  merged: boolean;
-  sha?: string;
-  filesChanged?: string[];
-  conflicts?: string[];
-  error?: string;
-}
-
-export interface WorktreeConfig {
-  baseDir: string;
-  maestroDir: string;
-}
 
 // ============================================================================
 // Sandbox Types (moved from dockerSandboxService to avoid cross-adapter import)

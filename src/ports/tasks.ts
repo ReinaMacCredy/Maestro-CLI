@@ -3,7 +3,7 @@
  * Concrete implementations: BrTaskAdapter (br CLI), InMemoryTaskPort (tests).
  */
 
-import type { TaskStatusType, TaskOrigin, TaskInfo } from '../types.ts';
+import type { TaskStatusType, TaskOrigin, TaskInfo, WorkerSession } from '../types.ts';
 
 export interface CreateOpts {
   labels?: string[];
@@ -16,7 +16,11 @@ export interface UpdateFields {
   status?: TaskStatusType;
   description?: string;
   notes?: string;
+  summary?: string;
   baseCommit?: string;
+  startedAt?: string;
+  completedAt?: string;
+  workerSession?: Partial<WorkerSession>;
 }
 
 export interface ListOpts {

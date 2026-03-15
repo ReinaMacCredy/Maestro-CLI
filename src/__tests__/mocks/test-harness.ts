@@ -36,7 +36,7 @@ export async function createTestHarness(): Promise<TestHarness> {
   const gitEmail = Bun.spawn(['git', 'config', 'user.email', 'test@test.com'], { cwd: dir, stdout: 'pipe', stderr: 'pipe' });
   await gitEmail.exited;
 
-  // Create initial commit (needed for worktree operations)
+  // Create initial commit so git audit capture has a valid HEAD
   const touch = Bun.spawn(['touch', '.gitkeep'], { cwd: dir, stdout: 'pipe', stderr: 'pipe' });
   await touch.exited;
   const gitAdd = Bun.spawn(['git', 'add', '.'], { cwd: dir, stdout: 'pipe', stderr: 'pipe' });

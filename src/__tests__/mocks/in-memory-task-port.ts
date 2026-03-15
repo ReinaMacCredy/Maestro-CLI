@@ -64,6 +64,16 @@ export class InMemoryTaskPort implements TaskPort {
 
     if (fields.description !== undefined) task.description = fields.description;
     if (fields.notes !== undefined) task.notes = fields.notes;
+    if (fields.summary !== undefined) task.summary = fields.summary;
+    if (fields.baseCommit !== undefined) task.baseCommit = fields.baseCommit;
+    if (fields.startedAt !== undefined) task.startedAt = fields.startedAt;
+    if (fields.completedAt !== undefined) task.completedAt = fields.completedAt;
+    if (fields.workerSession !== undefined) {
+      task.workerSession = {
+        ...(task.workerSession || { sessionId: 'test-session' }),
+        ...fields.workerSession,
+      };
+    }
 
     return { ...task };
   }

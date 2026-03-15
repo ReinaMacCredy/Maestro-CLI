@@ -5,10 +5,70 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
+import { startTask } from '../usecases/start-task.ts';
+import { finishTask } from '../usecases/finish-task.ts';
 import type { UpdateFields, ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 
 export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void {
+  server.registerTool(
+    'maestro_task_start',
+    {
+      description:
+        'Start a task with the configured worker CLI. Launches the worker in the main project checkout and waits for it to finish.',
+      inputSchema: {
+        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        task: z.string().describe('Task folder ID'),
+        continueFrom: z.enum(['blocked', 'partial']).optional().describe('Resume a blocked or partial task'),
+        decision: z.string().optional().describe('Decision text required for blocked continuation'),
+        force: z.boolean().optional().describe('Recover a stale in_progress task before restarting'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = await startTask(services, {
+        feature,
+        task: input.task,
+        continueFrom: input.continueFrom,
+        decision: input.decision,
+        force: input.force,
+      });
+      return respond({ success: true, ...result });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_finish',
+    {
+      description:
+        'Finish a task attempt, update its status, and write task report plus git audit details.',
+      inputSchema: {
+        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        task: z.string().describe('Task folder ID'),
+        status: z.enum(['completed', 'blocked', 'failed', 'partial']).describe('Final task status'),
+        summary: z.string().describe('Summary of work completed'),
+        blockerReason: z.string().optional().describe('Why the task is blocked'),
+        blockerRecommendation: z.string().optional().describe('Recommended unblock decision'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = await finishTask(services, {
+        feature,
+        task: input.task,
+        status: input.status,
+        summary: input.summary,
+        blockerReason: input.blockerReason,
+        blockerRecommendation: input.blockerRecommendation,
+      });
+      return respond({ ...result });
+    }),
+  );
+
   server.registerTool(
     'maestro_tasks_sync',
     {
@@ -54,7 +114,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
   server.registerTool(
     'maestro_task_update',
     {
-      description: 'Update a task status or add notes. Use for manual status changes outside the worktree workflow.',
+      description: 'Update a task status or add notes. Use for manual status changes outside the direct worker flow.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
         task: z.string().describe('Task folder ID'),
