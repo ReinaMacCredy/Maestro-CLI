@@ -13,6 +13,7 @@ import { registerTaskTools } from './server/task.ts';
 import { registerContextTools } from './server/context.ts';
 import { registerSkillTools } from './server/skill.ts';
 import { registerInitTools } from './server/init.ts';
+import { registerSymphonyTools } from './server/symphony.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
@@ -29,6 +30,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerContextTools(server, thunk);
   registerSkillTools(server, thunk, directory);
   registerInitTools(server, thunk, directory);
+  registerSymphonyTools(server, thunk, directory);
 
   return server;
 }

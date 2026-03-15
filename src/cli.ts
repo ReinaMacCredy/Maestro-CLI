@@ -2,9 +2,11 @@ import { defineCommand, runMain } from 'citty';
 import { setOutputMode } from './lib/output.ts';
 import { initServices } from './services.ts';
 import { findProjectRoot } from './utils/detection.ts';
-import { subCommands } from './commands/_internal/registry.generated.ts';
+import { subCommands as generatedSubCommands } from './commands/_internal/registry.generated.ts';
+import symphonyCmd from './commands/symphony/index.ts';
 import { VERSION } from './version.ts';
 
+const subCommands = { ...generatedSubCommands, symphony: symphonyCmd };
 const subCommandNames = Object.keys(subCommands);
 const metaCommands = new Set(['init', 'self-update', 'update']);
 
