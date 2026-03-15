@@ -8,8 +8,6 @@ import { join } from 'path';
 const COMMANDS_DIR = join(import.meta.dir, '..');
 const OUT_FILE = join(import.meta.dir, 'registry.generated.ts');
 
-const EXCLUDED = new Set(['generate.ts', 'registry.generated.ts']);
-
 function toCamelCase(slug: string): string {
   return (
     'cmd' +
@@ -37,8 +35,7 @@ async function main() {
         (e) =>
           e.isFile() &&
           e.name.endsWith('.ts') &&
-          !e.name.startsWith('_') &&
-          !EXCLUDED.has(e.name),
+          !e.name.startsWith('_'),
       )
       .map(async (e) => ({
         slug: await extractSlug(join(COMMANDS_DIR, e.name), e.name.replace(/\.ts$/, '')),
