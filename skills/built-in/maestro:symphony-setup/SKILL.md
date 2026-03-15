@@ -4,6 +4,9 @@ description: "Set up Symphony orchestration for any repository. Installs Codex s
 argument-hint: "<linear-project-slug> [repo-clone-url]"
 ---
 
+> [!] DEPRECATED: Use `maestro symphony install --linear-project <slug>` instead.
+> This skill will be removed in a future release.
+
 # Symphony Setup -- Automated Project Onboarding
 
 Set up OpenAI Symphony orchestration for the current repository so that Codex agents can autonomously pick up Linear issues, implement them, create PRs, and land them.

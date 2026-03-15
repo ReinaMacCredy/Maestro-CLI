@@ -31,6 +31,11 @@ interface ExternalSkill {
   argumentHint?: string;
 }
 
+/** Skills superseded by native commands. Loaded content gets a deprecation warning prepended. */
+const DEPRECATED_SKILLS = new Map<string, string>([
+  ['maestro:symphony-setup', 'Use `maestro symphony install --linear-project <slug>` instead.'],
+]);
+
 /** Resolve old skill name to canonical name. Returns { resolved, wasAliased }. */
 function resolveAlias(name: string): { resolved: string; wasAliased: boolean } {
   const alias = SKILL_ALIASES[name];
@@ -117,7 +122,12 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
   // Fall back to builtin -- content is embedded at build time, no file I/O needed.
   const builtin = BUILTIN_SKILLS[resolvedName as BuiltinSkillName];
   if (builtin) {
-    return { content: builtin.content };
+    let content = builtin.content;
+    const deprecation = DEPRECATED_SKILLS.get(resolvedName);
+    if (deprecation) {
+      content = `> [!] DEPRECATED: ${deprecation}\n> This skill will be removed in a future release.\n\n${content}`;
+    }
+    return { content };
   }
 
   // Collect all available names for the error message
