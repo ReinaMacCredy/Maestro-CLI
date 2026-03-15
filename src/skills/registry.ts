@@ -6,7 +6,7 @@ import { parseFrontmatter } from '../utils/frontmatter.ts';
 
 export { BUILTIN_SKILLS, BUILTIN_SKILL_NAMES, type BuiltinSkillName };
 
-export type SkillSource = 'builtin' | 'internal' | 'maestro' | 'claude';
+export type SkillSource = 'builtin' | 'external' | 'maestro' | 'claude';
 
 export interface SkillEntry {
   name: string;
@@ -15,14 +15,14 @@ export interface SkillEntry {
   argumentHint?: string;
 }
 
-/** Directories to scan for internal skills, in priority order. */
-const INTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
-  { dir: 'skills/internal', source: 'internal' },
+/** Directories to scan for external skills, in priority order. */
+const EXTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
+  { dir: 'skills/external', source: 'external' },
   { dir: '.maestro/skills', source: 'maestro' },
   { dir: '.claude/skills', source: 'claude' },
 ];
 
-interface InternalSkill {
+interface ExternalSkill {
   slug: string;
   description: string;
   content: string;
@@ -41,19 +41,19 @@ function resolveAlias(name: string): { resolved: string; wasAliased: boolean } {
 }
 
 /** Per-projectRoot cache -- skills don't change mid-session. */
-const _internalCache = new Map<string, InternalSkill[]>();
+const _externalCache = new Map<string, ExternalSkill[]>();
 
 /**
- * Discover internal skills from repository-local and project-local directories.
+ * Discover external skills from repository-local and project-local directories.
  * Expects the same layout as builtin: <dir>/<slug>/SKILL.md with name+description frontmatter.
  * Results are cached per projectRoot for the process lifetime.
  */
-async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
-  const cached = _internalCache.get(projectRoot);
+async function discoverExternal(projectRoot: string): Promise<ExternalSkill[]> {
+  const cached = _externalCache.get(projectRoot);
   if (cached) return cached;
-  const results: InternalSkill[] = [];
+  const results: ExternalSkill[] = [];
 
-  for (const { dir, source } of INTERNAL_SOURCES) {
+  for (const { dir, source } of EXTERNAL_SOURCES) {
     const base = join(projectRoot, dir);
     let entries;
     try {
@@ -88,16 +88,16 @@ async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
     }
   }
 
-  _internalCache.set(projectRoot, results);
+  _externalCache.set(projectRoot, results);
   return results;
 }
 
 export async function loadSkill(name: string, basePath?: string): Promise<{ content: string } | { error: string }> {
   const projectRoot = basePath || process.cwd();
-  const internals = await discoverInternal(projectRoot);
+  const externals = await discoverExternal(projectRoot);
 
-  // Check internal sources first (original name) -- internal overrides take priority over aliases.
-  const directMatch = internals.find((s) => s.slug === name);
+  // Check external sources first (original name) -- external overrides take priority over aliases.
+  const directMatch = externals.find((s) => s.slug === name);
   if (directMatch) {
     return { content: directMatch.content };
   }
@@ -107,8 +107,8 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
   if (wasAliased) {
     console.error(`[maestro] Skill '${name}' has been renamed to '${resolvedName}'. Please update your references.`);
 
-    // Check internals again with resolved name (in case internal uses new name).
-    const aliasMatch = internals.find((s) => s.slug === resolvedName);
+    // Check externals again with resolved name (in case external uses new name).
+    const aliasMatch = externals.find((s) => s.slug === resolvedName);
     if (aliasMatch) {
       return { content: aliasMatch.content };
     }
@@ -123,14 +123,14 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
   // Collect all available names for the error message
   const allNames = [
     ...BUILTIN_SKILL_NAMES,
-    ...internals.map((s) => s.slug),
+    ...externals.map((s) => s.slug),
   ];
   return { error: `Unknown skill: ${resolvedName}. Available: ${allNames.join(', ')}` };
 }
 
 /**
  * Load a specific reference file from a skill's reference/ directory.
- * Works for both built-in (embedded) and internal (filesystem) skills.
+ * Works for both built-in (embedded) and external (filesystem) skills.
  */
 export async function loadSkillReference(
   name: string,
@@ -138,12 +138,12 @@ export async function loadSkillReference(
   basePath?: string,
 ): Promise<{ content: string } | { error: string }> {
   const projectRoot = basePath || process.cwd();
-  const internals = await discoverInternal(projectRoot);
+  const externals = await discoverExternal(projectRoot);
 
-  // Check internal sources first with original name -- internal overrides take priority over aliases.
+  // Check external sources first with original name -- external overrides take priority over aliases.
   const { resolved: resolvedName, wasAliased } = resolveAlias(name);
-  const match = internals.find((s) => s.slug === name) ??
-    (wasAliased ? internals.find((s) => s.slug === resolvedName) : undefined);
+  const match = externals.find((s) => s.slug === name) ??
+    (wasAliased ? externals.find((s) => s.slug === resolvedName) : undefined);
   if (match) {
     const refFilePath = join(match.dirPath, 'reference', refPath);
     try {
@@ -175,9 +175,9 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
   const seen = new Set<string>();
   const results: SkillEntry[] = [];
 
-  // Internal skills first so repo-local overrides replace builtin entries in the listing.
-  const internals = await discoverInternal(projectRoot);
-  for (const s of internals) {
+  // External skills first so repo-local overrides replace builtin entries in the listing.
+  const externals = await discoverExternal(projectRoot);
+  for (const s of externals) {
     if (seen.has(s.slug)) {
       continue;
     }
@@ -185,7 +185,7 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
     results.push({ name: s.slug, description: s.description, source: s.source, argumentHint: s.argumentHint });
   }
 
-  // Builtins last; skip any names already provided by internal sources.
+  // Builtins last; skip any names already provided by external sources.
   for (const name of BUILTIN_SKILL_NAMES) {
     if (seen.has(name)) {
       continue;

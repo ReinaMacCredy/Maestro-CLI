@@ -16,15 +16,15 @@ describe('skills registry', () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test('loads repo-internal skills from skills/internal', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'demo-skill');
+  test('loads repo-external skills from skills/external', async () => {
+    const skillDir = join(tmpDir, 'skills', 'external', 'demo-skill');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
       [
         '---',
         'name: demo-skill',
-        'description: Demo internal skill',
+        'description: Demo external skill',
         '---',
         '',
         '# Demo',
@@ -34,44 +34,44 @@ describe('skills registry', () => {
     const result = await loadSkill('demo-skill', tmpDir);
 
     expect(result).toEqual({
-      content: ['---', 'name: demo-skill', 'description: Demo internal skill', '---', '', '# Demo'].join('\n'),
+      content: ['---', 'name: demo-skill', 'description: Demo external skill', '---', '', '# Demo'].join('\n'),
     });
   });
 
-  test('repo-internal skills override builtins with the same name', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'prompt-leverage');
+  test('repo-external skills override builtins with the same name', async () => {
+    const skillDir = join(tmpDir, 'skills', 'external', 'prompt-leverage');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
       [
         '---',
         'name: prompt-leverage',
-        'description: Internal override',
+        'description: External override',
         '---',
         '',
-        '# Internal prompt leverage',
+        '# External prompt leverage',
       ].join('\n'),
     );
 
     const result = await loadSkill('prompt-leverage', tmpDir);
 
     expect(result).toEqual({
-      content: ['---', 'name: prompt-leverage', 'description: Internal override', '---', '', '# Internal prompt leverage'].join('\n'),
+      content: ['---', 'name: prompt-leverage', 'description: External override', '---', '', '# External prompt leverage'].join('\n'),
     });
   });
 
-  test('listSkills prefers the internal source when names collide', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'prompt-leverage');
+  test('listSkills prefers the external source when names collide', async () => {
+    const skillDir = join(tmpDir, 'skills', 'external', 'prompt-leverage');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
       [
         '---',
         'name: prompt-leverage',
-        'description: Internal override',
+        'description: External override',
         '---',
         '',
-        '# Internal prompt leverage',
+        '# External prompt leverage',
       ].join('\n'),
     );
 
@@ -80,8 +80,8 @@ describe('skills registry', () => {
 
     expect(promptLeverage).toEqual({
       name: 'prompt-leverage',
-      description: 'Internal override',
-      source: 'internal',
+      description: 'External override',
+      source: 'external',
       argumentHint: undefined,
     });
   });
@@ -102,8 +102,8 @@ describe('skills registry', () => {
     expect(SKILL_ALIASES['verification-before-completion']).toBe('maestro:verification');
   });
 
-  test('loadSkillReference loads from internal skill filesystem', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'my-skill');
+  test('loadSkillReference loads from external skill filesystem', async () => {
+    const skillDir = join(tmpDir, 'skills', 'external', 'my-skill');
     const refDir = join(skillDir, 'reference');
     mkdirSync(refDir, { recursive: true });
     writeFileSync(
@@ -117,7 +117,7 @@ describe('skills registry', () => {
   });
 
   test('loadSkillReference returns error for missing reference', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'my-skill');
+    const skillDir = join(tmpDir, 'skills', 'external', 'my-skill');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
@@ -159,8 +159,8 @@ describe('skills registry', () => {
     expect((result as { error: string }).error).toContain('no reference files');
   });
 
-  test('internal skill with colon name overrides built-in', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'maestro:brainstorming');
+  test('external skill with colon name overrides built-in', async () => {
+    const skillDir = join(tmpDir, 'skills', 'external', 'maestro:brainstorming');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
@@ -172,7 +172,7 @@ describe('skills registry', () => {
   });
 
   test('listSkills includes argumentHint from frontmatter', async () => {
-    const skillDir = join(tmpDir, 'skills', 'internal', 'hinted-skill');
+    const skillDir = join(tmpDir, 'skills', 'external', 'hinted-skill');
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
       join(skillDir, 'SKILL.md'),
