@@ -19,6 +19,7 @@ const APPROVED_FILE = 'APPROVED';
 const SUBTASKS_DIR = 'subtasks';
 const SPEC_FILE = 'spec.md';
 const SESSION_FILE = 'session.json';
+const WORKER_PROMPT_FILE = 'worker-prompt.md';
 
 export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
@@ -98,4 +99,8 @@ export function getSubtaskSpecPath(projectRoot: string, featureName: string, tas
 
 export function getSubtaskReportPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
   return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), REPORT_FILE);
+}
+
+export function getWorkerPromptPath(projectRoot: string, featureName: string, taskFolder: string): string {
+  return path.join(getTaskPath(projectRoot, featureName, taskFolder), WORKER_PROMPT_FILE);
 }

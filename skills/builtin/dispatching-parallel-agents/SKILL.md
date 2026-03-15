@@ -76,12 +76,11 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-```typescript
-// Using Hive tools for parallel execution
-hive_worktree_start({ task: "01-fix-abort-tests" })
-hive_worktree_start({ task: "02-fix-batch-tests" })
-hive_worktree_start({ task: "03-fix-race-condition-tests" })
-// All three run concurrently in isolated worktrees
+```bash
+# Using maestro CLI for task execution
+maestro task-start --feature my-feature --task 01-fix-abort-tests
+maestro task-start --feature my-feature --task 02-fix-batch-tests
+maestro task-start --feature my-feature --task 03-fix-race-condition-tests
 ```
 
 Parallelize by issuing multiple task() calls in the same assistant message.
@@ -97,7 +96,7 @@ When agents return:
 - Read each summary
 - Verify fixes don't conflict
 - Run full test suite
-- Integrate all changes with `hive_merge`
+- Integrate all changes
 
 ## Agent Prompt Structure
 

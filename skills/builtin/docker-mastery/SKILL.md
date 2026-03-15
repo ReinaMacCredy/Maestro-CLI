@@ -73,12 +73,12 @@ Mount host directories into containers for persistence and code sharing:
 # Mount current directory to /app in container
 docker run -v $(pwd):/app myapp:latest
 
-# Hive worktrees are mounted automatically
+# Project directory is mounted automatically
 # Your code edits (via Read/Write/Edit tools) affect the host
 # Container sees the same files at runtime
 ```
 
-**How Hive uses this:** Worktree is mounted into container, so file tools work on host, bash commands run in container.
+**How maestro uses this:** Project directory is mounted into container, so file tools work on host, bash commands run in container.
 
 ### Multi-Stage Builds
 
@@ -247,7 +247,7 @@ dist
 
 When sandbox mode is active (`sandbox: 'docker'` in config):
 1. Hive hook intercepts bash commands before execution
-2. Wraps with `docker run --rm -v <worktree>:/workspace -w /workspace <image> sh -c "<command>"`
+2. Wraps with `docker run --rm -v <project>:/workspace -w /workspace <image> sh -c "<command>"`
 3. Command runs in container, but file edits (Read/Write/Edit) still affect host
 
 **Workers are unaware** — they issue normal bash commands, Hive handles containerization.
@@ -257,7 +257,7 @@ When sandbox mode is active (`sandbox: 'docker'` in config):
 Some operations MUST run on host:
 - **Git operations** (commit, push, branch) — repo state is on host
 - **Host-level tools** (Docker itself, system config)
-- **Cross-worktree operations** (accessing main repo from worktree)
+- **Cross-project operations** (accessing external repos or tools)
 
 **Pattern:** Use `HOST:` prefix to escape sandbox:
 ```bash

@@ -17,6 +17,7 @@ import {
   isManagedTaskSessionStale,
   readTaskSession,
   updateTaskSessionHeartbeat,
+  writeTaskSession,
 } from '../utils/task-session.ts';
 import { finishTask } from './finish-task.ts';
 import { getHeadCommit } from '../utils/git.ts';
@@ -27,7 +28,7 @@ import type { ContextPort } from '../ports/context.ts';
 import type { ContinueFromStatus } from '../utils/worker/prompt.ts';
 import type { WorkerCliName, TaskStatusType } from '../types.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
-import type { CliWorkerRunner } from '../adapters/worker-runner.ts';
+import type { WorkerRunnerPort } from '../ports/worker-runner.ts';
 import { isProcessAlive } from '../utils/process.ts';
 import { getTaskSessionPath, normalizePath } from '../utils/paths.ts';
 
@@ -37,7 +38,7 @@ export interface StartTaskServices {
   planAdapter: PlanPort;
   contextAdapter: ContextPort;
   configAdapter: FsConfigAdapter;
-  workerRunner: CliWorkerRunner;
+  workerRunner: WorkerRunnerPort;
   directory: string;
 }
 
@@ -275,7 +276,7 @@ export async function startTask(
   const sessionPath = normalizePath(
     path.relative(directory, getTaskSessionPath(directory, feature, task)),
   );
-  finalizeTaskSession(directory, feature, task, session, {});
+  writeTaskSession(directory, feature, task, session);
 
   const heartbeatInterval = setInterval(() => {
     session = updateTaskSessionHeartbeat(
@@ -344,10 +345,6 @@ export async function startTask(
         workerSignal: childExit.signal ?? undefined,
       },
     );
-    finalTask = await taskPort.get(feature, task);
-    if (!finalTask) {
-      throw new MaestroError(`Task '${task}' disappeared after auto-failure`);
-    }
     return {
       task,
       launcher,
@@ -357,8 +354,8 @@ export async function startTask(
       headCommit: autoFinish.audit.headCommit,
       childExitCode: childExit.code,
       childSignal: childExit.signal,
-      finalStatus: finalTask.status,
-      summary: finalTask.summary,
+      finalStatus: autoFinish.status,
+      summary: autoFinish.summary,
       nextAction: autoFinish.nextAction,
     };
   }

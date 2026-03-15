@@ -9,7 +9,7 @@ Plan-first delivery with approval gates and TDD by default.
 1. Discovery: define or refine the feature, gather only the context needed to act, and persist durable findings.
 2. Planning: write the execution plan before implementation and make task boundaries explicit.
 3. Approval: review the plan, resolve comments, and do not start execution work until the plan is approved.
-4. Execution: sync tasks, implement in isolated worktrees when appropriate, and keep reports current.
+4. Execution: sync tasks, implement via direct worker CLI launches, and keep reports current.
 5. Completion: merge only after verification passes and the resulting state is documented.
 
 ### TDD Lifecycle
@@ -42,7 +42,7 @@ Plan-first delivery with approval gates and TDD by default.
 
 ### Integration and E2E Tests
 - CLI command behavior in temp repositories
-- Git and worktree flows
+- Git flows and CLI command integration
 - Filesystem-backed adapters and persisted state
 - Plan, task, and merge flows that cross module boundaries
 
@@ -71,6 +71,6 @@ Plan-first delivery with approval gates and TDD by default.
 ## Repository Workflow Notes
 - Start with `maestro status` when working inside an existing tracked feature
 - Keep one active implementation thread at a time unless tasks are explicitly parallelizable
-- Use worktree isolation for task execution when it reduces merge risk
+- Use `maestro task-start` for managed task execution with session tracking
 - Do not merge on a broken baseline; fix failing build or tests before stacking more work
 - Update README, AGENTS, CLAUDE, or skill docs when the change materially affects contributor or agent workflows

@@ -200,7 +200,6 @@ Use the normal coding tools plus:
 
 Do not use:
 - recursive delegation of any kind
-- any \`maestro worktree-*\` command
 
 ---
 

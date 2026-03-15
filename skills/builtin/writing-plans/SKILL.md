@@ -13,7 +13,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Context:** Planning is read-only. Use `hive_feature_create` + `hive_plan_write` and avoid worktrees during planning.
+**Context:** Planning is read-only. Use `maestro feature-create` + `maestro plan-write`.
 
 **Save plans to:** `hive_plan_write` (writes to `.maestro/features/<feature>/plan.md`)
 
@@ -144,5 +144,5 @@ Which approach?
 - Fresh subagent per task + code review
 
 **If Parallel Session chosen:**
-- Guide them to open new session in worktree
-- **REQUIRED SUB-SKILL:** New session uses hive_skill:executing-plans
+- Guide them to open new session
+- **REQUIRED SUB-SKILL:** New session uses maestro skill executing-plans

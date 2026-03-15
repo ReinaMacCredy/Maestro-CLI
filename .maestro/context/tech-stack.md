@@ -19,7 +19,7 @@
 ## Tools and Infrastructure
 - Package manager: Bun
 - Runtime: Bun
-- Version control: Git with worktree-based task isolation
+- Version control: Git with direct worker CLI launches
 - Task backend: `br` / beads (optional integration)
 - CI/CD: GitHub Actions (`.github/workflows/ci.yml`)
 - Build entrypoint: `bun run build`

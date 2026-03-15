@@ -1,11 +1,11 @@
 {
   "name": "maestro",
   "version": "0.2.0",
-  "description": "Agent-optimized development orchestrator with parallel task execution, worktree isolation, and workflow enforcement",
+  "description": "Agent-optimized development orchestrator with parallel task execution and workflow enforcement",
   "author": { "name": "maestro" },
   "homepage": "https://github.com/user/maestro",
   "license": "MIT",
-  "keywords": ["mcp", "orchestration", "worktree", "tdd", "agent"],
+  "keywords": ["mcp", "orchestration", "tdd", "agent"],
   "mcpServers": {
     "maestro": {
       "command": "node",

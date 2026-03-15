@@ -15,53 +15,46 @@ function shellQuote(s: string): string {
 }
 
 export class DockerSandboxAdapter {
-  static detectImage(worktreePath: string): string | null {
-    if (existsSync(join(worktreePath, 'Dockerfile'))) {
+  static detectImage(projectPath: string): string | null {
+    if (existsSync(join(projectPath, 'Dockerfile'))) {
       return null;
     }
-    if (existsSync(join(worktreePath, 'package.json'))) {
+    if (existsSync(join(projectPath, 'package.json'))) {
       return 'node:22-slim';
     }
-    if (existsSync(join(worktreePath, 'requirements.txt')) ||
-        existsSync(join(worktreePath, 'pyproject.toml'))) {
+    if (existsSync(join(projectPath, 'requirements.txt')) ||
+        existsSync(join(projectPath, 'pyproject.toml'))) {
       return 'python:3.12-slim';
     }
-    if (existsSync(join(worktreePath, 'go.mod'))) {
+    if (existsSync(join(projectPath, 'go.mod'))) {
       return 'golang:1.22-slim';
     }
-    if (existsSync(join(worktreePath, 'Cargo.toml'))) {
+    if (existsSync(join(projectPath, 'Cargo.toml'))) {
       return 'rust:1.77-slim';
     }
     return 'ubuntu:24.04';
   }
 
-  static buildRunCommand(worktreePath: string, command: string, image: string): string {
-    return `docker run --rm -v ${shellQuote(worktreePath)}:/app -w /app ${shellQuote(image)} sh -c ${shellQuote(command)}`;
+  static buildRunCommand(projectPath: string, command: string, image: string): string {
+    return `docker run --rm -v ${shellQuote(projectPath)}:/app -w /app ${shellQuote(image)} sh -c ${shellQuote(command)}`;
   }
 
-  static containerName(worktreePath: string): string {
-    const parts = worktreePath.split(sep);
-    const worktreeIdx = parts.indexOf('.worktrees');
-
-    if (worktreeIdx === -1 || worktreeIdx + 2 >= parts.length) {
-      return `hive-sandbox-${Date.now()}`;
-    }
-
-    const feature = parts[worktreeIdx + 1];
-    const task = parts[worktreeIdx + 2];
-    const name = `hive-${feature}-${task}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  static containerName(projectPath: string): string {
+    const parts = projectPath.split(sep);
+    const projectDir = parts[parts.length - 1] || 'project';
+    const name = `maestro-sandbox-${projectDir}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
     return name.slice(0, 63);
   }
 
-  static ensureContainer(worktreePath: string, image: string): string {
-    const name = this.containerName(worktreePath);
+  static ensureContainer(projectPath: string, image: string): string {
+    const name = this.containerName(projectPath);
 
     try {
       execSync(`docker inspect --format='{{.State.Running}}' ${shellQuote(name)}`, { stdio: 'pipe' });
       return name;
     } catch {
       execSync(
-        `docker run -d --name ${shellQuote(name)} -v ${shellQuote(worktreePath)}:/app -w /app ${shellQuote(image)} tail -f /dev/null`,
+        `docker run -d --name ${shellQuote(name)} -v ${shellQuote(projectPath)}:/app -w /app ${shellQuote(image)} tail -f /dev/null`,
         { stdio: 'pipe' }
       );
       return name;
@@ -72,8 +65,8 @@ export class DockerSandboxAdapter {
     return `docker exec ${shellQuote(containerName)} sh -c ${shellQuote(command)}`;
   }
 
-  static stopContainer(worktreePath: string): void {
-    const name = this.containerName(worktreePath);
+  static stopContainer(projectPath: string): void {
+    const name = this.containerName(projectPath);
     try {
       execSync(`docker rm -f ${shellQuote(name)}`, { stdio: 'ignore' });
     } catch {
@@ -90,7 +83,7 @@ export class DockerSandboxAdapter {
     }
   }
 
-  static wrapCommand(worktreePath: string, command: string, config: SandboxConfig): string {
+  static wrapCommand(projectPath: string, command: string, config: SandboxConfig): string {
     if (command.startsWith('HOST: ')) {
       return command.substring(6);
     }
@@ -104,17 +97,17 @@ export class DockerSandboxAdapter {
     if (config.image) {
       image = config.image;
     } else {
-      image = this.detectImage(worktreePath);
+      image = this.detectImage(projectPath);
       if (image === null) {
         return command;
       }
     }
 
     if (config.persistent) {
-      const containerName = this.ensureContainer(worktreePath, image);
+      const containerName = this.ensureContainer(projectPath, image);
       return this.buildExecCommand(containerName, command);
     } else {
-      return this.buildRunCommand(worktreePath, command, image);
+      return this.buildRunCommand(projectPath, command, image);
     }
   }
 }

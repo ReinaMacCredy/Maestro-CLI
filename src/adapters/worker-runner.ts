@@ -1,23 +1,9 @@
-import { spawn, type ChildProcess, type StdioOptions } from 'node:child_process';
-import type { WorkerCliName } from '../types.ts';
+import { spawn, type ChildProcess } from 'node:child_process';
+import type { WorkerRunnerPort, WorkerLaunchRequest, WorkerLaunchSpec } from '../ports/worker-runner.ts';
 
-export interface WorkerLaunchRequest {
-  cli: WorkerCliName;
-  cwd: string;
-  instruction: string;
-  model?: string;
-  extraArgs?: string[];
-  stdio?: StdioOptions;
-  env?: NodeJS.ProcessEnv;
-}
+export type { WorkerLaunchRequest, WorkerLaunchSpec } from '../ports/worker-runner.ts';
 
-export interface WorkerLaunchSpec {
-  launcher: WorkerCliName;
-  command: string;
-  args: string[];
-}
-
-export class CliWorkerRunner {
+export class CliWorkerRunner implements WorkerRunnerPort {
   buildLaunchSpec(request: WorkerLaunchRequest): WorkerLaunchSpec {
     const { cli, cwd, instruction, model, extraArgs = [] } = request;
 

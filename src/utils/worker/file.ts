@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path';
-import { normalizePath } from '../paths.ts';
+import { getWorkerPromptPath, getTaskPath, normalizePath } from '../paths.ts';
 import { ensureDir, readText as readTextFile, writeText } from '../fs-io.ts';
 
 export interface PromptFileResult {
@@ -66,10 +66,10 @@ export function writeWorkerPromptFile(
   feature: string,
   task: string,
   prompt: string,
-  maestroDir: string
+  projectRoot: string,
 ): string {
-  const promptDir = path.join(maestroDir, 'features', feature, 'tasks', task);
-  const promptPath = path.join(promptDir, 'worker-prompt.md');
+  const promptDir = getTaskPath(projectRoot, feature, task);
+  const promptPath = getWorkerPromptPath(projectRoot, feature, task);
 
   ensureDir(promptDir);
   writeText(promptPath, prompt);

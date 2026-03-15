@@ -124,29 +124,19 @@ describe('DockerSandboxAdapter', () => {
   // -- containerName is a pure-ish function (only Date.now fallback is non-deterministic)
 
   describe('containerName', () => {
-    test('extracts feature and task from .worktrees path', () => {
-      const p = path.join('/project', '.worktrees', 'my-feature', 'task-1');
-      const name = DockerSandboxAdapter.containerName(p);
-      expect(name).toBe('hive-my-feature-task-1');
-    });
-
-    test('falls back to timestamp-based name without .worktrees', () => {
-      const name = DockerSandboxAdapter.containerName('/some/random/path');
-      expect(name).toMatch(/^hive-sandbox-\d+$/);
+    test('derives name from final directory component', () => {
+      const name = DockerSandboxAdapter.containerName('/projects/my-app');
+      expect(name).toBe('maestro-sandbox-my-app');
     });
 
     test('replaces invalid docker name characters with dashes', () => {
-      const p = path.join('/project', '.worktrees', 'feat_Special!@#', 'task.2');
-      const name = DockerSandboxAdapter.containerName(p);
-      // Only [a-z0-9-] survive (case-insensitive replace, then toLowerCase)
+      const name = DockerSandboxAdapter.containerName('/projects/feat_Special!@#');
       expect(name).not.toMatch(/[^a-z0-9-]/);
     });
 
     test('truncates to 63 characters', () => {
-      const longFeature = 'a'.repeat(50);
-      const longTask = 'b'.repeat(50);
-      const p = path.join('/project', '.worktrees', longFeature, longTask);
-      const name = DockerSandboxAdapter.containerName(p);
+      const longDir = 'a'.repeat(80);
+      const name = DockerSandboxAdapter.containerName(`/projects/${longDir}`);
       expect(name.length).toBeLessThanOrEqual(63);
     });
   });

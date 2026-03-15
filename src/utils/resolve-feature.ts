@@ -1,6 +1,5 @@
 /**
  * Feature resolution: explicit --feature > detected task context > single-feature fallback.
- * Legacy worktree-path detection remains for backward compatibility with older task directories.
  */
 
 import { detectContext, listFeatures, findProjectRoot } from './detection.ts';

@@ -4,6 +4,8 @@
  * Adapted: tool references changed from maestro_ MCP calls to maestro CLI commands.
  */
 
+import type { TaskStatusType } from '../types.ts';
+
 export function countTaskStatuses(tasks: Array<{ status: string }>): {
   pending: number;
   inProgress: number;
@@ -73,7 +75,7 @@ export function getNextAction(
   return 'All tasks complete. Review the feature and mark it complete when ready.';
 }
 
-export function deriveTaskNextAction(status: string): string | undefined {
+export function deriveTaskNextAction(status: TaskStatusType): string | undefined {
   switch (status) {
     case 'blocked':
       return 'Review the blocker and resume with task-start --continue-from blocked --decision "<text>".';

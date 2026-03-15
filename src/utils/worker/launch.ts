@@ -132,8 +132,7 @@ export async function prepareWorkerLaunch(
     droppedTasksHint,
   });
 
-  const maestroDir = path.join(services.directory, '.maestro');
-  const workerPromptPath = writeWorkerPromptFile(feature, task, workerPrompt, maestroDir);
+  const workerPromptPath = writeWorkerPromptFile(feature, task, workerPrompt, services.directory);
   const relativePromptPath = normalizePath(path.relative(services.directory, workerPromptPath));
 
   return {

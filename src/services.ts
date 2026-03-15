@@ -22,6 +22,7 @@ import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { ContextPort } from './ports/context.ts';
 import type { SessionPort } from './ports/sessions.ts';
+import type { WorkerRunnerPort } from './ports/worker-runner.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
@@ -32,7 +33,7 @@ export interface MaestroServices {
   configAdapter: FsConfigAdapter;
   askAdapter: FsAskAdapter;
   agentsMdAdapter: AgentsMdAdapter;
-  workerRunner: CliWorkerRunner;
+  workerRunner: WorkerRunnerPort;
   directory: string;
 }
 

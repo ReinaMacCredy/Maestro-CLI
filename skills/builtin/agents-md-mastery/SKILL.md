@@ -48,7 +48,7 @@ If an entry doesn't:
 
 ✅ **Non-obvious patterns:**
 - "Use `.js` extension for local imports (ESM requirement)"
-- "Worktrees don't share `node_modules` — run `bun install` in each"
+- "Import from `../utils/paths.ts` not `./paths` — strict ESM imports"
 - "SandboxConfig is in `dockerSandboxService.ts`, NOT `types.ts`"
 
 ✅ **Gotchas that break builds:**
@@ -69,7 +69,7 @@ If an entry doesn't:
 
 ❌ **Describes what code does:**
 - "FeatureService manages features" (agent can read code)
-- "The system uses git worktrees" (observable from commands)
+- "The system uses direct task execution" (observable from commands)
 
 ### Rule of Thumb
 
@@ -156,7 +156,7 @@ Remove entries when they become:
 
 **Describing code:**
 - "TaskService manages tasks" → Agent can read `TaskService` class
-- "Worktrees are in `.maestro/.worktrees/`" → Observable from filesystem
+- "Task prompts are in `.maestro/features/<feat>/tasks/<task>/`" → Observable from filesystem
 
 **Proven unnecessary:**
 - Entry added 6 months ago, but agents haven't hit that issue since

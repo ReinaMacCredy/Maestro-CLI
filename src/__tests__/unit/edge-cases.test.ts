@@ -71,13 +71,13 @@ describe("atomic writes", () => {
 // ============================================================================
 
 describe("DockerSandboxAdapter shell escaping", () => {
-  test("buildRunCommand quotes worktree path with spaces", () => {
+  test("buildRunCommand quotes project path with spaces", () => {
     const cmd = DockerSandboxAdapter.buildRunCommand(
-      "/path/with spaces/worktree",
+      "/path/with spaces/project",
       "npm test",
       "node:22-slim",
     );
-    expect(cmd).toContain("'/path/with spaces/worktree'");
+    expect(cmd).toContain("'/path/with spaces/project'");
     expect(cmd).toContain("'node:22-slim'");
     expect(cmd).toContain("'npm test'");
   });
@@ -93,12 +93,12 @@ describe("DockerSandboxAdapter shell escaping", () => {
 
   test("buildRunCommand neutralizes shell metacharacters in path", () => {
     const cmd = DockerSandboxAdapter.buildRunCommand(
-      "/path/$(whoami)/worktree",
+      "/path/$(whoami)/project",
       "ls",
       "node:22-slim",
     );
     // Path is single-quoted, so $() is not expanded
-    expect(cmd).toContain("'/path/$(whoami)/worktree'");
+    expect(cmd).toContain("'/path/$(whoami)/project'");
   });
 
   test("buildExecCommand quotes container name and command", () => {
@@ -108,9 +108,8 @@ describe("DockerSandboxAdapter shell escaping", () => {
   });
 
   test("containerName sanitizes to safe characters", () => {
-    // Simulate a worktree path
     const name = DockerSandboxAdapter.containerName(
-      "/project/.maestro/.worktrees/my feature!/task-1",
+      "/project/my feature!",
     );
     expect(name).toMatch(/^[a-z0-9-]+$/);
     expect(name).not.toContain(" ");
@@ -132,8 +131,7 @@ describe("worker prompt sanitization", () => {
       feature: 'feat"injection',
       task: "task-1",
       taskOrder: 1,
-      worktreePath: "/tmp/wt",
-      branch: "maestro/feat/task-1",
+      workspacePath: "/tmp/wt",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -148,8 +146,7 @@ describe("worker prompt sanitization", () => {
       feature: "feat",
       task: "task-$(rm -rf /)",
       taskOrder: 1,
-      worktreePath: "/tmp/wt",
-      branch: "maestro/feat/task-1",
+      workspacePath: "/tmp/wt",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -163,8 +160,7 @@ describe("worker prompt sanitization", () => {
       feature: "feat`whoami`",
       task: "task-1",
       taskOrder: 1,
-      worktreePath: "/tmp/wt",
-      branch: "maestro/feat/task-1",
+      workspacePath: "/tmp/wt",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
@@ -177,8 +173,7 @@ describe("worker prompt sanitization", () => {
       feature: "my-feature",
       task: "task-1",
       taskOrder: 1,
-      worktreePath: "/tmp/wt",
-      branch: "maestro/my-feature/task-1",
+      workspacePath: "/tmp/wt",
       plan: "test plan",
       contextFiles: [],
       spec: "do stuff",
