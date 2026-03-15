@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { listSkills, loadSkill, loadSkillReference, SKILL_ALIASES } from '../../skills/registry.ts';
+import { listSkills, loadSkill, loadSkillReference, SKILL_ALIASES, BUILTIN_SKILL_NAMES } from '../../skills/registry.ts';
 
 describe('skills registry', () => {
   let tmpDir: string;
@@ -125,6 +125,49 @@ describe('skills registry', () => {
 
     const result = await loadSkillReference('my-skill', 'nonexistent.md', tmpDir);
     expect(result).toHaveProperty('error');
+  });
+
+  test('all 18 built-in skills load without error', async () => {
+    expect(BUILTIN_SKILL_NAMES).toHaveLength(18);
+    for (const name of BUILTIN_SKILL_NAMES) {
+      const result = await loadSkill(name, tmpDir);
+      expect(result).toHaveProperty('content');
+    }
+  });
+
+  test('all built-in skill names use colon prefix', () => {
+    for (const name of BUILTIN_SKILL_NAMES) {
+      expect(name).toMatch(/^maestro:/);
+    }
+  });
+
+  test('loadSkill resolves alias to new name', async () => {
+    const result = await loadSkill('writing-plans', tmpDir);
+    expect(result).toHaveProperty('content');
+  });
+
+  test('loadSkillReference loads embedded reference from built-in skill', async () => {
+    const result = await loadSkillReference('maestro:design', 'steps/step-01-init.md', tmpDir);
+    expect(result).toHaveProperty('content');
+    expect((result as { content: string }).content).toContain('Step 1');
+  });
+
+  test('loadSkillReference returns error for skill with no references', async () => {
+    const result = await loadSkillReference('maestro:brainstorming', 'nonexistent.md', tmpDir);
+    expect(result).toHaveProperty('error');
+    expect((result as { error: string }).error).toContain('no reference files');
+  });
+
+  test('internal skill with colon name overrides built-in', async () => {
+    const skillDir = join(tmpDir, 'skills', 'internal', 'maestro:brainstorming');
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, 'SKILL.md'),
+      ['---', 'name: maestro:brainstorming', 'description: Custom brainstorming', '---', '', '# Custom'].join('\n'),
+    );
+
+    const result = await loadSkill('maestro:brainstorming', tmpDir);
+    expect((result as { content: string }).content).toContain('# Custom');
   });
 
   test('listSkills includes argumentHint from frontmatter', async () => {

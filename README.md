@@ -87,19 +87,34 @@ All commands accept `--json` for machine-readable output.
 
 ## Skills
 
-Bundled workflow skills include:
+18 bundled workflow skills, all using `maestro:` colon-prefixed naming:
 
-- `maestro:design`
-- `maestro:parallel-exploration`
-- `maestro:brainstorming`
-- `maestro:implement`
-- `maestro:review`
-- `maestro:verification`
-- `maestro:debugging`
-- `maestro:tdd`
-- `maestro:agents-md`
-- `maestro:docker`
-- `maestro:dispatching`
-- `maestro:prompt-leverage`
+- `maestro:design` -- deep discovery and specification (16-step process with reference files)
+- `maestro:implement` -- task execution with TDD, parallel, and team modes
+- `maestro:review` -- track-aware code review with automated checks
+- `maestro:brainstorming` -- creative exploration before implementation
+- `maestro:parallel-exploration` -- parallel read-only exploration
+- `maestro:dispatching` -- parallel agent dispatch
+- `maestro:debugging` -- systematic debugging methodology
+- `maestro:tdd` -- test-driven development guidance
+- `maestro:verification` -- verification before completion
+- `maestro:agents-md` -- AGENTS.md quality discipline and generation
+- `maestro:docker` -- Docker container workflows
+- `maestro:prompt-leverage` -- prompt engineering for AI agents
+- `maestro:new-track` -- create feature/bug tracks with spec and plan
+- `maestro:note` -- capture decisions and context to persistent notepad
+- `maestro:revert` -- git-aware undo of track implementation
+- `maestro:setup` -- scaffold project context
+- `maestro:status` -- track progress overview
+- `maestro:symphony-setup` -- extended setup with codex skills
 
 Load with `maestro skill <name>`, list with `maestro skill-list`.
+
+Skills with `reference/` subdirectories support progressive disclosure:
+```
+maestro skill maestro:design --ref steps/step-01-init.md
+```
+
+Old skill names (e.g., `writing-plans`) are aliased with deprecation warnings.
+
+Note: Colon-prefixed directory names are not supported on Windows/NTFS.
