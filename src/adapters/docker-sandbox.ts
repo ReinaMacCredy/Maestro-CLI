@@ -5,7 +5,7 @@
  */
 
 import { existsSync } from 'fs';
-import { join, sep } from 'path';
+import { basename, join } from 'path';
 import { execSync } from 'child_process';
 import type { SandboxConfig } from '../types.ts';
 
@@ -16,22 +16,12 @@ function shellQuote(s: string): string {
 
 export class DockerSandboxAdapter {
   static detectImage(projectPath: string): string | null {
-    if (existsSync(join(projectPath, 'Dockerfile'))) {
-      return null;
-    }
-    if (existsSync(join(projectPath, 'package.json'))) {
-      return 'node:22-slim';
-    }
+    if (existsSync(join(projectPath, 'Dockerfile'))) return null;
+    if (existsSync(join(projectPath, 'package.json'))) return 'node:22-slim';
     if (existsSync(join(projectPath, 'requirements.txt')) ||
-        existsSync(join(projectPath, 'pyproject.toml'))) {
-      return 'python:3.12-slim';
-    }
-    if (existsSync(join(projectPath, 'go.mod'))) {
-      return 'golang:1.22-slim';
-    }
-    if (existsSync(join(projectPath, 'Cargo.toml'))) {
-      return 'rust:1.77-slim';
-    }
+        existsSync(join(projectPath, 'pyproject.toml'))) return 'python:3.12-slim';
+    if (existsSync(join(projectPath, 'go.mod'))) return 'golang:1.22-slim';
+    if (existsSync(join(projectPath, 'Cargo.toml'))) return 'rust:1.77-slim';
     return 'ubuntu:24.04';
   }
 
@@ -40,8 +30,7 @@ export class DockerSandboxAdapter {
   }
 
   static containerName(projectPath: string): string {
-    const parts = projectPath.split(sep);
-    const projectDir = parts[parts.length - 1] || 'project';
+    const projectDir = basename(projectPath) || 'project';
     const name = `maestro-sandbox-${projectDir}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
     return name.slice(0, 63);
   }

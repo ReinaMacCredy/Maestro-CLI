@@ -141,8 +141,8 @@ Conventional commits:
 
 ```
 feat: add parallel task execution
-fix: handle missing worktree gracefully
-refactor: extract worktree logic to adapter
+fix: handle missing worker session gracefully
+refactor: extract worker launch to utility
 test: add feature resolution unit tests
 docs: update skill documentation
 chore: upgrade dependencies

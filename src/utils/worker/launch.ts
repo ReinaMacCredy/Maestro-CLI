@@ -31,7 +31,7 @@ export interface WorkerLaunchParams {
   feature: string;
   task: string;
   taskInfo: TaskInfo;
-  allTasks?: TaskInfo[];
+  allTasks: TaskInfo[];
   continueFrom?: ContinueFromStatus;
   decision?: string;
 }
@@ -58,7 +58,7 @@ export async function prepareWorkerLaunch(
   const dependsOn = taskInfo.dependsOn ?? [];
 
   const planResult = services.planAdapter.read(feature);
-  const allTasks = params.allTasks ?? await services.taskPort.list(feature, { includeAll: true });
+  const allTasks = params.allTasks;
 
   const rawContextFiles = services.contextAdapter.list(feature).map((file) => ({
     name: file.name,

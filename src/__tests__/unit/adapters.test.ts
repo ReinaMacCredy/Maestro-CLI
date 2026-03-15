@@ -198,7 +198,7 @@ describe('AgentsMdAdapter', () => {
   // Minimal mock for FsContextAdapter -- only list() is needed by the methods we test
   function mockContextAdapter(contexts: Array<{ name: string; content: string }>) {
     return {
-      list: () => contexts.map((c, i) => ({
+      list: () => contexts.map((c) => ({
         name: c.name,
         content: c.content,
         feature: 'test-feature',

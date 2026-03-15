@@ -68,10 +68,8 @@ export function writeWorkerPromptFile(
   prompt: string,
   projectRoot: string,
 ): string {
-  const promptDir = getTaskPath(projectRoot, feature, task);
   const promptPath = getWorkerPromptPath(projectRoot, feature, task);
-
-  ensureDir(promptDir);
+  ensureDir(getTaskPath(projectRoot, feature, task));
   writeText(promptPath, prompt);
 
   return promptPath;
