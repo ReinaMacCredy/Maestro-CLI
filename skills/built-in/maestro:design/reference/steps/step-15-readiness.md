@@ -70,11 +70,30 @@ Validate that the spec and plan are aligned and complete before committing. Quic
 - [ok] Gaps actionable (specific items listed, not vague)
 - [ok] Gate re-run after any fixes
 
+## When to Accept Imperfection
+
+Not every gap is a blocker. Use this decision guide:
+
+| Gap type | Blocking? | Action |
+|----------|-----------|--------|
+| Orphaned FR in MVP tier | Yes | Add a task or demote the FR to Growth |
+| Orphaned FR in Growth/Vision tier | No | Acceptable -- these are future scope |
+| AC without exact verification command | Yes | Write the command. "Manually verify" is not acceptable. |
+| Domain requirement not in a task | Yes | Add a task or a `Must NOT do` guardrail |
+| Minor dependency ordering issue | No | Note it, fix in plan, re-run gate |
+| NFR without measurable threshold | Depends | If the NFR is MVP, add a number. If Growth, accept. |
+
+**The principle**: MVP FRs and ACs must be fully covered. Growth/Vision items can be noted as future scope. The gate validates MVP completeness, not total completeness.
+
 ## Anti-patterns
-- [x] Skipping the gate -- always run it, even when things look complete
-- [x] Reporting "all good" without actually parsing the files
-- [x] Not offering resolution options when gaps found
-- [x] Proceeding past gaps without user acknowledgment
+
+| Anti-pattern | Why it fails | Fix |
+|--------------|-------------|-----|
+| Skipping the gate | Gaps in coverage ship silently | Always run, even when things look complete |
+| Reporting "all good" without parsing | False confidence -- you did not actually check | Parse spec.md FR references, match against plan task Addresses lines |
+| Not offering resolution options | User is stuck with a gap report and no path forward | Present: add task, remove FR, or accept with note |
+| Proceeding past gaps without acknowledgment | Undocumented technical debt | User must explicitly accept any gap |
+| Perfectionism -- refusing to pass with any Growth-tier gap | Design paralysis | Growth/Vision gaps are expected and acceptable |
 
 ## Next Step
 Read and follow `reference/steps/step-16-commit.md`.

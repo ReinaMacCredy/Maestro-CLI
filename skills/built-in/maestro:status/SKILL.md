@@ -1,126 +1,135 @@
 ---
 name: maestro:status
-description: "Show track progress overview with phase/task completion stats, next actions, and blockers."
+description: "Interpret feature progress, detect problems, and recommend next actions based on maestro status output."
 ---
 
-# Status -- Track Progress Overview
+# Status -- Feature Progress & Next Actions
 
-Display a high-level overview of all tracks and detailed progress for in-progress tracks.
+## Overview
 
----
+Read the current feature state and translate it into actionable guidance. Status is the orientation layer -- run it at session start, after completing work, or when uncertain about what to do next.
 
-## Step 1: Read Tracks Registry
+**Core principle:** Status is not a passive display. It is a diagnostic. Detect problems, highlight what needs attention, and tell the user exactly what command to run next.
 
-Read `.maestro/tracks.md`.
+## When to Use
 
-If file doesn't exist:
-- Report: "No tracks found. Run `/maestro:setup` then `/maestro:new-track` to get started."
+- Session start (always)
+- After a task completes or fails
+- When the user asks "what's next?" or "where are we?"
+- Before starting any new work (to check for zombies, blockers, or stale state)
+
+## Step 1: Gather State
+
+Run `maestro status` (or `maestro status --feature <name>` for a specific feature).
+
+If no active feature is set:
+- Report: "No active feature. Run `maestro feature-active <name>` to set one, or `maestro feature-list` to see available features."
+- If no features exist at all: "No features found. Run `maestro feature-create <name>` to start."
 - Stop.
 
-## Step 2: Count Tracks by Status
+The status output contains these fields:
+- **feature**: name and status (`planning` | `approved` | `executing` | `completed`)
+- **plan**: exists (yes/no), approved (yes/no), comment count
+- **tasks**: total, pending, in_progress, done counts, plus individual task list with statuses
+- **zombies**: stale in_progress tasks where the session is missing or expired
+- **blocked**: tasks blocked by unfinished dependencies
+- **context**: file count and byte total for saved context
+- **nextAction**: the system's recommended next step
 
-Parse the registry and count, supporting both formats:
+## Step 2: Identify the Feature Phase
 
-- New format: `- [ ] **Track: {description}**`
-- Legacy format: `## [ ] Track: {description}`
+Map the status output to one of four phases. This determines what to emphasize in the report.
 
-Count by marker:
-- `[ ]` -- New (pending)
-- `[~]` -- In Progress
-- `[x]` -- Complete
+| Feature Status | Plan     | Tasks      | Phase         | Focus                              |
+|----------------|----------|------------|---------------|------------------------------------|
+| `planning`     | none     | 0          | Discovery     | Gathering requirements, exploring  |
+| `planning`     | draft    | 0          | Planning      | Refining plan, addressing comments |
+| `approved`     | approved | 0          | Pre-Execution | Need to sync tasks from plan       |
+| `approved`     | approved | >0 pending | Execution     | Starting and running tasks         |
+| `executing`    | approved | mixed      | Execution     | Active work in progress            |
+| `completed`    | any      | all done   | Completion    | Review and wrap-up                 |
 
-## Step 3: Detail In-Progress Tracks
+**Phase determines what sections to show:**
 
-For each track marked `[~]`:
+- **Discovery**: Emphasize context files, suggest brainstorming or design skills, de-emphasize tasks (none exist).
+- **Planning**: Emphasize plan status and comments. If comments exist, highlight them -- they may contain unresolved feedback.
+- **Pre-Execution**: Single clear action: run `maestro task-sync`.
+- **Execution**: Full task breakdown with progress, conditions, and next action. This is the most detailed phase.
+- **Completion**: Brief summary. Show done count. Suggest `maestro feature-complete`.
 
-1. Read `.maestro/tracks/{track_id}/metadata.json` and `.maestro/tracks/{track_id}/plan.md`.
+## Step 3: Detect Conditions Requiring Attention
 
-2. If `metadata.json` has `beads_epic_id`: use `br` commands with `--json` for state tracking. Otherwise: parse plan.md checkboxes.
+Scan the status output for these conditions. Each one requires a specific callout in the report.
 
-3. Parse phases and tasks from plan.md:
-   - Count `[ ]` (pending), `[~]` (in-progress), `[x]` (complete) per phase
-   - Calculate overall completion percentage
+| Condition              | Detection Signal                           | Severity | Action                                                                                   |
+|------------------------|--------------------------------------------|----------|------------------------------------------------------------------------------------------|
+| Zombie (stale task)    | `zombies` list is non-empty                | High     | `maestro task-start --feature <f> --task <id> --force` to recover                        |
+| Blocked task           | Task status is `blocked`                   | High     | Review blocker, then `maestro task-start --task <id> --continue-from blocked --decision`  |
+| Failed task            | Task status is `failed`                    | Medium   | `maestro task-update --feature <f> --task <id> --status pending` to reset                |
+| Partial task           | Task status is `partial`                   | Medium   | `maestro task-start --feature <f> --task <id> --continue-from partial` to resume         |
+| Unreviewed comments    | `plan.commentCount > 0` and plan is draft  | Medium   | Read comments with `maestro plan-read`, address feedback, revise plan                    |
+| No tasks synced        | Plan approved but `tasks.total == 0`       | Low      | `maestro task-sync --feature <name>` to generate tasks                                   |
+| All pending, dep-blocked | All tasks pending, `blocked` map non-empty | Low      | Check dependency chain -- something upstream may need manual intervention                |
 
-4. Identify the next pending task (first `[ ]` in the plan, or from `bv -robot-next`)
+**Severity determines formatting:**
+- **High**: Mark with `[!]` prefix. These block progress and must be resolved first.
+- **Medium**: Mark with `[~]` prefix. These represent interrupted work that should be resumed.
+- **Low**: Mark with `-->` prefix. These are informational next steps.
 
-5. Check for blockers:
-   - Any task marked `[~]` for more than one phase indicates a stall
-   - Any phase with failed verification noted
+## Step 4: Present the Status Report
 
-## Step 4: Assess Project Status
+Format the report using phase-aware rules. See `reference/output-templates.md` for concrete examples of every phase and condition.
 
-Using the data collected, compute a qualitative status:
+**General formatting rules:**
 
-- **Blocked** -- any task is explicitly blocked or a stall is detected (task `[~]` spanning multiple phases, failed verification)
-- **Behind Schedule** -- completed tasks represent less than 25% of total tasks and at least one track is active
-- **On Track** -- active tracks exist and no blockers detected
-- **No Active Work** -- zero tracks marked `[~]`
+1. **Lead with the headline**: Feature name, phase, and overall health in one line.
+2. **Show problems first**: Any High or Medium conditions appear before the task list.
+3. **Task list**: Show all tasks with status markers. Use alignment for readability.
+4. **Progress bar**: For execution phase, show completion as `done/total` with percentage.
+5. **Next action**: Always end with the specific command to run next.
+6. **Suppress empty sections**: Do not show "Blockers: None" or "Zombies: None". Only show sections that have content.
 
-If any track has `beads_epic_id`, include `bv -robot-insights -format json` health signals (cycles, stale issues, bottlenecks) in the report.
+**Phase-specific rules:**
 
-## Step 5: Display Report
+- **Discovery**: Show context file count if any. Suggest `maestro:brainstorming` or `maestro:design` skills.
+- **Planning**: Show plan status prominently. If comments exist, show count and suggest `maestro plan-read`. If plan is draft, suggest `maestro plan-write` or `maestro plan-approve`.
+- **Execution**: Full task table. Group by status: in_progress first, then partial/blocked/failed, then pending, then done (collapsed if many).
+- **Completion**: Brief summary. Show done count. Suggest `maestro feature-complete`.
 
-Format the output as:
+## Step 5: Recommend Next Action
 
-```
-## Tracks Overview
+The `nextAction` field from `maestro status` provides the primary recommendation. Use it as the base, then layer on context-aware guidance.
 
-**Report generated**: {current date and time}
-**Project status**: {On Track | Behind Schedule | Blocked | No Active Work}
+**Enhancement rules based on phase and conditions:**
 
-| Status | Count |
-|--------|-------|
-| New    | {n}   |
-| Active | {n}   |
-| Done   | {n}   |
+| Phase     | Condition          | Beyond nextAction                                                          |
+|-----------|--------------------|----------------------------------------------------------------------------|
+| Discovery | No plan            | Suggest loading `maestro:brainstorming` skill before writing plan          |
+| Planning  | Comments exist     | "Address the N comments before seeking approval"                           |
+| Planning  | No comments        | "Plan looks clean -- run `maestro plan-approve` when ready"                |
+| Execution | Zombie detected    | "Recover the stale task BEFORE starting new work"                          |
+| Execution | Blocked task       | "Read the blocker report: `maestro task-report-read --task <id>`"          |
+| Execution | Multiple runnable  | "N tasks are ready. Pick based on priority or dependencies."               |
+| Execution | All done           | "All tasks complete. Review implementation, then `maestro feature-complete`"|
+| Execution | Failed + runnable  | "Reset the failed task or skip it and continue with runnable tasks"        |
+| Any       | Zero context files | "Consider saving key decisions: `maestro context-write`"                   |
 
----
+**Compound conditions**: When multiple conditions coexist (e.g., zombie + blocked), prioritize by severity. Address the highest-severity condition first in the recommendation.
 
-### Blockers
+## Relationship to Other Commands and Skills
 
-{If no blockers: "None detected."}
-{Otherwise, list each blocked or stalled item:}
-- [track_id] {task description} -- {reason: stalled / failed verification / explicitly blocked}
+Status is the observability layer across the maestro workflow:
 
----
+| Command / Skill         | Relationship to Status                                     |
+|-------------------------|------------------------------------------------------------|
+| `maestro feature-create`| Creates the feature that status reads                      |
+| `maestro plan-write`    | Status tracks plan existence and approval state            |
+| `maestro plan-approve`  | Status detects approved plans and suggests task-sync       |
+| `maestro task-sync`     | Generates tasks that status tracks                         |
+| `maestro task-start`    | Status detects in_progress, partial, blocked, failed tasks |
+| `maestro task-finish`   | Status updates done count and recalculates next action     |
+| `maestro:brainstorming` | Status suggests this skill during Discovery phase          |
+| `maestro:design`        | Status suggests this skill for complex features            |
+| `maestro:implement`     | Load during Execution phase alongside status               |
 
-### Active: {track_description}
-> ID: {track_id} | Type: {type}
-
-**Phase 1: {title}** -- {completed}/{total} tasks [####----] {pct}%
-**Phase 2: {title}** -- {completed}/{total} tasks [--------] {pct}%
-
-**Next task**: {next_task_description}
-**Run**: `/maestro:implement {track_id}`
-
----
-
-### Recently Completed
-- [x] {track_description} ({date})
-```
-
-## Step 6: Suggest Next Action
-
-Based on the state:
-
-- No tracks at all --> "Run `/maestro:setup` then `/maestro:new-track <description>`"
-- All tracks complete --> "All tracks done. `/maestro:new-track` to start something new."
-- Has pending tracks --> "Run `/maestro:implement {next_track}` to start."
-- Has in-progress tracks --> "Run `/maestro:implement {active_track} --resume` to continue."
-- Blocked --> "Resolve the blocker listed above before continuing."
-
----
-
-## Relationship to Other Commands
-
-Recommended workflow:
-
-- `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:new-track` -- Create a feature/bug track with spec and plan
-- `/maestro:implement` -- Execute the implementation
-- `/maestro:review` -- Verify implementation correctness
-- `/maestro:status` -- **You are here.** Check progress across all tracks
-- `/maestro:revert` -- Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
-
-Status is the observability layer across all maestro commands. It reads tracks created by `/maestro:new-track`, progress from `/maestro:implement`, and state changes from `/maestro:revert`. Use it anytime to orient yourself on what to do next.
+Run `maestro status` before and after every significant action to stay oriented.

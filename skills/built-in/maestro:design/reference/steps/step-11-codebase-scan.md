@@ -21,22 +21,29 @@ Scan the existing codebase for patterns relevant to this track. Feed findings in
 ## Scan Sequence
 
 1. **Determine Scan Focus**
-   Based on project type and FR capability areas, identify what to look for:
-   - Similar components/modules to what this track will build
-   - API patterns (routing, middleware, error handling)
-   - Test conventions (framework, file structure, naming)
-   - Database/data patterns (ORM, schema style, migrations)
-   - Configuration patterns (env vars, config files)
-   - Authentication/authorization patterns (if relevant FRs exist)
+   Based on project type and FR capability areas, decide what to scan for. Use this decision matrix:
+
+   | FR capability area | What to scan | Example search |
+   |--------------------|-------------|----------------|
+   | API endpoints | Routing, middleware, error handling | Glob `**/routes/**`, Grep `app.get\|app.post\|router` |
+   | Data persistence | ORM, schema, migrations | Glob `**/models/**`, `**/migrations/**` |
+   | Authentication | Auth middleware, session handling | Grep `auth\|session\|jwt\|passport` |
+   | Testing | Framework, conventions, helpers | Glob `**/*.test.*`, `**/*.spec.*` |
+   | Configuration | Env vars, config loading | Glob `**/*.config.*`, Grep `process.env\|dotenv` |
+   | UI components | Component structure, state management | Glob `**/components/**`, Grep `useState\|useEffect` |
+
+   **Skip anything the track's FRs do not touch.** If no FR mentions auth, do not scan auth patterns.
 
 2. **Execute Scan**
-   Use Glob and Grep to search the codebase:
-   - Look for existing implementations of similar capabilities
-   - Identify test file conventions and frameworks
-   - Find configuration patterns
-   - Note directory structure conventions
+   Use Glob and Grep to search the codebase. For each capability area:
 
-   Prioritize patterns that directly relate to FR capability areas. Skip areas the track will not touch.
+   a. **Find the closest existing analog.** If the track adds a "notification service" and the codebase already has an "email service", that is the pattern to follow.
+
+   b. **Identify the file-level convention.** Where do tests go? Co-located or in a `tests/` directory? What is the naming pattern? (`foo.test.ts` vs `test_foo.py` vs `foo_test.go`)
+
+   c. **Note the import/dependency style.** Does the codebase use dependency injection? Barrel exports? Direct imports?
+
+   **Time-box: 5 minutes maximum.** If you cannot find a pattern in 5 minutes, note "no existing pattern found" and move on. The plan will establish the pattern.
 
 3. **Compile Findings**
    Format as a concise context block:
@@ -52,6 +59,17 @@ Scan the existing codebase for patterns relevant to this track. Feed findings in
    ```
 
    Omit categories that are not relevant. Only include what was actually found.
+
+   **Concrete example:**
+   ```
+   ## Codebase Patterns (for plan generation)
+
+   - Test framework: vitest with co-located tests (src/foo.ts -> src/foo.test.ts)
+   - API pattern: Hono router in src/routes/, middleware in src/middleware/
+   - Data layer: Drizzle ORM, schemas in src/db/schema.ts, migrations via drizzle-kit
+   - Similar existing: src/services/email.ts is analogous to the notification service we are building
+   - Conventions: barrel exports in index.ts per directory, zod for input validation
+   ```
 
 4. **Present to User**
    Show findings briefly:

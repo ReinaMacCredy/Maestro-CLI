@@ -9,7 +9,7 @@ description: Use when you need parallel, read-only exploration with task() (Scou
 
 When you need to answer "where/how does X work?" across multiple domains (codebase, tests, docs, OSS), investigating sequentially wastes time. Each investigation is independent and can happen in parallel.
 
-**Core principle:** Decompose into independent sub-questions, spawn one task per sub-question, collect results asynchronously.
+**Core principle:** Decompose into independent sub-questions, spawn one scout per sub-question, collect results, synthesize into a coherent picture.
 
 **Safe in Planning mode:** This is read-only exploration. It is OK to use during exploratory research even when there is no feature, no plan, and no approved tasks.
 
@@ -17,224 +17,293 @@ When you need to answer "where/how does X work?" across multiple domains (codeba
 
 ## When to Use
 
-**Default to this skill when:**
 **Use when:**
-- Investigation spans multiple domains (code + tests + docs)
-- User asks **2+ questions across different domains** (e.g., code + tests, code + docs/OSS, code + config/runtime)
+- Investigation spans 2+ domains (code + tests, code + docs, code + config)
 - Questions are independent (answer to A doesn't affect B)
-- User asks **3+ independent questions** (often as a numbered list or separate bullets)
 - No edits needed (read-only exploration)
-- User asks for an exploration that likely spans multiple files/packages
-- The work is read-only and the questions can be investigated independently
+- The exploration likely spans multiple files or packages
 
-**Only skip this skill when:**
-- Investigation requires shared state or context between questions
-- It's a single focused question that is genuinely answerable with **one quick grep + one file read**
+**Skip when:**
+- It's a single focused question answerable with one grep + one file read
 - Questions are dependent (answer A materially changes what to ask for B)
-- Work involves file edits (use Hive tasks / Forager instead)
+- Work involves file edits (use Hive tasks instead)
 
-**Important:** Do not treat "this is exploratory" as a reason to avoid delegation. This skill is specifically for exploratory research when fan-out makes it faster and cleaner.
+Thinking "this is simple, I'll just do it myself"? If the investigation touches 3+ domains, fan out. Sequential exploration in a parallel-capable system is waste.
 
 ## The Pattern
 
 ### 1. Decompose Into Independent Questions
 
-Split your investigation into 2-4 independent sub-questions. Good decomposition:
+Split your investigation into 2-4 independent sub-questions.
 
-| Domain | Question Example |
-|--------|------------------|
+| Domain | Question shape |
+|--------|---------------|
 | Codebase | "Where is X implemented? What files define it?" |
-| Tests | "How is X tested? What test patterns exist?" |
-| Docs/OSS | "How do other projects implement X? What's the recommended pattern?" |
-| Config | "How is X configured? What environment variables affect it?" |
+| Tests | "How is X tested? What patterns exist?" |
+| Docs/OSS | "How do other projects implement X?" |
+| Config | "How is X configured? What env vars affect it?" |
 
-**Bad decomposition (dependent questions):**
-- "What is X?" then "How is X used?" (second depends on first)
-- "Find the bug" then "Fix the bug" (not read-only)
+See `reference/scout-patterns.md` for concrete fan-out strategies: codebase survey, dependency analysis, pattern search, API surface mapping.
 
-### 2. Spawn Tasks (Fan-Out)
+### 2. Write Scout Prompts
 
-Launch all tasks before waiting for any results:
+Each scout prompt must be specific, bounded, and evidence-oriented.
+
+<Good>
+```
+Find all call sites for `loadSkill()` in the codebase.
+For each call site, return:
+- File path and line number
+- The calling function name
+- What arguments are passed
+- Whether the result is awaited or fire-and-forget
+
+Return as a table. Do not read files outside src/.
+```
+Specific function. Defined output format. Bounded scope. Evidence-oriented.
+</Good>
+
+<Bad>
+```
+How does the skill system work? Look at everything related to skills
+and give me a summary.
+```
+Unbounded scope. No output format. Will return a vague narrative instead of evidence.
+</Bad>
+
+<Good>
+```
+Find all error handling patterns in src/commands/.
+For each try/catch block, return:
+- File:line
+- What error types are caught
+- What action is taken (rethrow, log, swallow, wrap)
+Return as a table.
+```
+Specific artifact (try/catch). Defined output columns. Bounded directory.
+</Good>
+
+<Bad>
+```
+Look at error handling in the codebase.
+```
+No artifact specified. No output format. No scope boundary.
+</Bad>
+
+**Scout prompt checklist:**
+- [ ] Specific target (function, pattern, file type -- not "everything about X")
+- [ ] Bounded scope (directory, file glob, or explicit exclusions)
+- [ ] Defined output format (table, list with file:line, or explicit columns)
+- [ ] Evidence-oriented ("return file paths with line numbers", not "summarize")
+
+### 3. Decide How Many Scouts
+
+| Situation | Scouts | Rationale |
+|-----------|--------|-----------|
+| Focused question, 2 clear domains | 2 | Minimum useful parallelism |
+| Typical investigation | 3 | Sweet spot: structure + behavior + tests/config |
+| Complex unfamiliar subsystem | 4 | Maximum before synthesis overhead dominates |
+| 5+ scouts | **Stop. Reframe.** | Decompose into 2 sequential rounds of 2-3 each |
+
+**The overlap test:** Write out each scout's expected output before launching. If two scouts would return the same files, merge them or redefine boundaries.
+
+### 4. Fan Out (Spawn All Before Waiting)
+
+Launch all scouts in the same assistant message. Do not wait for results between launches.
 
 ```typescript
-// Parallelize by issuing multiple task() calls in the same assistant message.
+// GOOD: All scouts launched in one message
 task({
   subagent_type: 'scout-researcher',
-  description: 'Find API route implementation',
-  prompt: `Where are API routes implemented and registered?
-    - Find the tool definition
-    - Find the plugin registration
-    - Return file paths with line numbers`,
+  description: 'Map skill registry structure',
+  prompt: `Map the file structure of src/skills/.
+    For each file: purpose, exports, and which modules import it.
+    Return as a table with columns: file, purpose, exports, importers.`,
 });
 
 task({
   subagent_type: 'scout-researcher',
-  description: 'Analyze background task concurrency',
-  prompt: `How does background task concurrency/queueing work?
-    - Find the manager/scheduler code
-    - Document the concurrency model
-    - Return file paths with evidence`,
+  description: 'Trace skill loading data flow',
+  prompt: `Trace data flow for skill loading: from CLI invocation
+    through registry lookup to file read. List each function in the
+    chain with file:line. Return as an ordered list.`,
 });
 
 task({
   subagent_type: 'scout-researcher',
-  description: 'Find parent notification mechanism',
-  prompt: `How does parent notification work for background tasks?
-    - Where is the notification built?
-    - How is it sent to the parent session?
-    - Return file paths with evidence`,
+  description: 'Audit skill configuration points',
+  prompt: `Find all configuration that affects skill loading: env vars,
+    config file keys, CLI flags, defaults. Return as a table with
+    columns: source, key, default_value, effect.`,
 });
 ```
 
-**Key points:**
-- Use `subagent_type: 'scout-researcher'` for read-only exploration
-- Give each task a clear, focused `description`
-- Make prompts specific about what evidence to return
+```typescript
+// BAD: Sequential -- defeats the purpose
+const result1 = await task({ ... });  // Waits here
+const result2 = await task({ ... });  // Then waits here
+```
 
-### 3. Continue Working (Optional)
+### 5. Continue Working (Optional)
 
-While tasks run, you can:
-- Work on other aspects of the problem
+While scouts run, you can:
 - Prepare synthesis structure
-- Start drafting based on what you already know
+- Draft based on what you already know
+- Work on unrelated aspects
 
-You'll receive a `<system-reminder>` notification when each task completes.
+You'll receive a `<system-reminder>` notification when each scout completes.
 
-### 4. Collect Results
+### 6. Synthesize Findings
 
-When each task completes, its result is returned directly. Collect the outputs from each task and proceed to synthesis.
+This is the hardest step. Raw scout results are not the answer.
 
-### 5. Synthesize Findings
+**Synthesis process:**
+1. **Deduplicate** -- List every file mentioned. Files cited by 2+ scouts are integration points.
+2. **Resolve contradictions** -- Scouts disagree? One is wrong. Re-read the code yourself. Never average.
+3. **Identify gaps** -- What wasn't found? Missing answers matter as much as found ones.
+4. **Build narrative** -- Write an integrated story with evidence, not a paste of each scout's output.
 
-Combine results from all tasks:
-- Cross-reference findings (file X mentioned by tasks A and B)
-- Identify gaps (task C found nothing, need different approach)
-- Build coherent answer from parallel evidence
-
-### 6. Cleanup (If Needed)
-
-No manual cancellation is required in task mode.
-
-## Prompt Templates
-
-### Codebase Slice
-
+<Good>
 ```
-Investigate [TOPIC] in the codebase:
-- Where is [X] defined/implemented?
-- What files contain [X]?
-- How does [X] interact with [Y]?
+Skill loading is a 3-step pipeline:
+1. CLI entry (cli.ts:45) parses the skill name from argv
+2. Registry lookup (registry.ts:23) resolves name to path
+   - Uses SKILL_PATH env var (default: ./skills/)
+   - Falls back to built-in directory if not found
+3. File parsing (loader.ts:67) reads YAML frontmatter + markdown body
 
-Return:
-- File paths with line numbers
-- Brief code snippets as evidence
-- Key patterns observed
+Integration point: registry.ts -- both CLI and loader depend on it.
+Gap: No tests found for the fallback path.
 ```
+Cross-referenced. Integration points identified. Gaps noted.
+</Good>
 
-### Tests Slice
-
+<Bad>
 ```
-Investigate how [TOPIC] is tested:
-- What test files cover [X]?
-- What testing patterns are used?
-- What edge cases are tested?
-
-Return:
-- Test file paths
-- Example test patterns
-- Coverage gaps if obvious
+Scout 1 found: registry.ts, loader.ts, types.ts
+Scout 2 found: cli.ts calls loadSkill(), loadSkill() calls parseFile()
+Scout 3 found: SKILL_PATH env var, default is ./skills/
 ```
+Dumped raw results. No integration. No gaps identified.
+</Bad>
 
-### Docs/OSS Slice
+See `reference/synthesis-guide.md` for detailed patterns: resolving contradictions, prioritizing discoveries, gap analysis.
 
-```
-Research [TOPIC] in external sources:
-- How do other projects implement [X]?
-- What does the official documentation say?
-- What are common patterns/anti-patterns?
+### 7. Verify Completeness
 
-Return:
-- Links to relevant docs/repos
-- Key recommendations
-- Patterns that apply to our codebase
-```
+After synthesis, check:
+- [ ] All scouts spawned before collecting any results (true fan-out)
+- [ ] Scout prompts were specific and bounded (not "tell me about X")
+- [ ] Contradictions resolved (not glossed over)
+- [ ] Gaps identified and either investigated or noted
+- [ ] Synthesis is a narrative with evidence, not a scout dump
 
-## Real Example
+## Diminishing Returns -- When to Stop Exploring
 
-**Investigation:** "How does the API routing system work?"
+Exploration is seductive. You can always learn more. The goal is not complete knowledge -- it's sufficient knowledge to make design decisions.
 
-**Decomposition:**
-1. Implementation: Where are API routes defined?
-2. Routing: How does route registration work?
-3. Notifications: How are errors surfaced to the caller?
+### Stop signals
 
-**Fan-out:**
-```typescript
-// Parallelize by issuing multiple task() calls in the same assistant message.
-task({
-  subagent_type: 'scout-researcher',
-  description: 'Find API route implementation',
-  prompt: 'Where are API routes implemented? Find tool definition and registration.',
-});
+| Signal | What it means | Action |
+|--------|--------------|--------|
+| Scouts return the same files you already know about | You've mapped the domain | Stop. Start designing. |
+| Follow-up scouts find edge cases, not new subsystems | Core structure is understood | Note edge cases. Start designing. |
+| You're on round 3+ of scouts | Diminishing returns | Stop. What you don't know, you'll learn during implementation. |
+| You can explain the subsystem to someone else | Sufficient understanding | Stop. Write the context doc. |
+| You're exploring "just in case" | Curiosity, not necessity | Stop. Explore when blocked, not preemptively. |
 
-task({
-  subagent_type: 'scout-researcher',
-  description: 'Analyze concurrency model',
-  prompt: 'How does background task concurrency work? Find the manager/scheduler.',
-});
+### The 2-round rule
 
-task({
-  subagent_type: 'scout-researcher',
-  description: 'Find notification mechanism',
-  prompt: 'How are parent sessions notified of task completion?',
-});
-```
+- **Round 1:** Broad survey (2-4 scouts). Map structure, data flow, config.
+- **Round 2:** Targeted follow-ups (1-2 scouts). Fill specific gaps identified in synthesis.
+- **Round 3:** Almost never needed. If two rounds didn't answer your question, either reframe the question or read the code yourself.
 
-**Results:**
-- Task 1: Found `background-tools.ts` (tool definition), `index.ts` (registration)
-- Task 2: Found `manager.ts` with concurrency=3 default, queue-based scheduling
-- Task 3: Found `session.prompt()` call in manager for parent notification
+### Exploration vs. design time
 
-**Synthesis:** Complete picture of background task lifecycle in ~1/3 the time of sequential investigation.
+| Codebase familiarity | Exploration budget | Then |
+|---------------------|-------------------|------|
+| Greenfield / never seen | 1 broad round + 1 targeted round | Start designing |
+| Familiar codebase, new subsystem | 1 targeted round | Start designing |
+| Familiar codebase, known subsystem | Skip scouts. Read 1-2 files yourself. | Start designing |
+
+**The test:** Can you write the `## Discovery` section of the plan? If yes, you have explored enough. If no, identify the specific gap and send one more targeted scout.
 
 ## Common Mistakes
 
-**Spawning sequentially (defeats the purpose):**
-```typescript
-// BAD: Wait for each before spawning next
-await task({ ... });
-await task({ ... });
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| Sequential spawning | `await task()` blocks; no parallelism | Launch all scouts in the same message |
+| Vague prompts | "Tell me about X" returns vague summaries | Use the scout prompt checklist above |
+| Too many scouts (5+) | Synthesis overhead exceeds parallelism benefit | Max 4 per round; reframe if you need more |
+| Overlapping scopes | Two scouts search the same files | Use the overlap test before launching |
+| Dependent questions | Scout B needs Scout A's answer | Run sequentially or make independent |
+| Scout dump synthesis | Paste each scout's output without integration | Write a narrative; see synthesis guide |
+| Exploring forever | "Just one more scout" delays design | Apply the 2-round rule |
+| Using scouts for edits | Scouts are read-only | Use `maestro:dispatching` for implementation |
+
+## Prompt Templates
+
+### Codebase Structure
+
+```
+Map the file structure of [DIRECTORY].
+For each file, return:
+- File path
+- Purpose (1 sentence)
+- Exports (function/class/type names)
+- Which other modules import from it
+
+Return as a table. Do not read files outside [DIRECTORY].
 ```
 
-```typescript
-// GOOD: Spawn all in the same assistant message
-task({ ... });
-task({ ... });
-task({ ... });
+### Data Flow Trace
+
+```
+Trace the data flow for [OPERATION]:
+- Where does the data enter? (entry point, function signature)
+- What transforms are applied? (each step with file:line)
+- Where does the data exit? (return value, side effect, output)
+
+Return as an ordered list with file:line for each step.
 ```
 
-**Too many tasks (diminishing returns):**
-- 2-4 tasks: Good parallelization
-- 5+ tasks: Overhead exceeds benefit, harder to synthesize
+### Test Coverage Audit
 
-**Dependent questions:**
-- Don't spawn task B if it needs task A's answer
-- Either make them independent or run sequentially
+```
+Find all tests related to [FEATURE] in [TEST_DIRECTORY]:
+- What test files exist?
+- What behaviors are tested? (list each test name)
+- What edge cases are covered?
+- What's obviously missing?
 
-**Using for edits:**
-- Scout is read-only; use Forager for implementation
-- This skill is for exploration, not execution
+Return as a table with columns: file, test_name, behavior_tested.
+```
 
-## Key Benefits
+### Dependency Impact
 
-1. **Speed** - 3 investigations in time of 1
-2. **Focus** - Each Scout has narrow scope
-3. **Independence** - No interference between tasks
-4. **Flexibility** - Cancel unneeded tasks, add new ones
+```
+Find all files that depend on [MODULE/FUNCTION]:
+- Direct imports (files that import from [MODULE])
+- Call sites (files that call [FUNCTION] with file:line)
+- Type references (files that use [TYPE] in signatures)
 
-## Verification
+Return as a table with columns: file, relationship_type, specific_usage.
+```
 
-After using this pattern, verify:
-- [ ] All tasks spawned before collecting any results (true fan-out)
-- [ ] Verified `task()` fan-out pattern used for parallel exploration
-- [ ] Synthesized findings into coherent answer
+### Configuration Audit
+
+```
+Find all configuration points for [SUBSYSTEM]:
+- Environment variables
+- Config file keys
+- CLI flags
+- Hardcoded defaults
+
+For each, return: source, key, default_value, effect.
+Return as a table.
+```
+
+## Reference Documents
+
+- `reference/scout-patterns.md` -- Concrete fan-out strategies for common investigation types
+- `reference/synthesis-guide.md` -- Patterns for merging findings, resolving contradictions, gap analysis

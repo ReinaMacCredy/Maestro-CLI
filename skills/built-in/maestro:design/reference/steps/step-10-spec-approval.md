@@ -69,12 +69,31 @@ Compose the complete specification from all discovery steps (4-9), present for a
 - [ok] Acceptance criteria reference FR-N numbers
 - [ok] File written to correct path
 
+## Self-Review Before Presenting
+
+Before showing the spec to the user, verify these internally:
+
+| Check | How to verify |
+|-------|---------------|
+| Every FR is testable | FR says what happens, not "handles" or "supports" |
+| No FR is a design decision | FRs say WHAT, not HOW. "User can log in" not "Use JWT for auth" |
+| Success criteria have numbers | "< 200ms p95" not "fast". "99.9% uptime" not "reliable" |
+| MVP scope is small | 3-8 FRs for simple tracks, 8-15 for complex. More than 15 MVP FRs = over-specification |
+| Edge cases come from journeys | Error paths from step 6, not invented in isolation |
+| Out of scope is explicit | At least 2-3 items. If nothing is out of scope, the scope is too vague |
+
+If any check fails, fix the spec before presenting. Do not ask the user to fix your assembly errors.
+
 ## Anti-patterns
-- [x] Regenerating content instead of assembling from discovery steps
-- [x] Presenting a summary instead of the full spec
-- [x] Skipping acceptance criteria derivation
-- [x] Not offering A/P options at spec approval
-- [x] Writing spec to disk before user approval
+
+| Anti-pattern | Why it fails | Fix |
+|--------------|-------------|-----|
+| Regenerating from scratch | Ignores the nuance from discovery steps 4-9 | Assemble from existing outputs |
+| Presenting a summary | User cannot review what they cannot see | Show the full spec, every section |
+| Skipping AC derivation | Acceptance criteria are the bridge to plan tasks | Derive ACs from FRs + success criteria |
+| Not offering A/P options | User misses the stress-test opportunity | Always show `[A] [P] [C]` menu |
+| Writing before approval | User cannot revise what is already committed | Present, get explicit approval, then write |
+| Over-specified FRs | 25 FRs for a CRUD feature signals over-engineering | Match FR count to classification complexity |
 
 ## Next Step
 Read and follow `reference/steps/step-11-codebase-scan.md`.

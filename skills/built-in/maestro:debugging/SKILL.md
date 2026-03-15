@@ -43,163 +43,200 @@ Use for ANY technical issue:
 - You're in a hurry (rushing guarantees rework)
 - Manager wants it fixed NOW (systematic is faster than thrashing)
 
+## Debugging Decision Tree
+
+Given a symptom, start with the highest-probability approach:
+
+| Symptom | First Move | Tool |
+|---------|-----------|------|
+| Runtime error / exception | Read full stack trace backward | `bun test <file> 2>&1 \| tail -80` |
+| Type error (compile-time) | Find "expected X, got Y" mismatch source | `rg 'type Y\b\|interface Y\b' --type ts` |
+| Test passes alone, fails in suite | Shared state pollution | Run pairs: `bun test a.test.ts b.test.ts` |
+| Flaky / intermittent | Reproduce in loop, add timestamps | `for i in {1..50}; do bun test <file> \|\| break; done` |
+| Performance issue | Measure before guessing | `time bun run script.ts` + instrumentation |
+| Integration failure | Verify each boundary in isolation | `curl` each endpoint, check env vars |
+| Build failure | Read the FIRST error only | `bun run build 2>&1 \| head -30` |
+
+See `reference/debugging-patterns.md` for detailed workflows per symptom type.
+
 ## The Four Phases
 
 You MUST complete each phase before proceeding to the next.
 
-### Phase 1: Root Cause Investigation
+### Phase 1: Reproduce
 
-**BEFORE attempting ANY fix:**
+**BEFORE attempting ANY fix, get a single command that triggers the bug.**
 
 1. **Read Error Messages Carefully**
-   - Don't skip past errors or warnings
-   - They often contain the exact solution
-   - Read stack traces completely
+   - Read stack traces completely -- don't skip past them
    - Note line numbers, file paths, error codes
+   - The error often contains the exact solution
+
+   ```bash
+   # Get full error with context
+   bun test path/to/failing.test.ts 2>&1 | tail -80
+
+   # For deep stack traces
+   NODE_OPTIONS='--stack-trace-limit=50' bun run script.ts
+   ```
 
 2. **Reproduce Consistently**
-   - Can you trigger it reliably?
-   - What are the exact steps?
-   - Does it happen every time?
-   - If not reproducible → gather more data, don't guess
+   - Can you trigger it reliably with a single command?
+   - If not reproducible: gather more data, don't guess
+
+   ```bash
+   # Run the specific failing test in isolation
+   bun test path/to/failing.test.ts --bail
+
+   # Reproduce with clean state
+   rm -rf node_modules/.cache dist/
+   bun install && bun test path/to/failing.test.ts
+   ```
 
 3. **Check Recent Changes**
-   - What changed that could cause this?
-   - Git diff, recent commits
-   - New dependencies, config changes
-   - Environmental differences
 
-4. **Gather Evidence in Multi-Component Systems**
-
-   **WHEN system has multiple components (CI → build → signing, API → service → database):**
-
-   **BEFORE proposing fixes, add diagnostic instrumentation:**
-   ```
-   For EACH component boundary:
-     - Log what data enters component
-     - Log what data exits component
-     - Verify environment/config propagation
-     - Check state at each layer
-
-   Run once to gather evidence showing WHERE it breaks
-   THEN analyze evidence to identify failing component
-   THEN investigate that specific component
-   ```
-
-   **Example (multi-layer system):**
    ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
-   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+   # What changed since last green state?
+   git log --oneline -20
+   git diff HEAD~3 -- src/
 
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   env | grep IDENTITY || echo "IDENTITY not in environment"
-
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
-
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
+   # Binary search for breaking commit
+   git bisect start && git bisect bad HEAD && git bisect good <good-commit>
+   git bisect run bun test path/to/failing.test.ts
    ```
 
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
+### Phase 2: Isolate
 
-5. **Trace Data Flow**
+**Narrow from "something broke" to "THIS line is the cause."**
 
-   **WHEN error is deep in call stack:**
-
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
-
-   **Quick version:**
-   - Where does bad value originate?
-   - What called this with bad value?
-   - Keep tracing up until you find the source
+1. **Trace Data Flow**
+   - Where does the bad value originate?
+   - What called this with the bad value?
+   - Keep tracing backward until you find the source
    - Fix at source, not at symptom
 
-### Phase 2: Pattern Analysis
+   ```bash
+   # Find all assignments to the suspect variable
+   rg 'myVariable\s*=' --type ts -n
 
-**Find the pattern before fixing:**
+   # Find all callers of the broken function
+   sg run -p 'brokenFunction($$$ARGS)' --lang typescript
 
-1. **Find Working Examples**
+   # Find where an error is thrown
+   rg 'throw new.*ErrorMessage' --type ts -n -C 3
+   ```
+
+   See `root-cause-tracing.md` for the complete backward tracing technique.
+
+2. **Gather Evidence at Boundaries (multi-component systems)**
+
+   When system has multiple components (CI --> build --> signing, API --> service --> database):
+
+   ```
+   For EACH component boundary:
+     - Log what data enters
+     - Log what data exits
+     - Verify environment/config propagation
+
+   Run once --> read output --> identify failing boundary
+   ```
+
+   ```bash
+   # Example: identify which layer fails
+   echo "=== Layer 1: Workflow ==="
+   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
+
+   echo "=== Layer 2: Build script ==="
+   env | grep IDENTITY || echo "IDENTITY not in environment"
+
+   echo "=== Layer 3: Signing ==="
+   security find-identity -v
+   ```
+
+3. **Find Working Examples and Compare**
    - Locate similar working code in same codebase
-   - What works that's similar to what's broken?
-
-2. **Compare Against References**
-   - If implementing pattern, read reference implementation COMPLETELY
-   - Don't skim - read every line
-   - Understand the pattern fully before applying
-
-3. **Identify Differences**
-   - What's different between working and broken?
    - List every difference, however small
    - Don't assume "that can't matter"
 
-4. **Understand Dependencies**
-   - What other components does this need?
-   - What settings, config, environment?
-   - What assumptions does it make?
+   ```bash
+   # Find working examples of the same pattern
+   sg run -p 'workingPattern($$$ARGS)' --lang typescript
+   rg 'similarFunction\(' --type ts --files-with-matches
+   ```
 
-### Phase 3: Hypothesis and Testing
+### Phase 3: Hypothesize and Test
 
-**Scientific method:**
+**Scientific method -- one variable at a time.**
 
 1. **Form Single Hypothesis**
-   - State clearly: "I think X is the root cause because Y"
-   - Write it down
+   - State clearly: "I think X is the root cause because evidence Y shows Z"
    - Be specific, not vague
 
 2. **Test Minimally**
-   - Make the SMALLEST possible change to test hypothesis
+   - Make the SMALLEST possible change to test the hypothesis
    - One variable at a time
    - Don't fix multiple things at once
 
-3. **Verify Before Continuing**
-   - Did it work? Yes → Phase 4
-   - Didn't work? Form NEW hypothesis
-   - DON'T add more fixes on top
+3. **Evaluate**
+   - Did it work? Yes --> Phase 4
+   - Didn't work? Form NEW hypothesis with the new evidence
+   - DON'T stack fixes on top of each other
 
 4. **When You Don't Know**
-   - Say "I don't understand X"
-   - Don't pretend to know
-   - Ask for help
-   - Research more
+   - Say "I don't understand X" -- don't pretend
+   - Research more before guessing
 
-### Phase 4: Implementation
+### Phase 4: Fix and Verify
 
-**Fix the root cause, not the symptom:**
+**Fix the root cause, not the symptom.**
 
 1. **Create Failing Test Case**
-   - Simplest possible reproduction
-   - Automated test if possible
-   - One-off test script if no framework
-   - MUST have before fixing
-   - Use the `maestro skill maestro:tdd` skill for writing proper failing tests
+
+   ```bash
+   # Write the test
+   # (use maestro skill maestro:tdd for proper TDD technique)
+
+   # MUST fail before you fix
+   bun test path/to/module.test.ts --bail
+   # Expected: FAIL
+   ```
 
 2. **Implement Single Fix**
-   - Address the root cause identified
+   - Address the root cause identified in Phase 2
    - ONE change at a time
    - No "while I'm here" improvements
    - No bundled refactoring
 
-3. **Verify Fix**
-   - Test passes now?
-   - No other tests broken?
-   - Issue actually resolved?
+3. **Verify Completely**
+
+   ```bash
+   # Regression test passes
+   bun test path/to/module.test.ts --bail
+
+   # Full suite passes
+   bun test
+
+   # Build succeeds
+   bun run build
+
+   # For flaky bugs: run multiple times
+   for i in {1..20}; do bun test path/to/module.test.ts || break; done
+
+   # Check for sibling bugs (same broken pattern elsewhere)
+   rg 'the-broken-pattern' --type ts --files-with-matches
+   ```
 
 4. **If Fix Doesn't Work**
    - STOP
    - Count: How many fixes have you tried?
-   - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
+   - If < 3: Return to Phase 1 with new evidence
+   - **If >= 3: STOP -- this is architectural (see below)**
    - DON'T attempt Fix #4 without architectural discussion
 
 5. **If 3+ Fixes Failed: Question Architecture**
 
    **Pattern indicating architectural problem:**
-   - Each fix reveals new shared state/coupling/problem in different place
+   - Each fix reveals new shared state / coupling in a different place
    - Fixes require "massive refactoring" to implement
    - Each fix creates new symptoms elsewhere
 
@@ -208,37 +245,53 @@ You MUST complete each phase before proceeding to the next.
    - Are we "sticking with it through sheer inertia"?
    - Should we refactor architecture vs. continue fixing symptoms?
 
-   **Discuss with your human partner before attempting more fixes**
+   **Discuss with your human partner before attempting more fixes.**
 
-   This is NOT a failed hypothesis - this is a wrong architecture.
+   This is NOT a failed hypothesis -- this is a wrong architecture.
 
-## Red Flags - STOP and Follow Process
+## Red Flags -- STOP and Follow Process
 
-If you catch yourself thinking:
+### Thought Patterns (you catch yourself thinking)
+
 - "Quick fix for now, investigate later"
 - "Just try changing X and see if it works"
-- "Add multiple changes, run tests"
-- "Skip the test, I'll manually verify"
 - "It's probably X, let me fix that"
 - "I don't fully understand but this might work"
-- "Pattern says X but I'll adapt it differently"
 - "Here are the main problems: [lists fixes without investigation]"
-- Proposing solutions before tracing data flow
-- **"One more fix attempt" (when already tried 2+)**
-- **Each fix reveals new problem in different place**
+
+### Action Patterns (you're already doing this)
+
+- Making multiple changes before testing any of them
+- Proposing a fix before tracing data flow
+- Adding `as any`, `@ts-ignore`, or `// eslint-disable` to silence errors
+- Adding defensive null checks instead of ensuring values exist at source
+- Skipping test creation: "I'll manually verify"
+- Copy-pasting a fix from StackOverflow without understanding it
+- **Fix #3 on the same bug** (each revealing a new problem in a different place)
+
+### Code Patterns (you see these in your diff)
+
+| Pattern in Diff | What It Means |
+|----------------|---------------|
+| `as any` or `as unknown as X` | Silencing the type system, not fixing the mismatch |
+| `?.` chains added defensively | Hiding null propagation instead of fixing the source |
+| `try { } catch { }` with empty catch | Swallowing errors that need handling |
+| `setTimeout` / `sleep` added | Papering over a race condition |
+| `// TODO: fix later` | You know it's wrong and you're shipping it anyway |
+| Multiple files changed for "one fix" | You're doing shotgun debugging |
 
 **ALL of these mean: STOP. Return to Phase 1.**
 
-**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+**If 3+ fixes failed:** Question the architecture (see Phase 4, step 5).
 
-## your human partner's Signals You're Doing It Wrong
+## Your Human Partner's Signals
 
 **Watch for these redirections:**
-- "Is that not happening?" - You assumed without verifying
-- "Will it show us...?" - You should have added evidence gathering
-- "Stop guessing" - You're proposing fixes without understanding
-- "Ultrathink this" - Question fundamentals, not just symptoms
-- "We're stuck?" (frustrated) - Your approach isn't working
+- "Is that not happening?" -- You assumed without verifying
+- "Will it show us...?" -- You should have added evidence gathering
+- "Stop guessing" -- You're proposing fixes without understanding
+- "Ultrathink this" -- Question fundamentals, not just symptoms
+- "We're stuck?" (frustrated) -- Your approach isn't working
 
 **When you see these:** STOP. Return to Phase 1.
 
@@ -277,8 +330,9 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
+**In this directory:**
 
+- **`reference/debugging-patterns.md`** - Concrete workflows per symptom type: runtime errors, type errors, test failures, performance, integration. Decision tree, tool commands, anti-patterns.
 - **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
 - **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling

@@ -56,13 +56,57 @@ If diff > 300 lines, offer Iterative Review Mode (per-file review).
 
 ## Step 5: Run Automated Checks
 
+Run all applicable checks and interpret results before manual review. Automated checks catch mechanical issues so manual review can focus on logic and design.
+
+### 5.1: Determine Check Commands
+
+Detect from project config (`package.json`, `Makefile`, `pyproject.toml`, etc.):
+
 ```bash
-CI=true {test_command}
-{lint_command}
-{typecheck_command}
+CI=true {test_command}      # e.g., bun test, uv run pytest, ./gradlew test
+{lint_command}               # e.g., eslint ., ruff check, clippy
+{typecheck_command}          # e.g., tsc --noEmit, mypy, cargo check
+{format_check_command}       # e.g., prettier --check ., ruff format --check
 ```
 
-Report pass/fail for each check.
+### 5.2: File-Type-Specific Checks
+
+Run targeted checks based on which file types appear in the diff:
+
+| File type | Check | What it catches |
+|-----------|-------|-----------------|
+| `.ts`, `.tsx` | `tsc --noEmit` | Type errors, missing imports, incorrect generics |
+| `.ts`, `.tsx` | `eslint --no-warn-ignored {files}` | Lint violations, unused vars, style drift |
+| `.py` | `ruff check {files}` | Lint, import order, complexity |
+| `.py` | `mypy {files}` | Type errors, None handling |
+| `.rs` | `cargo check` | Borrow checker, lifetime errors |
+| `.rs` | `cargo clippy -- -D warnings` | Idiomatic Rust violations |
+| `.go` | `go vet ./...` | Suspicious constructs |
+| `.go` | `staticcheck ./...` | Bug-prone patterns |
+| `.java` | `./gradlew check` or `./mvnw verify` | Compile errors, checkstyle |
+| `.json` | Validate with `jq . < file > /dev/null` | Syntax errors |
+| `.yaml`, `.yml` | Validate with language-appropriate parser | Syntax errors, indentation |
+| `Dockerfile` | `hadolint` (if available) | Best practice violations |
+| `.sql` | `sqlfluff lint` (if available) | SQL anti-patterns |
+
+### 5.3: Interpret Results
+
+For each check, report:
+
+```
+[ok] TypeScript: 0 errors
+[!]  ESLint: 3 errors in 2 files (2 auto-fixable)
+[ok] Tests: 47 passed, 0 failed
+[--] Format: not configured
+```
+
+Classification:
+- **[ok]**: Check passed -- no action needed
+- **[!]**: Check failed -- findings become review items with severity
+- **[--]**: Check not available -- note in report, not a blocker
+- **[x]**: Check errored (tool crashed, config broken) -- investigate before proceeding
+
+**Auto-fixable results**: If a linter reports auto-fixable issues (e.g., `eslint --fix`, `ruff format`), note the count separately. These feed into Step 8's auto-fix protocol.
 
 ## Step 6: Review Dimensions
 
@@ -72,17 +116,62 @@ See `reference/review-dimensions.md` for full criteria per dimension.
 ## Step 7: Generate Report
 
 Format findings with severity ratings and checkbox verification.
-See `reference/report-template.md` for the full report format and verdict options (PASS / PASS WITH NOTES / NEEDS CHANGES).
+See `reference/report-template.md` for the full report format and verdict options.
+
+### Severity Classification
+
+Every finding gets exactly one severity. Use these definitions consistently:
+
+| Severity | Label | Meaning | Blocks approval? |
+|----------|-------|---------|-------------------|
+| **Blocker** | `[!!]` | Incorrect behavior, data loss risk, security vulnerability, spec violation | Yes -- must fix |
+| **Major** | `[!]` | Significant quality issue, missing error handling, untested path, performance trap | Yes -- must fix or justify |
+| **Minor** | `[?]` | Style inconsistency, naming, missing edge case test, documentation gap | No -- should fix |
+| **Nit** | `[.]` | Formatting, subjective preference, trivial improvement | No -- optional |
+
+**Rules for severity assignment:**
+- Spec violations are always Blocker, regardless of how small
+- Security issues are always Blocker unless clearly theoretical (e.g., timing attack on non-secret comparison)
+- "I would have done it differently" is a Nit, not a Major
+- If unsure between two severities, pick the lower one and explain your uncertainty
+- Never mark something Blocker without a concrete failure scenario
 
 ## Step 8: Auto-fix Option
 
-If verdict is not PASS, offer auto-fix, manual-only, per-fix review, or complete-track-anyway.
-See `reference/report-template.md` for the auto-fix protocol.
+If verdict is not PASS, offer auto-fix options.
+See `reference/report-template.md` for the auto-fix protocol and the boundary between auto-fixable and human-judgment issues.
 
 ## Step 9: Post-Review Cleanup
 
 Offer archive, delete, keep, or skip for the track.
 See `reference/report-template.md` for cleanup options.
+
+---
+
+## Reviewing Across Worktrees
+
+When reviewing a task completed in a worktree (common in maestro workflows):
+
+### Compare Worker Output to Spec
+
+1. **Read the worker prompt**: `.maestro/features/{feature}/tasks/{task}/worker-prompt.md` contains the full spec the worker received
+2. **Read the task report**: `.maestro/features/{feature}/tasks/{task}/report.md` for the worker's self-assessment
+3. **Diff against main**: `git diff main...{task-branch}` to see only changes from this task
+4. **Check for bleed**: Ensure the worker didn't modify files outside its task scope
+
+### Cross-Task Consistency
+
+When multiple tasks are complete:
+- Check for conflicting patterns (e.g., Task A uses one error style, Task B another)
+- Check for duplicated code across task branches
+- Verify shared interfaces match between producer and consumer tasks
+
+### Worktree-Specific Red Flags
+
+- Worker committed `.maestro/` metadata changes (should not happen)
+- Worker modified files belonging to another task's scope
+- Worker left debugging artifacts (console.log, print statements, TODO markers)
+- Worker diverged from the plan without documenting why in the task report
 
 ---
 

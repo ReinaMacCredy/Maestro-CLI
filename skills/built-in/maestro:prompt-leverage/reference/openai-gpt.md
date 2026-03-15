@@ -237,15 +237,89 @@ you to make code changes. If you encounter blockers, attempt to resolve them you
 </dig_deeper_nudge>
 ```
 
-## Reasoning Effort Heuristics
+## Reasoning Model Calibration (o-series vs. gpt-series)
 
-Not all tasks need deep reasoning. Match effort to task shape:
+Not all tasks need reasoning models. Match model choice to task shape.
 
-- **Minimal:** workflow steps, field extraction, support triage, short structured transforms.
-- **Moderate:** typical coding, drafting, data analysis, multi-step tool use.
-- **Deep:** long-context synthesis, multi-document review, conflict resolution, strategy writing, long-horizon agentic work.
+### When to Use o-series (o1, o3, o4-mini)
 
-Before cranking up reasoning effort, first add `<completeness_contract>`, `<verification_loop>`, and `<tool_persistence_rules>`. Stronger prompts often recover the performance teams seek through higher reasoning settings.
+- Complex multi-step logic (math, algorithms, proofs)
+- Tasks where chain-of-thought visibly improves accuracy
+- Planning with many interdependent constraints
+- Code that requires understanding complex state machines
+
+### When gpt-series Is Sufficient
+
+- Straightforward coding (add field, fix typo, rename variable)
+- Text generation and editing
+- Data extraction and formatting
+- Most tool-use workflows
+
+### Prompting Differences
+
+**gpt-series** responds well to:
+- Detailed step-by-step instructions
+- Examples and few-shot demonstrations
+- XML-tagged structural blocks
+
+**o-series** responds well to:
+- Clear problem statement without over-specifying the approach
+- Constraints and success criteria (let the model reason about HOW)
+- Minimal few-shot examples (reasoning models derive approach from the problem)
+
+```
+-- GPT-series style (good):
+   "Step 1: Read the config file. Step 2: Extract the database URL.
+   Step 3: Parse host, port, and database name. Step 4: Return as object."
+
+-- o-series style (good):
+   "Parse database connection strings into { host, port, database } objects.
+   Handle: standard postgres URLs, socket paths, and URLs with query parameters.
+   Return null for unparseable strings."
+```
+
+**Anti-pattern:** Using o-series with step-by-step instructions. The reasoning model may follow your steps even when it would find a better approach on its own.
+
+## Before/After: GPT Prompt Transformation
+
+### Raw Prompt (Weak)
+
+```
+Write me an API endpoint that handles file uploads
+```
+
+### Upgraded Prompt (Strong)
+
+```
+## Objective
+Add a POST /api/files/upload endpoint to the Express API.
+Accept multipart/form-data with a single file field named "document".
+
+## Constraints
+- Max file size: 10MB. Return 413 if exceeded.
+- Allowed types: .pdf, .docx, .txt. Return 415 for others.
+- Store files in uploads/ directory with UUID filenames (preserve extension).
+- Return { id: string, originalName: string, size: number, uploadedAt: string }.
+
+## Context
+- Existing routes follow the pattern in src/api/routes/users.ts
+- File utilities exist in src/utils/file.ts (mime type detection, path sanitization)
+- No existing upload handling anywhere in the codebase
+
+<output_contract>
+- Return the complete route handler file.
+- Include input validation, error responses, and success response.
+- Add tests covering: valid upload, oversized file, wrong type, missing file field.
+</output_contract>
+
+<verification_loop>
+Before finalizing:
+- All error cases return appropriate HTTP status codes
+- File is written to disk only after all validation passes
+- UUID generation uses crypto.randomUUID() (not Math.random())
+- Test file is self-contained (creates and cleans up test files)
+</verification_loop>
+```
 
 ## Frontend Patterns
 
@@ -260,3 +334,14 @@ When doing frontend design tasks, avoid generic, overbuilt layouts.
 - Reduce clutter: avoid pill clusters, stat strips, icon rows, competing text blocks.
 </frontend_tasks>
 ```
+
+## GPT-Specific Pitfalls
+
+| Pitfall | What Happens | Fix |
+|---------|-------------|-----|
+| No output contract | GPT picks its own format, often verbose | Add `<output_contract>` with explicit format |
+| Missing completeness contract | GPT finishes early on multi-item tasks | Add `<completeness_contract>` with tracking |
+| Step-by-step for o-series | Model follows suboptimal steps instead of reasoning | State the goal and constraints, let it reason |
+| No empty-result recovery | GPT reports "not found" on first failure | Add `<empty_result_recovery>` with fallback strategies |
+| Vague tool instructions | GPT uses tools speculatively or skips them | Add `<tool_persistence_rules>` with clear criteria |
+| No verification loop | Code changes ship without self-review | Add `<verification_loop>` before finalization |

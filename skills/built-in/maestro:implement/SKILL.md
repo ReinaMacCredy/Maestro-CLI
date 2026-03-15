@@ -19,13 +19,71 @@ Execute tasks from a track's implementation plan, following the configured workf
 
 ---
 
-## Step 1: Mode Detection
+## Step 1: Mode Selection
 
-Parse `$ARGUMENTS`:
+Parse `$ARGUMENTS` for explicit flags, then validate the choice is appropriate.
+
+### 1a: Explicit Flag Detection
+
 - If contains `--team` --> team mode (see `reference/team-mode.md`)
 - If contains `--parallel` --> parallel mode (see `reference/parallel-mode.md`)
 - Otherwise --> single-agent mode (default)
-- If contains `--resume` --> set resume flag
+- If contains `--resume` --> set resume flag (works with all modes)
+
+### 1b: Mode Selection Checklist
+
+Before executing, validate that the chosen mode fits the work. Use this checklist when the user has NOT specified a flag and you need to recommend, or to warn when an explicit flag conflicts with the task shape.
+
+```
+MODE SELECTION CHECKLIST
+
+   Evaluate:                          Single    Parallel    Team
+   ----------------------------------------------------------------
+1. Task count                         1-3       3-8         4+
+2. Independent tasks in phase?        any       2+ needed   2+ needed
+3. File scope overlap between tasks?  n/a       low/none    low/none
+4. Cross-task dependencies?           any       few         moderate ok
+5. Task complexity                    any       moderate    high
+6. Need human review between tasks?   yes       wave-end    task-end
+7. Runtime supports Task tool?        n/a       required    n/a
+8. Runtime supports Agent Teams?      n/a       n/a         required
+```
+
+**Decision rules:**
+
+| Condition | Recommended Mode | Reason |
+|-----------|-----------------|--------|
+| 1-3 tasks, any dependency shape | Single | Overhead of parallelism exceeds benefit |
+| 3-8 tasks, 2+ independent per phase, low file overlap | Parallel | Wave-based execution saves time |
+| 4+ tasks, high complexity, need orchestration | Team | Workers handle complexity, orchestrator verifies |
+| All tasks are sequential (each depends on previous) | Single | No parallelism possible regardless of count |
+| Tasks touch many shared files | Single | File conflicts make parallel/team counterproductive |
+| Mix of independent and dependent tasks | Parallel | Waves handle the dependency ordering naturally |
+
+**Warn and suggest** if the user's explicit flag conflicts:
+
+```
+[!] --parallel specified but all 3 tasks are sequential (each depends on previous).
+--> Falling back to single-agent mode. No parallelism benefit here.
+```
+
+```
+[!] --team specified but only 2 tasks in this track.
+--> Single-agent mode is more efficient for small tracks. Proceed with --team anyway? (y/n)
+```
+
+### 1c: Mode Comparison
+
+| Aspect | Single | Parallel | Team |
+|--------|--------|----------|------|
+| Execution | Sequential in main session | Concurrent sub-agents in worktrees | Concurrent workers via delegation |
+| Isolation | None (main worktree) | Git worktree per sub-agent | Shared worktree, task-level isolation |
+| Who commits | Main session | Main session (after merge) | Orchestrator (after verification) |
+| Failure recovery | Fix inline, retry | Retry failed task sequentially | Reassign or fix task |
+| Best for | Small tracks, tight dependencies | Medium tracks, independent tasks | Large tracks, complex tasks |
+| Overhead | None | Worktree setup + merge | Team setup + monitoring |
+
+---
 
 ## Step 2: Track Selection
 
@@ -67,7 +125,21 @@ If `br_enabled` and `.beads/` does not exist: `br init --prefix maestro --json`.
 Parse `plan.md`: identify phases (`## Phase N`), tasks (`### Task N.M`), sub-tasks (`- [ ] ...`).
 If `--resume`: skip tasks already marked `[x]`.
 
-If `br_enabled`: use `bv -robot-plan -label "track:{epic_id}" -format json` to get dependency-respecting execution order. If `--resume`: use `br list --status open --label "phase:{N}" --json` to identify remaining work. Fall back to plan.md parsing if `bv` is unavailable.
+### Task Dependency Resolution
+
+Dependencies are resolved in this priority order:
+
+1. **BR dependencies** (if `br_enabled`): Use `bv -robot-plan -label "track:{epic_id}" -format json` to get dependency-respecting execution order. This is the most reliable source because dependencies are explicit.
+2. **Plan structure**: Tasks within a phase execute in document order. Phases execute sequentially. Cross-phase tasks are always sequential.
+3. **Inferred dependencies**: If a task's description references output from another task (e.g., "using the API from Task 1.1"), treat it as a dependency even if not explicitly marked.
+
+**Dependency conflict detection:**
+```
+[!] Task 2.3 references "the schema from Task 2.1" but plan.md lists them as independent.
+--> Treating Task 2.3 as dependent on Task 2.1. Adjust wave assignment.
+```
+
+If `br_enabled` and `--resume`: use `br list --status open --label "phase:{N}" --json` to identify remaining work. Fall back to plan.md parsing if `bv` is unavailable.
 
 ---
 
@@ -76,7 +148,7 @@ If `br_enabled`: use `bv -robot-plan -label "track:{epic_id}" -format json` to g
 ### Step 6a: Execute Tasks Sequentially
 
 Follow the TDD or ship-fast methodology for each task.
-See `reference/single-agent-execution.md` for the full Red-Green-Refactor cycle (steps 6a.1-6a.9), ship-fast variant, and skill injection protocol.
+See `reference/single-agent-execution.md` for the full Red-Green-Refactor cycle (steps 6a.1-6a.9), ship-fast variant, skill injection protocol, and worked examples.
 See `reference/tdd-workflow.md` for TDD best practices and anti-patterns.
 
 ### Step 7a: Phase Completion Verification
@@ -88,13 +160,13 @@ See `reference/phase-completion.md` for details (coverage check, full test run, 
 
 ## Parallel Mode (--parallel)
 
-See `reference/parallel-mode.md` for full protocol: plan analysis for task independence, wave-based sub-agent spawning with worktree isolation, result verification and merge, conflict detection, and sequential fallback.
+See `reference/parallel-mode.md` for full protocol: plan analysis for task independence, wave-based sub-agent spawning with worktree isolation, result verification and merge, conflict detection, sequential fallback, and worked examples.
 
 ---
 
 ## Team Mode (--team)
 
-See `reference/team-mode.md` for full protocol: team creation, task delegation, worker spawning, monitoring, verification, and shutdown.
+See `reference/team-mode.md` for full protocol: team creation, task delegation, worker spawning, monitoring, verification, shutdown, and worked examples.
 
 ---
 
@@ -102,6 +174,68 @@ See `reference/team-mode.md` for full protocol: team creation, task delegation, 
 
 When ALL phases are complete, run the Track Completion Protocol.
 See `reference/track-completion.md` for details (mark complete, skill effectiveness recording, cleanup, final commit, summary).
+
+---
+
+## Failure Recovery
+
+These recovery procedures apply across all modes. Mode-specific recovery is documented in the respective reference files.
+
+### Worker/Sub-agent Failure
+
+When a worker or sub-agent fails during task execution:
+
+```
+FAILURE TRIAGE
+
+1. Read the error output
+2. Classify the failure:
+
+   Build error         --> Fix the code, retry the task
+   Test failure        --> Debug the test or implementation, retry
+   Missing dependency  --> Install/configure, retry
+   Unclear spec        --> STOP, ask user for clarification
+   Infrastructure      --> Check environment, retry once, then STOP
+   Repeated failure    --> STOP after 3 attempts on same task
+```
+
+### Retry vs. Manual Fix Decision
+
+| Signal | Action |
+|--------|--------|
+| Test failure with clear error message | Retry: fix the code and re-run |
+| Same test fails 3 times | STOP: ask user -- likely a spec or design issue |
+| Build error in generated/config code | Manual fix in main session, then continue |
+| Worker reports blocker | Assess blocker, provide decision, re-dispatch |
+| Merge conflict after parallel wave | Sequential retry for conflicting tasks |
+| Rate limit or infrastructure error | Wait and retry once, then fall back to sequential |
+
+### Re-dispatch vs. Fix-in-Place
+
+**Re-dispatch** (spawn a new worker/sub-agent) when:
+- The failure was environmental (timeout, rate limit, infra)
+- The task is independent and can run cleanly from scratch
+- The previous attempt left no partial state
+
+**Fix-in-place** (main session fixes directly) when:
+- The failure is a small, obvious bug (typo, missing import)
+- Partial work exists and is mostly correct
+- Re-dispatching would repeat substantial correct work
+
+### Stale Task Recovery
+
+If `maestro status` shows a task stuck in `[~]` (in-progress) with no active worker:
+
+```
+[!] Task 2.1 is marked in-progress but no worker is active.
+--> This is a stale task from a crashed/interrupted session.
+```
+
+Recovery:
+1. Check if partial work exists (uncommitted files, partial implementation)
+2. If partial work is salvageable: use `--resume` to continue from current state
+3. If partial work is broken: reset to last commit, mark task `[ ]`, re-execute
+4. If using BR: `br update {issue_id} --status open --json` to unblock downstream
 
 ---
 
@@ -119,7 +253,8 @@ After each task checkpoint report, ask the operator if they want a Hygienic code
 - Hit a blocker mid-task (missing dependency, test fails, instruction unclear)
 - Plan has critical gaps preventing starting
 - You don't understand an instruction
-- Verification fails repeatedly
+- Verification fails repeatedly (3+ attempts)
+- A task produces side effects not anticipated by the plan
 
 **Ask for clarification rather than guessing.**
 
@@ -133,6 +268,7 @@ After each task checkpoint report, ask the operator if they want a Hygienic code
 - Multiple tasks are failing due to a shared incorrect assumption
 - The codebase structure diverges significantly from what the plan expected
 - Dependencies between tasks are discovered that the plan did not account for
+- A completed task invalidated assumptions in upcoming tasks
 
 **Don't force through blockers** -- stop and ask.
 

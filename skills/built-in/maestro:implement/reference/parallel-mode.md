@@ -4,6 +4,15 @@
 
 Parallel mode uses Task sub-agents to execute independent plan tasks concurrently. You (the main session) analyze the plan for parallelism opportunities, spawn sub-agents in isolated worktrees, then verify and merge their results before committing. Sub-agents can read, write, and edit files but cannot commit, touch BR state, or modify plan.md.
 
+## When to Use
+
+- 3-8 tasks in a phase with 2+ independent tasks
+- Tasks modify different files (low file scope overlap)
+- Tasks do not depend on each other's output within the same wave
+- Runtime supports the Task tool with worktree isolation
+
+**Do not use** when all tasks are sequential, tasks heavily overlap in file scope, or the track has fewer than 3 tasks (overhead exceeds benefit).
+
 ## Prerequisites
 
 Your runtime must support the Task tool for spawning sub-agents.
@@ -37,7 +46,7 @@ Parse `plan.md` to identify all tasks in the current phase. For each task, deter
 
 4. **File reservation check** (if agent-mail available): After heuristic analysis, call `file_reservation_paths` with `exclusive: true` for each task's inferred file scope. If `conflicts` are returned (another task already reserved overlapping paths), move the conflicting task to a later wave. This replaces guesswork with concrete overlap detection.
 
-### 6b.2: Classify Tasks
+### 6b.2: Classify Tasks into Waves
 
 For each phase, partition tasks into waves:
 
@@ -263,6 +272,16 @@ If some sub-agents in a wave succeed and others fail:
 3. Retry failed tasks sequentially
 4. This ensures progress is not lost due to individual failures
 
+### Merge Failure After Verification
+
+If tests pass in the worktree but fail after merging into main:
+
+1. The conflict is between the merged code and main branch state
+2. Identify which task's changes cause the failure
+3. Revert the merge: `git merge --abort` or `git reset --hard HEAD`
+4. Re-execute the failing task sequentially with full main branch context
+5. The sub-agent lacked visibility into other wave results -- sequential execution fixes this
+
 ### Orphaned Worktrees
 
 On `--resume` with `--parallel`, check for stale worktrees from a previous interrupted run:
@@ -274,6 +293,93 @@ git worktree list --porcelain | grep -A1 "worktree.*\.claude/worktrees"
 If found, prune them:
 ```bash
 git worktree prune
+```
+
+---
+
+## Worked Example: Parallel Execution
+
+**Track**: "Add REST API endpoints for user management"
+**Phase 2** has 5 tasks:
+- Task 2.1: Create GET /users endpoint
+- Task 2.2: Create GET /users/:id endpoint
+- Task 2.3: Create POST /users endpoint
+- Task 2.4: Add input validation middleware
+- Task 2.5: Add pagination to GET /users
+
+**Dependency analysis:**
+
+```
+Task 2.1: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+Task 2.2: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+Task 2.3: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+Task 2.4: Modifies src/middleware/validation.ts                  | no deps
+Task 2.5: Modifies src/routes/users.ts (depends on 2.1 output)  | depends on 2.1
+
+[!] Tasks 2.1, 2.2, 2.3 all modify src/routes/users.ts
+--> File scope overlap detected. Cannot parallelize all three.
+```
+
+**Wave assignment:**
+
+```
+[ok] Phase 2 parallelism analysis:
+  Wave 1 (parallel): Task 2.1, Task 2.4
+    - 2.1: src/routes/users.ts (GET /users only)
+    - 2.4: src/middleware/validation.ts (no overlap)
+  Wave 2 (parallel): Task 2.2, Task 2.3
+    - Both touch users.ts but in different handler functions
+    - Acceptable risk -- hunks unlikely to overlap
+  Wave 3 (sequential): Task 2.5
+    - Depends on 2.1 (needs the GET /users handler to add pagination)
+  --> 4 tasks parallel across 2 waves, 1 sequential
+```
+
+**Execution:**
+
+```
+--- Wave 1 ---
+Spawning sub-agent: Task 2.1 (GET /users) [worktree: .claude/worktrees/task-2.1]
+Spawning sub-agent: Task 2.4 (validation) [worktree: .claude/worktrees/task-2.4]
+
+[ok] Task 2.4 complete: src/middleware/validation.ts created, 6 tests pass
+[ok] Task 2.1 complete: GET /users handler added, 4 tests pass
+
+Merging wave 1...
+  git merge --no-commit worktree/task-2.1  [ok]
+  git merge --no-commit worktree/task-2.4  [ok]
+  CI=true bun test  [ok] 10 new tests pass, 0 regressions
+  git commit -m "feat(api): add GET /users and validation middleware [parallel: 2.1, 2.4]"
+[x] Wave 1 complete (sha: m1n2o3p)
+
+--- Wave 2 ---
+Spawning sub-agent: Task 2.2 (GET /users/:id)
+Spawning sub-agent: Task 2.3 (POST /users)
+
+[ok] Task 2.2 complete: 3 tests pass
+[!] Task 2.3 failed: "Cannot find module '../models/user'"
+--> Sub-agent needed a model that doesn't exist yet.
+--> Queuing Task 2.3 for sequential retry.
+
+Merging wave 2 (partial)...
+  git merge --no-commit worktree/task-2.2  [ok]
+  CI=true bun test  [ok]
+  git commit -m "feat(api): add GET /users/:id [parallel: 2.2]"
+[x] Task 2.2 complete (sha: q4r5s6t)
+
+--- Task 2.3 (sequential retry) ---
+Executing in main session with full context...
+Created src/models/user.ts (was missing from task scope)
+Created POST /users handler
+[ok] 5 tests pass
+[x] Task 2.3 complete (sha: u7v8w9x)
+
+--- Wave 3 ---
+Task 2.5: Adding pagination to GET /users (sequential, depends on 2.1)
+[ok] 3 tests pass
+[x] Task 2.5 complete (sha: y0z1a2b)
+
+--- Phase 2 Complete ---
 ```
 
 ---
@@ -297,3 +403,5 @@ The phase completion check runs against the main worktree, which now contains al
 | Force all tasks parallel | Fall back to sequential when parallelism adds no value |
 | Spawn too many sub-agents (>4) | Limit wave size to 3-4 concurrent sub-agents |
 | Skip file reservations when agent-mail is available | Reserve paths before spawning to catch conflicts early |
+| Retry failed sub-agents in parallel again | Sequential retry gives full context and avoids repeating the same failure |
+| Ignore partial wave failures | Merge successful work, retry failures sequentially |

@@ -1,8 +1,29 @@
 # Single-Agent Execution Protocol
 
+## When to Use
+
+Single-agent mode is the default. Use it when:
+- Track has 1-3 tasks
+- All tasks are sequential (each depends on the previous)
+- Tasks touch heavily overlapping files
+- You want maximum control and review between each task
+
 ## Task Execution Loop
 
 For each task in the queue, follow the workflow methodology from `workflow.md`.
+
+**Loop structure:**
+```
+for each phase in plan:
+  for each task in phase:
+    6a.1: Mark in progress
+    6a.2-6a.4: Red-Green-Refactor (TDD) or Implement-Test (ship-fast)
+    6a.5-6a.6: Verify coverage and compliance
+    6a.7-6a.9: Commit, attach summary, record SHA
+  end
+  Phase Completion Protocol
+end
+```
 
 ---
 
@@ -113,6 +134,114 @@ Same flow but reordered:
 3. Write tests covering the implementation
 4. Run tests, verify passing
 5. Commit, attach summary, record SHA
+
+---
+
+## Worked Example: Single-Agent TDD
+
+**Track**: "Add user email validation"
+**Plan**: Phase 1 has 3 tasks:
+- Task 1.1: Create email validator module
+- Task 1.2: Integrate validator into registration form
+- Task 1.3: Add error messages for invalid emails
+
+**Execution flow:**
+
+```
+[ok] Starting Track: add-user-email-validation (single-agent mode)
+[ok] Loaded plan.md (3 tasks, 1 phase)
+
+--- Task 1.1: Create email validator module ---
+[~] Marked in progress
+RED:   Created tests/email-validator.test.ts
+       - rejects empty string
+       - rejects missing @
+       - accepts valid email
+       Run: CI=true bun test tests/email-validator.test.ts
+       [ok] 3 tests FAIL (expected -- module doesn't exist)
+
+GREEN: Created src/utils/email-validator.ts
+       Run: CI=true bun test tests/email-validator.test.ts
+       [ok] 3 tests PASS
+
+REFACTOR: Extracted regex to named constant. Tests still pass.
+
+COMMIT: git add src/utils/email-validator.ts tests/email-validator.test.ts
+        git commit -m "feat(validation): add email validator module"
+[x] Task 1.1 complete (sha: a1b2c3d)
+
+--- Task 1.2: Integrate validator into registration form ---
+[~] Marked in progress
+RED:   Added test in tests/registration.test.ts
+       - form rejects invalid email on submit
+       Run: CI=true bun test tests/registration.test.ts
+       [ok] 1 test FAILS (validator not wired up)
+
+GREEN: Imported validator in src/routes/register.ts
+       Run: CI=true bun test tests/registration.test.ts
+       [ok] All tests PASS
+
+COMMIT: git commit -m "feat(registration): integrate email validation"
+[x] Task 1.2 complete (sha: d4e5f6g)
+
+--- Task 1.3: Add error messages for invalid emails ---
+[~] Marked in progress
+RED:   Added tests for error message rendering
+       [ok] Tests FAIL (no error UI exists)
+
+GREEN: Added error display component
+       [ok] Tests PASS
+
+COMMIT: git commit -m "feat(registration): add validation error messages"
+[x] Task 1.3 complete (sha: h7i8j9k)
+
+--- Phase 1 Completion ---
+[ok] Full test suite: 47 tests, all passing
+[ok] Coverage: 94% (threshold: 80%)
+Presenting manual verification plan to user...
+```
+
+---
+
+## Failure Recovery (Single-Agent)
+
+### Test Won't Pass After 3 Attempts
+
+```
+[!] Task 1.2 test "form rejects invalid email" fails after 3 fix attempts.
+    Error: TypeError: validator.validate is not a function
+--> STOPPING. Asking user for help.
+```
+
+Possible causes:
+- Spec is ambiguous about the expected API
+- Task 1.1 produced a different interface than Task 1.2 expects
+- Missing dependency or import issue
+
+Recovery: Ask user to clarify, then fix and continue. Do NOT skip the task.
+
+### Build Breaks on Later Task
+
+If Task 1.3 breaks code from Task 1.1:
+
+1. Run the full test suite to identify all failures
+2. Determine if the break is in Task 1.3's changes or a latent issue
+3. If Task 1.3 caused it: fix within Task 1.3 before committing
+4. If latent issue: create a fix sub-task, execute it, then continue
+
+### Unexpected Behavior Already Exists
+
+If the Red phase shows tests already passing:
+
+```
+[!] Task 1.1 tests pass immediately -- email validator already exists.
+--> Behavior already implemented. Checking if it matches spec...
+```
+
+1. Read the existing implementation
+2. Compare against the spec
+3. If matches: mark task complete, note in task notes
+4. If differs: write tests for the MISSING behavior, then implement
 
 ---
 

@@ -28,6 +28,20 @@ If an entry doesn't:
 
 **Test:** Would a fresh agent session make a mistake without this entry? If no --> noise.
 
+## What Belongs Where
+
+| Content | Location | Why |
+|---------|----------|-----|
+| Quote style, semicolons, indent | Linter config | Auto-fixable, auto-enforceable |
+| File naming, architecture boundaries | AGENTS.md | Not statically checkable |
+| Build/test commands, gotchas | AGENTS.md | Agent needs these immediately |
+| Detailed conventions, test patterns | `.maestro/context/*.md` | Progressive disclosure |
+| Function-specific constraints | Code comments | In-place, not session-wide |
+
+**Rule:** If a linter/formatter already enforces it, remove it from AGENTS.md. Duplicate enforcement is noise.
+
+See `reference/style-enforcement.md` for: detecting project code style, writing enforceable rules, before/after examples, and validation patterns.
+
 ## When to Use
 
 | Trigger | Action |
@@ -83,35 +97,20 @@ Agents read AGENTS.md top-to-bottom once at session start. Put high-value info f
 ```markdown
 # Project Name
 
-## Build & Test Commands
-# <-- Agents need this IMMEDIATELY
-bun run build
-bun run test
-bun run release:check
-
-## Code Style
-# <-- Prevents syntax/import errors
-- Semicolons: Yes
-- Quotes: Single
-- Imports: Use `.js` extension
-
-## Architecture
-# <-- Key directories, where things live
-packages/
-|-- hive-core/      # Shared logic
-|-- opencode-hive/  # Plugin
-\-- vscode-hive/    # Extension
-
-## Important Patterns
-# <-- How to do common tasks correctly
-Use `readText` from paths.ts, not fs.readFileSync
-
-## Gotchas & Anti-Patterns
-# <-- Things that break or mislead
-NEVER use `ensureDirSync` -- doesn't exist
+## Build & Test Commands        <-- Agents need this IMMEDIATELY
+## Code Style (Hard Rules only) <-- Prevents syntax/import errors
+## Architecture                 <-- Key directories, dependency direction
+## Important Patterns           <-- How to do common tasks correctly
+## Gotchas & Anti-Patterns      <-- Things that break or mislead
 ```
 
-**Keep total under 500 lines.** Beyond that, agents lose focus and miss critical entries.
+**Keep total under 100 lines.** The 100-line budget forces ruthless prioritization. Move detailed conventions, test patterns, and architecture deep-dives to `.maestro/context/` files (progressive disclosure -- loaded only when relevant).
+
+**Progressive disclosure strategy:**
+- AGENTS.md: What every agent needs every session (build cmds, hard rules, gotchas)
+- `.maestro/context/code_conventions.md`: Detailed naming, file org, API patterns
+- `.maestro/context/test_patterns.md`: Test structure, fixtures, mocking approach
+- Code comments: Function-specific constraints
 
 ## The Sync Workflow
 
@@ -165,7 +164,7 @@ Remove entries when they become:
 
 | Warning Sign | Why It's Bad | Fix |
 |-------------|-------------|-----|
-| AGENTS.md > 800 lines | Agents lose focus, miss critical info | Prune aggressively |
+| AGENTS.md > 100 lines | Agents lose focus, miss critical info | Move details to `.maestro/context/` |
 | Describes what code does | Agent can read code | Remove descriptions |
 | Missing build/test commands | First thing agents need | Add at top |
 | No gotchas section | Agents repeat past mistakes | Document failure modes |
@@ -182,52 +181,38 @@ Remove entries when they become:
 | "Explains the system" | Agents read code for that |
 | "Comprehensive reference" | AGENTS.md is a filter, not docs |
 
-## Good Examples
+## Before/After Examples
 
-**Build Commands (High value, agents need immediately):**
-```markdown
-## Build & Test Commands
-bun run build              # Build all packages
-bun run test               # Run all tests
-bun run release:check      # Full CI check
-```
+See `reference/style-enforcement.md` for before/after examples (Code Style, Architecture, Gotchas) and the full style detection workflow.
 
-**Project-Specific Convention (Prevents mistakes):**
-```markdown
-## Code Style
-- Imports: Use `.js` extension for local imports (ESM requirement)
-- Paths: Import from `../utils/paths.js` never `./paths`
-```
+## Maintenance: When and How to Update
 
-**Non-Obvious Gotcha (Prevents build failure):**
-```markdown
-## Important Patterns
-Use `ensureDir` from paths.ts -- sync despite name
-NEVER use `ensureDirSync` (doesn't exist)
-```
+AGENTS.md drifts from reality. Detect and fix drift proactively.
 
-## Bad Examples
+**When to update:**
 
-**Generic advice (agent already knows):**
-```markdown
-## Best Practices
-- Use meaningful variable names
-- Write unit tests
-- Follow DRY principle
-```
+| Trigger | Action |
+|---------|--------|
+| Feature completed | Sync learnings -- did agents hit new gotchas? |
+| Tooling change | Update build/test commands, remove linter-duplicated rules |
+| Dependency migration | Replace old library references (Redux --> Zustand) |
+| Agent repeating a mistake | Add the missing entry that would prevent it |
+| Quarterly review | Audit every entry against the Iron Law |
 
-**Describes code (agent can read it):**
-```markdown
-## Architecture
-The FeatureService class manages features. It has methods
-for create, read, update, and delete operations.
-```
+**Detecting drift:**
 
-**Irrelevant metadata:**
-```markdown
-## Project History
-Created in January 2024 by the platform team.
-Originally built for internal use.
+1. **Stale commands**: Run each build/test command in AGENTS.md. If any fail, the entry is stale.
+2. **Orphaned rules**: Search codebase for patterns mentioned in AGENTS.md. If the pattern no longer exists, remove the rule.
+3. **Linter overlap**: Compare AGENTS.md rules against linter config. If a rule is now linter-enforced, remove it from AGENTS.md.
+4. **Missing coverage**: Review recent agent sessions. If agents made preventable mistakes, add the missing entry.
+
+**Drift audit command sequence:**
+```bash
+# Verify build/test commands still work
+bun run build && bun run test
+
+# Check for patterns mentioned in AGENTS.md that no longer exist in code
+# (manual: read AGENTS.md, search for each referenced path/pattern)
 ```
 
 ## Verification
@@ -238,16 +223,20 @@ Before finalizing AGENTS.md updates:
 - [ ] No generic advice that applies to all projects
 - [ ] Build/test commands are first
 - [ ] Gotchas section exists and is populated
-- [ ] Total length under 500 lines (800 absolute max)
+- [ ] Total length under 100 lines
 - [ ] No entries describing what code does
+- [ ] No rules duplicated by linter/formatter config
 - [ ] Fresh agent session would benefit from each entry
+- [ ] Detailed patterns moved to `.maestro/context/` files
 
 ## Summary
 
 AGENTS.md is **behavioral memory**, not documentation:
 - Write for agents, optimize for behavior change
 - Signal = prevents mistakes, Noise = describes observables
-- Sync after features, prune quarterly
+- Keep under 100 lines -- move details to `.maestro/context/` (progressive disclosure)
+- Don't duplicate what linters enforce -- see `reference/style-enforcement.md`
+- Sync after features, audit quarterly for drift
 - Test: Would agent make a mistake without this entry?
 
 **Quality > quantity. Every line counts.**
@@ -306,7 +295,7 @@ Organize discoveries into these categories (internal notes, not output):
 
 ### Step 3: Draft AGENTS.md
 
-Use the Section Structure guidance above. The output file MUST be under 100 lines. Apply the Iron Law and Signal/Noise filtering to every entry.
+Use the Section Structure guidance above. The output file MUST be under 100 lines. Apply the Iron Law, Signal/Noise filtering, and the "What Belongs Where" table to every entry. Move detailed patterns to `.maestro/context/` files.
 
 ### Step 4: Draft Progressive Disclosure Files
 
