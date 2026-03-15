@@ -47,8 +47,8 @@ async function scanReferences(refDir: string, basePath: string = ''): Promise<Re
 }
 
 async function main() {
-  const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-  const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  const dirEntries = await readdir(SKILLS_DIR, { withFileTypes: true });
+  const dirs = dirEntries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
 
   const skills: SkillMeta[] = [];
 
@@ -82,7 +82,7 @@ async function main() {
 
   const names = skills.map((s) => `'${s.slug}'`).join(', ');
 
-  const entries_ = skills
+  const entries = skills
     .map((s) => {
       const parts = [
         `name: '${s.slug}'`,
@@ -103,7 +103,7 @@ async function main() {
 export const BUILTIN_SKILL_NAMES = [${names}] as const;
 export type BuiltinSkillName = typeof BUILTIN_SKILL_NAMES[number];
 export const BUILTIN_SKILLS: Record<BuiltinSkillName, { name: string; description: string; content: string; argumentHint?: string; references?: Record<string, string> }> = {
-${entries_}
+${entries}
 };
 `;
 

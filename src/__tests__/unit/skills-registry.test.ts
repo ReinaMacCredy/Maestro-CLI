@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { listSkills, loadSkill, loadSkillReference, SKILL_ALIASES, BUILTIN_SKILL_NAMES } from '../../skills/registry.ts';
+import { listSkills, loadSkill, loadSkillReference, BUILTIN_SKILL_NAMES } from '../../skills/registry.ts';
+import { SKILL_ALIASES } from '../../skills/aliases.ts';
 
 describe('skills registry', () => {
   let tmpDir: string;

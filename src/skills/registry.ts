@@ -1,4 +1,5 @@
 import { BUILTIN_SKILLS, BUILTIN_SKILL_NAMES, type BuiltinSkillName } from './registry.generated.ts';
+import { SKILL_ALIASES } from './aliases.ts';
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { parseFrontmatter } from '../utils/frontmatter.ts';
@@ -13,25 +14,6 @@ export interface SkillEntry {
   source: SkillSource;
   argumentHint?: string;
 }
-
-/**
- * Maps old (pre-colon) skill names to new colon-prefixed names.
- * Used for backward compatibility with deprecation warnings.
- */
-export const SKILL_ALIASES: Record<string, string> = {
-  'writing-plans': 'maestro:design',
-  'executing-plans': 'maestro:implement',
-  'code-reviewer': 'maestro:review',
-  'agents-md-mastery': 'maestro:agents-md',
-  'brainstorming': 'maestro:brainstorming',
-  'dispatching-parallel-agents': 'maestro:dispatching',
-  'docker-mastery': 'maestro:docker',
-  'parallel-exploration': 'maestro:parallel-exploration',
-  'prompt-leverage': 'maestro:prompt-leverage',
-  'systematic-debugging': 'maestro:debugging',
-  'test-driven-development': 'maestro:tdd',
-  'verification-before-completion': 'maestro:verification',
-};
 
 /** Directories to scan for internal skills, in priority order. */
 const INTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
@@ -49,11 +31,26 @@ interface InternalSkill {
   argumentHint?: string;
 }
 
+/** Resolve old skill name to canonical name. Returns { resolved, wasAliased }. */
+function resolveAlias(name: string): { resolved: string; wasAliased: boolean } {
+  const alias = SKILL_ALIASES[name];
+  if (alias) {
+    return { resolved: alias, wasAliased: true };
+  }
+  return { resolved: name, wasAliased: false };
+}
+
+/** Per-projectRoot cache -- skills don't change mid-session. */
+const _internalCache = new Map<string, InternalSkill[]>();
+
 /**
  * Discover internal skills from repository-local and project-local directories.
  * Expects the same layout as builtin: <dir>/<slug>/SKILL.md with name+description frontmatter.
+ * Results are cached per projectRoot for the process lifetime.
  */
 async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
+  const cached = _internalCache.get(projectRoot);
+  if (cached) return cached;
   const results: InternalSkill[] = [];
 
   for (const { dir, source } of INTERNAL_SOURCES) {
@@ -91,6 +88,7 @@ async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
     }
   }
 
+  _internalCache.set(projectRoot, results);
   return results;
 }
 
@@ -105,14 +103,11 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
   }
 
   // Resolve aliases with deprecation warning.
-  let resolvedName = name;
-  if (SKILL_ALIASES[name]) {
-    resolvedName = SKILL_ALIASES[name];
+  const { resolved: resolvedName, wasAliased } = resolveAlias(name);
+  if (wasAliased) {
     console.error(`[maestro] Skill '${name}' has been renamed to '${resolvedName}'. Please update your references.`);
-  }
 
-  // Check internals again with resolved name (in case internal uses new name).
-  if (resolvedName !== name) {
+    // Check internals again with resolved name (in case internal uses new name).
     const aliasMatch = internals.find((s) => s.slug === resolvedName);
     if (aliasMatch) {
       return { content: aliasMatch.content };
@@ -142,31 +137,30 @@ export async function loadSkillReference(
   refPath: string,
   basePath?: string,
 ): Promise<{ content: string } | { error: string }> {
-  // Resolve aliases.
-  const resolvedName = SKILL_ALIASES[name] ?? name;
-
-  // Check internal sources first.
   const projectRoot = basePath || process.cwd();
   const internals = await discoverInternal(projectRoot);
-  const match = internals.find((s) => s.slug === resolvedName);
+
+  // Check internal sources first with original name -- internal overrides take priority over aliases.
+  const { resolved: resolvedName, wasAliased } = resolveAlias(name);
+  const match = internals.find((s) => s.slug === name) ??
+    (wasAliased ? internals.find((s) => s.slug === resolvedName) : undefined);
   if (match) {
     const refFilePath = join(match.dirPath, 'reference', refPath);
     try {
       const content = await readFile(refFilePath, 'utf-8');
       return { content };
     } catch {
-      return { error: `Reference file '${refPath}' not found in skill '${resolvedName}'` };
+      return { error: `Reference file '${refPath}' not found in skill '${match.slug}'` };
     }
   }
 
   // Check builtins -- references are embedded at build time.
   const builtin = BUILTIN_SKILLS[resolvedName as BuiltinSkillName];
   if (builtin) {
-    const refs = (builtin as { references?: Record<string, string> }).references;
-    if (refs && refs[refPath]) {
-      return { content: refs[refPath] };
+    if (builtin.references?.[refPath]) {
+      return { content: builtin.references[refPath] };
     }
-    const available = refs ? Object.keys(refs) : [];
+    const available = builtin.references ? Object.keys(builtin.references) : [];
     if (available.length > 0) {
       return { error: `Reference file '${refPath}' not found in skill '${resolvedName}'. Available: ${available.join(', ')}` };
     }
@@ -197,8 +191,8 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
       continue;
     }
     seen.add(name);
-    const builtinSkill = BUILTIN_SKILLS[name] as { description: string; argumentHint?: string };
-    results.push({ name, description: builtinSkill.description, source: 'builtin', argumentHint: builtinSkill.argumentHint });
+    const { description, argumentHint } = BUILTIN_SKILLS[name];
+    results.push({ name, description, source: 'builtin', argumentHint });
   }
 
   return results;
