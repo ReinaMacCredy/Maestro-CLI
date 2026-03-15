@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTaskTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { parseStatus } from '../_task-factory.ts';
+import { parseStatus } from '../_internal/task-factory.ts';
 
 export default defineCommand({
   meta: { name: 'task-list', description: 'List tasks for a feature' },

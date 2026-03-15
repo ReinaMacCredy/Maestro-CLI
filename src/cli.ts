@@ -2,7 +2,7 @@ import { defineCommand, runMain } from 'citty';
 import { setOutputMode } from './lib/output.ts';
 import { initServices } from './services.ts';
 import { findProjectRoot } from './utils/detection.ts';
-import { subCommands } from './commands/registry.generated.ts';
+import { subCommands } from './commands/_internal/registry.generated.ts';
 import { VERSION } from './version.ts';
 
 const subCommandNames = Object.keys(subCommands);

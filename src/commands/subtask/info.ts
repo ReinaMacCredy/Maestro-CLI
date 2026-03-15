@@ -1,2 +1,2 @@
-import { makeInfoCommand } from '../_task-factory.ts';
+import { makeInfoCommand } from '../_internal/task-factory.ts';
 export default makeInfoCommand('subtask');

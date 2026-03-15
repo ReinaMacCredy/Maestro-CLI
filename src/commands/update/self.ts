@@ -3,14 +3,14 @@
  */
 
 import { defineCommand } from 'citty';
-import { output } from '../lib/output.ts';
-import { handleCommandError, MaestroError } from '../lib/errors.ts';
+import { output } from '../../lib/output.ts';
+import { handleCommandError, MaestroError } from '../../lib/errors.ts';
 import {
   detectInstall,
   selfUpdate,
   type ExecResult,
   type SelfUpdateResult,
-} from '../usecases/self-update.ts';
+} from '../../usecases/self-update.ts';
 
 async function execCommand(cmd: string[], opts: { cwd: string }): Promise<ExecResult> {
   const proc = Bun.spawn(cmd, {

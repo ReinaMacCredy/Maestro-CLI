@@ -1,2 +1,2 @@
-import { makeUpdateCommand } from '../_task-factory.ts';
+import { makeUpdateCommand } from '../_internal/task-factory.ts';
 export default makeUpdateCommand('subtask');

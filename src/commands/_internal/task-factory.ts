@@ -4,11 +4,11 @@
  */
 
 import { defineCommand } from 'citty';
-import { getServices } from '../services.ts';
-import { output, renderStatusLine } from '../lib/output.ts';
-import { formatError, handleCommandError, MaestroError } from '../lib/errors.ts';
-import type { TaskStatusType, TaskInfo } from '../types.ts';
-import { VALID_TRANSITIONS } from '../ports/tasks.ts';
+import { getServices } from '../../services.ts';
+import { output, renderStatusLine } from '../../lib/output.ts';
+import { formatError, handleCommandError, MaestroError } from '../../lib/errors.ts';
+import type { TaskStatusType, TaskInfo } from '../../types.ts';
+import { VALID_TRANSITIONS } from '../../ports/tasks.ts';
 
 const VALID_STATUSES = Object.keys(VALID_TRANSITIONS) as TaskStatusType[];
 

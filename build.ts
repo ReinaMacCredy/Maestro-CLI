@@ -22,7 +22,7 @@ async function build() {
   await $`bun src/skills/generate.ts`;
 
   console.log('[build] Generating command registry...');
-  await $`bun src/commands/generate.ts`;
+  await $`bun src/commands/_internal/generate.ts`;
 
   // Step 1: Server bundle (Node target, ESM)
   console.log('[build] Bundling MCP server...');

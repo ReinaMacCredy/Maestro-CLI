@@ -3,11 +3,11 @@
  */
 
 import { defineCommand } from 'citty';
-import { getServices } from '../services.ts';
-import { checkStatus, type StatusResult } from '../usecases/check-status.ts';
-import { output, renderStatusLine } from '../lib/output.ts';
-import { handleCommandError, MaestroError } from '../lib/errors.ts';
-import { truncateList, formatTruncation } from '../lib/truncation.ts';
+import { getServices } from '../../services.ts';
+import { checkStatus, type StatusResult } from '../../usecases/check-status.ts';
+import { output, renderStatusLine } from '../../lib/output.ts';
+import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { truncateList, formatTruncation } from '../../lib/truncation.ts';
 
 function formatStatus(result: StatusResult): string {
   const lines: string[] = [];
