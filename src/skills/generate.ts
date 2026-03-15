@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// Build-time generator: reads skills/builtin/[name]/SKILL.md frontmatter + content
+// Build-time generator: reads skills/built-in/[name]/SKILL.md frontmatter + content
 // and emits src/skills/registry.generated.ts with embedded skill content
 
 import { readdir, readFile, writeFile } from 'fs/promises';
@@ -7,7 +7,7 @@ import { join } from 'path';
 import { parseFrontmatter } from '../utils/frontmatter.ts';
 
 const ROOT = join(import.meta.dir, '..', '..');
-const SKILLS_DIR = join(ROOT, 'skills', 'builtin');
+const SKILLS_DIR = join(ROOT, 'skills', 'built-in');
 const OUT_FILE = join(ROOT, 'src', 'skills', 'registry.generated.ts');
 
 interface SkillMeta {

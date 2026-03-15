@@ -12,5 +12,5 @@
       "args": ["${CLAUDE_PLUGIN_ROOT}/start.mjs"]
     }
   },
-  "skills": "./skills/builtin/"
+  "skills": "./skills/built-in/"
 }
