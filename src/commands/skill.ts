@@ -3,7 +3,7 @@
  */
 
 import { defineCommand } from 'citty';
-import { loadSkill } from '../skills/registry.ts';
+import { loadSkill, loadSkillReference } from '../skills/registry.ts';
 import { output } from '../lib/output.ts';
 import { handleCommandError, MaestroError } from '../lib/errors.ts';
 
@@ -19,10 +19,16 @@ export default defineCommand({
       description: 'Skill name to load',
       required: true,
     },
+    ref: {
+      type: 'string',
+      description: 'Load a specific reference file from the skill (e.g. steps/step-01.md)',
+    },
   },
   async run({ args }) {
     try {
-      const result = await loadSkill(args.name);
+      const result = args.ref
+        ? await loadSkillReference(args.name, args.ref)
+        : await loadSkill(args.name);
 
       if ('error' in result) {
         throw new MaestroError(result.error);
