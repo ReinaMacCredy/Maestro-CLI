@@ -1,0 +1,126 @@
+---
+name: maestro:status
+description: "Show track progress overview with phase/task completion stats, next actions, and blockers."
+---
+
+# Status -- Track Progress Overview
+
+Display a high-level overview of all tracks and detailed progress for in-progress tracks.
+
+---
+
+## Step 1: Read Tracks Registry
+
+Read `.maestro/tracks.md`.
+
+If file doesn't exist:
+- Report: "No tracks found. Run `/maestro:setup` then `/maestro:new-track` to get started."
+- Stop.
+
+## Step 2: Count Tracks by Status
+
+Parse the registry and count, supporting both formats:
+
+- New format: `- [ ] **Track: {description}**`
+- Legacy format: `## [ ] Track: {description}`
+
+Count by marker:
+- `[ ]` -- New (pending)
+- `[~]` -- In Progress
+- `[x]` -- Complete
+
+## Step 3: Detail In-Progress Tracks
+
+For each track marked `[~]`:
+
+1. Read `.maestro/tracks/{track_id}/metadata.json` and `.maestro/tracks/{track_id}/plan.md`.
+
+2. If `metadata.json` has `beads_epic_id`: use `br` commands with `--json` for state tracking. Otherwise: parse plan.md checkboxes.
+
+3. Parse phases and tasks from plan.md:
+   - Count `[ ]` (pending), `[~]` (in-progress), `[x]` (complete) per phase
+   - Calculate overall completion percentage
+
+4. Identify the next pending task (first `[ ]` in the plan, or from `bv -robot-next`)
+
+5. Check for blockers:
+   - Any task marked `[~]` for more than one phase indicates a stall
+   - Any phase with failed verification noted
+
+## Step 4: Assess Project Status
+
+Using the data collected, compute a qualitative status:
+
+- **Blocked** -- any task is explicitly blocked or a stall is detected (task `[~]` spanning multiple phases, failed verification)
+- **Behind Schedule** -- completed tasks represent less than 25% of total tasks and at least one track is active
+- **On Track** -- active tracks exist and no blockers detected
+- **No Active Work** -- zero tracks marked `[~]`
+
+If any track has `beads_epic_id`, include `bv -robot-insights -format json` health signals (cycles, stale issues, bottlenecks) in the report.
+
+## Step 5: Display Report
+
+Format the output as:
+
+```
+## Tracks Overview
+
+**Report generated**: {current date and time}
+**Project status**: {On Track | Behind Schedule | Blocked | No Active Work}
+
+| Status | Count |
+|--------|-------|
+| New    | {n}   |
+| Active | {n}   |
+| Done   | {n}   |
+
+---
+
+### Blockers
+
+{If no blockers: "None detected."}
+{Otherwise, list each blocked or stalled item:}
+- [track_id] {task description} -- {reason: stalled / failed verification / explicitly blocked}
+
+---
+
+### Active: {track_description}
+> ID: {track_id} | Type: {type}
+
+**Phase 1: {title}** -- {completed}/{total} tasks [####----] {pct}%
+**Phase 2: {title}** -- {completed}/{total} tasks [--------] {pct}%
+
+**Next task**: {next_task_description}
+**Run**: `/maestro:implement {track_id}`
+
+---
+
+### Recently Completed
+- [x] {track_description} ({date})
+```
+
+## Step 6: Suggest Next Action
+
+Based on the state:
+
+- No tracks at all --> "Run `/maestro:setup` then `/maestro:new-track <description>`"
+- All tracks complete --> "All tracks done. `/maestro:new-track` to start something new."
+- Has pending tracks --> "Run `/maestro:implement {next_track}` to start."
+- Has in-progress tracks --> "Run `/maestro:implement {active_track} --resume` to continue."
+- Blocked --> "Resolve the blocker listed above before continuing."
+
+---
+
+## Relationship to Other Commands
+
+Recommended workflow:
+
+- `/maestro:setup` -- Scaffold project context (run first)
+- `/maestro:new-track` -- Create a feature/bug track with spec and plan
+- `/maestro:implement` -- Execute the implementation
+- `/maestro:review` -- Verify implementation correctness
+- `/maestro:status` -- **You are here.** Check progress across all tracks
+- `/maestro:revert` -- Undo implementation if needed
+- `/maestro:note` -- Capture decisions and context to persistent notepad
+
+Status is the observability layer across all maestro commands. It reads tracks created by `/maestro:new-track`, progress from `/maestro:implement`, and state changes from `/maestro:revert`. Use it anytime to orient yourself on what to do next.
