@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { listSkills, loadSkill } from '../../skills/registry.ts';
+import { listSkills, loadSkill, loadSkillReference, SKILL_ALIASES } from '../../skills/registry.ts';
 
 describe('skills registry', () => {
   let tmpDir: string;
@@ -81,6 +81,62 @@ describe('skills registry', () => {
       name: 'prompt-leverage',
       description: 'Internal override',
       source: 'internal',
+      argumentHint: undefined,
     });
+  });
+
+  test('SKILL_ALIASES contains all 12 mappings', () => {
+    expect(Object.keys(SKILL_ALIASES)).toHaveLength(12);
+    expect(SKILL_ALIASES['writing-plans']).toBe('maestro:design');
+    expect(SKILL_ALIASES['executing-plans']).toBe('maestro:implement');
+    expect(SKILL_ALIASES['code-reviewer']).toBe('maestro:review');
+    expect(SKILL_ALIASES['agents-md-mastery']).toBe('maestro:agents-md');
+    expect(SKILL_ALIASES['brainstorming']).toBe('maestro:brainstorming');
+    expect(SKILL_ALIASES['dispatching-parallel-agents']).toBe('maestro:dispatching');
+    expect(SKILL_ALIASES['docker-mastery']).toBe('maestro:docker');
+    expect(SKILL_ALIASES['parallel-exploration']).toBe('maestro:parallel-exploration');
+    expect(SKILL_ALIASES['prompt-leverage']).toBe('maestro:prompt-leverage');
+    expect(SKILL_ALIASES['systematic-debugging']).toBe('maestro:debugging');
+    expect(SKILL_ALIASES['test-driven-development']).toBe('maestro:tdd');
+    expect(SKILL_ALIASES['verification-before-completion']).toBe('maestro:verification');
+  });
+
+  test('loadSkillReference loads from internal skill filesystem', async () => {
+    const skillDir = join(tmpDir, 'skills', 'internal', 'my-skill');
+    const refDir = join(skillDir, 'reference');
+    mkdirSync(refDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, 'SKILL.md'),
+      ['---', 'name: my-skill', 'description: Test skill', '---', '', '# My Skill'].join('\n'),
+    );
+    writeFileSync(join(refDir, 'guide.md'), '# Reference Guide');
+
+    const result = await loadSkillReference('my-skill', 'guide.md', tmpDir);
+    expect(result).toEqual({ content: '# Reference Guide' });
+  });
+
+  test('loadSkillReference returns error for missing reference', async () => {
+    const skillDir = join(tmpDir, 'skills', 'internal', 'my-skill');
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, 'SKILL.md'),
+      ['---', 'name: my-skill', 'description: Test skill', '---', '', '# My Skill'].join('\n'),
+    );
+
+    const result = await loadSkillReference('my-skill', 'nonexistent.md', tmpDir);
+    expect(result).toHaveProperty('error');
+  });
+
+  test('listSkills includes argumentHint from frontmatter', async () => {
+    const skillDir = join(tmpDir, 'skills', 'internal', 'hinted-skill');
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, 'SKILL.md'),
+      ['---', 'name: hinted-skill', 'description: Skill with hint', 'argument-hint: <track-id>', '---', '', '# Hinted'].join('\n'),
+    );
+
+    const skills = await listSkills(tmpDir);
+    const hinted = skills.find((s) => s.name === 'hinted-skill');
+    expect(hinted?.argumentHint).toBe('<track-id>');
   });
 });

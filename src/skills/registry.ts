@@ -11,7 +11,27 @@ export interface SkillEntry {
   name: string;
   description: string;
   source: SkillSource;
+  argumentHint?: string;
 }
+
+/**
+ * Maps old (pre-colon) skill names to new colon-prefixed names.
+ * Used for backward compatibility with deprecation warnings.
+ */
+export const SKILL_ALIASES: Record<string, string> = {
+  'writing-plans': 'maestro:design',
+  'executing-plans': 'maestro:implement',
+  'code-reviewer': 'maestro:review',
+  'agents-md-mastery': 'maestro:agents-md',
+  'brainstorming': 'maestro:brainstorming',
+  'dispatching-parallel-agents': 'maestro:dispatching',
+  'docker-mastery': 'maestro:docker',
+  'parallel-exploration': 'maestro:parallel-exploration',
+  'prompt-leverage': 'maestro:prompt-leverage',
+  'systematic-debugging': 'maestro:debugging',
+  'test-driven-development': 'maestro:tdd',
+  'verification-before-completion': 'maestro:verification',
+};
 
 /** Directories to scan for internal skills, in priority order. */
 const INTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
@@ -25,6 +45,8 @@ interface InternalSkill {
   description: string;
   content: string;
   source: SkillSource;
+  dirPath: string;
+  argumentHint?: string;
 }
 
 /**
@@ -57,7 +79,15 @@ async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
       const fm = parseFrontmatter(raw);
       if (!fm?.name || !fm?.description) continue;
 
-      results.push({ slug, description: fm.description, content: raw, source });
+      const skillDirPath = join(base, slug);
+      results.push({
+        slug,
+        description: fm.description,
+        content: raw,
+        source,
+        dirPath: skillDirPath,
+        argumentHint: fm['argument-hint'],
+      });
     }
   }
 
@@ -65,16 +95,32 @@ async function discoverInternal(projectRoot: string): Promise<InternalSkill[]> {
 }
 
 export async function loadSkill(name: string, basePath?: string): Promise<{ content: string } | { error: string }> {
-  // Check internal sources first so repository-local overrides can shadow builtins.
   const projectRoot = basePath || process.cwd();
   const internals = await discoverInternal(projectRoot);
-  const match = internals.find((s) => s.slug === name);
-  if (match) {
-    return { content: match.content };
+
+  // Check internal sources first (original name) -- internal overrides take priority over aliases.
+  const directMatch = internals.find((s) => s.slug === name);
+  if (directMatch) {
+    return { content: directMatch.content };
+  }
+
+  // Resolve aliases with deprecation warning.
+  let resolvedName = name;
+  if (SKILL_ALIASES[name]) {
+    resolvedName = SKILL_ALIASES[name];
+    console.error(`[maestro] Skill '${name}' has been renamed to '${resolvedName}'. Please update your references.`);
+  }
+
+  // Check internals again with resolved name (in case internal uses new name).
+  if (resolvedName !== name) {
+    const aliasMatch = internals.find((s) => s.slug === resolvedName);
+    if (aliasMatch) {
+      return { content: aliasMatch.content };
+    }
   }
 
   // Fall back to builtin -- content is embedded at build time, no file I/O needed.
-  const builtin = BUILTIN_SKILLS[name as BuiltinSkillName];
+  const builtin = BUILTIN_SKILLS[resolvedName as BuiltinSkillName];
   if (builtin) {
     return { content: builtin.content };
   }
@@ -84,7 +130,50 @@ export async function loadSkill(name: string, basePath?: string): Promise<{ cont
     ...BUILTIN_SKILL_NAMES,
     ...internals.map((s) => s.slug),
   ];
-  return { error: `Unknown skill: ${name}. Available: ${allNames.join(', ')}` };
+  return { error: `Unknown skill: ${resolvedName}. Available: ${allNames.join(', ')}` };
+}
+
+/**
+ * Load a specific reference file from a skill's reference/ directory.
+ * Works for both built-in (embedded) and internal (filesystem) skills.
+ */
+export async function loadSkillReference(
+  name: string,
+  refPath: string,
+  basePath?: string,
+): Promise<{ content: string } | { error: string }> {
+  // Resolve aliases.
+  const resolvedName = SKILL_ALIASES[name] ?? name;
+
+  // Check internal sources first.
+  const projectRoot = basePath || process.cwd();
+  const internals = await discoverInternal(projectRoot);
+  const match = internals.find((s) => s.slug === resolvedName);
+  if (match) {
+    const refFilePath = join(match.dirPath, 'reference', refPath);
+    try {
+      const content = await readFile(refFilePath, 'utf-8');
+      return { content };
+    } catch {
+      return { error: `Reference file '${refPath}' not found in skill '${resolvedName}'` };
+    }
+  }
+
+  // Check builtins -- references are embedded at build time.
+  const builtin = BUILTIN_SKILLS[resolvedName as BuiltinSkillName];
+  if (builtin) {
+    const refs = (builtin as { references?: Record<string, string> }).references;
+    if (refs && refs[refPath]) {
+      return { content: refs[refPath] };
+    }
+    const available = refs ? Object.keys(refs) : [];
+    if (available.length > 0) {
+      return { error: `Reference file '${refPath}' not found in skill '${resolvedName}'. Available: ${available.join(', ')}` };
+    }
+    return { error: `Skill '${resolvedName}' has no reference files` };
+  }
+
+  return { error: `Unknown skill: ${resolvedName}` };
 }
 
 export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> {
@@ -99,7 +188,7 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
       continue;
     }
     seen.add(s.slug);
-    results.push({ name: s.slug, description: s.description, source: s.source });
+    results.push({ name: s.slug, description: s.description, source: s.source, argumentHint: s.argumentHint });
   }
 
   // Builtins last; skip any names already provided by internal sources.
@@ -108,7 +197,8 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
       continue;
     }
     seen.add(name);
-    results.push({ name, description: BUILTIN_SKILLS[name].description, source: 'builtin' });
+    const builtinSkill = BUILTIN_SKILLS[name] as { description: string; argumentHint?: string };
+    results.push({ name, description: builtinSkill.description, source: 'builtin', argumentHint: builtinSkill.argumentHint });
   }
 
   return results;

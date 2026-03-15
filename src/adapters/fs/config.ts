@@ -10,6 +10,7 @@ import * as path from 'path';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../types.ts';
 import type { SandboxConfig, AgentName } from '../../types.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
+import { SKILL_ALIASES } from '../../skills/registry.ts';
 
 export class FsConfigAdapter {
   private configPath: string;
@@ -95,7 +96,9 @@ export class FsConfigAdapter {
       : defaultAutoLoadSkills.filter((skill) => skill !== 'onboarding');
     const combinedAutoLoadSkills = [...effectiveDefaultAutoLoadSkills, ...effectiveUserAutoLoadSkills];
     const uniqueAutoLoadSkills = Array.from(new Set(combinedAutoLoadSkills));
-    const disabledSkills = config.disableSkills ?? [];
+    const disabledSkills = (config.disableSkills ?? []).map(
+      (skill) => SKILL_ALIASES[skill] ?? skill,
+    );
     const effectiveAutoLoadSkills = uniqueAutoLoadSkills.filter(
       (skill) => !disabledSkills.includes(skill),
     );
