@@ -62,8 +62,17 @@ Detect the plan source and read it:
 | Maestro feature | User says "review the plan for [feature]" | `maestro plan-read --feature <name>` |
 | File path | User provides a path (`.md`, `.txt`) | Read the file directly |
 | Plan mode | Active plan in `~/.claude/plans/` | Read the plan file |
-| Inline | Plan is in the conversation | Extract from conversation context |
+| Inline | Plan is pasted in the conversation | Save to a temp file first (see below) |
 | Codex | Plan in `.codex/` or similar | Read the file directly |
+
+**Inline plans must be materialized to a file.** When the user pastes a plan directly in conversation, save it to a working file before starting the loop. This is critical -- the loop edits the plan in-place across rounds, and conversation context is not a durable place to track changes.
+
+```
+# Save inline plan to a working file
+Write the plan to: .maestro/plans/review-draft.md (or /tmp/plan-review-<timestamp>.md if no .maestro/)
+```
+
+Tell the user: "I've saved your plan to `<path>` so I can track changes across review rounds. The final version will be at the same path."
 
 If the source is ambiguous, ask: "Where is the plan? Give me a feature name, file path, or paste it."
 
@@ -146,7 +155,7 @@ For each issue the reviewer found:
 | Maestro | `maestro plan-write --feature <name>` with updated content |
 | File | Edit the plan file directly |
 | Plan mode | Edit the plan file |
-| Inline | Rewrite the plan section in conversation |
+| Inline (saved to file) | Edit the working file created in Step 1 |
 
 After fixing, go back to Step 2 with the updated plan.
 
