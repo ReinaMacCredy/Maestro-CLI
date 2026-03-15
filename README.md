@@ -89,15 +89,17 @@ All commands accept `--json` for machine-readable output.
 
 Bundled workflow skills include:
 
-- `writing-plans`
-- `parallel-exploration`
-- `brainstorming`
-- `executing-plans`
-- `code-reviewer`
-- `verification-before-completion`
-- `systematic-debugging`
-- `test-driven-development`
-- `agents-md-mastery`
-- `docker-mastery`
+- `maestro:design`
+- `maestro:parallel-exploration`
+- `maestro:brainstorming`
+- `maestro:implement`
+- `maestro:review`
+- `maestro:verification`
+- `maestro:debugging`
+- `maestro:tdd`
+- `maestro:agents-md`
+- `maestro:docker`
+- `maestro:dispatching`
+- `maestro:prompt-leverage`
 
 Load with `maestro skill <name>`, list with `maestro skill-list`.

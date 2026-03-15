@@ -26,9 +26,9 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
 
       const skills: { recommended: string[] } = { recommended: [] };
       if (!result.plan.exists) {
-        skills.recommended.push('writing-plans', 'parallel-exploration', 'brainstorming');
+        skills.recommended.push('maestro:design', 'maestro:parallel-exploration', 'maestro:brainstorming');
       } else if (!result.plan.approved) {
-        skills.recommended.push('writing-plans');
+        skills.recommended.push('maestro:design');
       }
 
       return respond({

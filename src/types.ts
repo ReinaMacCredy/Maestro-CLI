@@ -232,19 +232,19 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
     'hive-master': {
       model: DEFAULT_AGENT_MODELS['hive-master'],
       temperature: 0.5,
-      skills: ['brainstorming', 'writing-plans', 'dispatching-parallel-agents', 'executing-plans'],
-      autoLoadSkills: ['parallel-exploration'],
+      skills: ['maestro:brainstorming', 'maestro:design', 'maestro:dispatching', 'maestro:implement'],
+      autoLoadSkills: ['maestro:parallel-exploration'],
     },
     'architect-planner': {
       model: DEFAULT_AGENT_MODELS['architect-planner'],
       temperature: 0.7,
-      skills: ['brainstorming', 'writing-plans'],
-      autoLoadSkills: ['parallel-exploration'],
+      skills: ['maestro:brainstorming', 'maestro:design'],
+      autoLoadSkills: ['maestro:parallel-exploration'],
     },
     'swarm-orchestrator': {
       model: DEFAULT_AGENT_MODELS['swarm-orchestrator'],
       temperature: 0.5,
-      skills: ['dispatching-parallel-agents', 'executing-plans'],
+      skills: ['maestro:dispatching', 'maestro:implement'],
       autoLoadSkills: [],
     },
     'scout-researcher': {
@@ -256,12 +256,12 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
     'forager-worker': {
       model: DEFAULT_AGENT_MODELS['forager-worker'],
       temperature: 0.3,
-      autoLoadSkills: ['test-driven-development', 'verification-before-completion'],
+      autoLoadSkills: ['maestro:tdd', 'maestro:verification'],
     },
     'hygienic-reviewer': {
       model: DEFAULT_AGENT_MODELS['hygienic-reviewer'],
       temperature: 0.3,
-      skills: ['systematic-debugging', 'code-reviewer'],
+      skills: ['maestro:debugging', 'maestro:review'],
       autoLoadSkills: [],
     },
   },

@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: maestro:brainstorming
 description: "Use before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
 ---
 
@@ -40,7 +40,7 @@ Start by understanding the current project context, then ask questions one at a 
 
 **Implementation (if continuing):**
 - Ask: "Ready to set up for implementation?"
-- Use `hive_skill:writing-plans` to create detailed implementation plan
+- Use `maestro skill maestro:design` to create detailed implementation plan
 
 ## Key Principles
 

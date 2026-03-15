@@ -1,5 +1,5 @@
 ---
-name: prompt-leverage
+name: maestro:prompt-leverage
 description: Strengthen a raw user prompt into an execution-ready instruction set for Amp, Claude Code, or another AI agent. Use when the user wants to improve an existing prompt, build a reusable prompting framework, wrap the current request with better structure, add clearer tool rules, or create a hook that upgrades prompts before execution.
 ---
 
@@ -12,7 +12,7 @@ Turn the user's current prompt into a stronger working prompt without changing t
 1. Read the raw prompt and identify the real job to be done.
 2. Infer the task type: coding, research, writing, analysis, planning, or review.
 3. Identify the target model family if specified or implied (see Provider References below).
-4. Rebuild the prompt with the framework blocks in `references/framework.md`.
+4. Rebuild the prompt with the framework blocks in `reference/framework.md`.
 5. If a specific provider is targeted, consult the relevant vendor reference for provider-specific patterns.
 6. Keep the result proportional: do not over-specify a simple task.
 7. Return both the improved prompt and a short explanation of what changed when useful.
@@ -42,9 +42,9 @@ Use these blocks selectively.
 
 Three reference files support prompt construction:
 
-- `references/framework.md` -- vendor-neutral framework. Always loaded.
-- `references/anthropic-claude.md` -- Claude-specific patterns. Loaded for Claude targets.
-- `references/openai-gpt.md` -- GPT-specific patterns. Loaded for GPT targets.
+- `reference/framework.md` -- vendor-neutral framework. Always loaded.
+- `reference/anthropic-claude.md` -- Claude-specific patterns. Loaded for Claude targets.
+- `reference/openai-gpt.md` -- GPT-specific patterns. Loaded for GPT targets.
 
 ### Detection: which reference to load
 

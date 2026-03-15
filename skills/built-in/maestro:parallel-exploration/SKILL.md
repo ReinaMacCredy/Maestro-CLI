@@ -1,5 +1,5 @@
 ---
-name: parallel-exploration
+name: maestro:parallel-exploration
 description: Use when you need parallel, read-only exploration with task() (Scout fan-out)
 ---
 
@@ -13,7 +13,7 @@ When you need to answer "where/how does X work?" across multiple domains (codeba
 
 **Safe in Planning mode:** This is read-only exploration. It is OK to use during exploratory research even when there is no feature, no plan, and no approved tasks.
 
-**This skill is for read-only research.** For parallel implementation work, use `maestro skill dispatching-parallel-agents` with `maestro task-start`.
+**This skill is for read-only research.** For parallel implementation work, use `maestro skill maestro:dispatching` with `maestro task-start`.
 
 ## When to Use
 

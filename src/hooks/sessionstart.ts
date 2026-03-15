@@ -82,7 +82,7 @@ async function main(): Promise<void> {
   // Recommend skills based on phase
   const skills: string[] = [];
   if (!status.plan.approved) {
-    skills.push('writing-plans');
+    skills.push('maestro:design');
   }
   if (skills.length > 0) {
     lines.push('');

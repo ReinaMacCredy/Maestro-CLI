@@ -1,5 +1,5 @@
 ---
-name: docker-mastery
+name: maestro:docker
 description: "Use when working with Docker containers — debugging container failures, writing Dockerfiles, docker-compose for integration tests, image optimization, or deploying containerized applications"
 ---
 
@@ -341,6 +341,6 @@ Before marking Docker work complete:
 
 ## Related Skills
 
-- **hive_skill:systematic-debugging** - When container behavior is unexpected
-- **hive_skill:test-driven-development** - Write tests that run in containers
-- **hive_skill:verification-before-completion** - Verify tests pass in container before claiming done
+- **maestro skill maestro:debugging** - When container behavior is unexpected
+- **maestro skill maestro:tdd** - Write tests that run in containers
+- **maestro skill maestro:verification** - Verify tests pass in container before claiming done

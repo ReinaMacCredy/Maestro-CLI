@@ -21,7 +21,7 @@ maestro skill <name>
 
 ## Planning Mode
 
-1. Load `writing-plans` and `parallel-exploration`
+1. Load `maestro:design` and `maestro:parallel-exploration`
 2. Ask clarifying questions about the feature
 3. Research the codebase and save findings with `context-write`
 4. Write the plan with `plan-write`
