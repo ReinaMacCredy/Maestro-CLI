@@ -70,6 +70,43 @@ export class InMemoryTaskPort implements TaskPort {
     tasks.delete(id);
   }
 
+  async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    if (task.status !== 'pending') throw new MaestroError(`Cannot claim: status is '${task.status}'`);
+    task.status = 'claimed';
+    task.claimedBy = agentId;
+    task.claimedAt = new Date().toISOString();
+    return { ...task };
+  }
+
+  async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    if (task.status !== 'claimed') throw new MaestroError(`Cannot complete: status is '${task.status}'`);
+    task.status = 'done';
+    task.summary = summary;
+    task.completedAt = new Date().toISOString();
+    return { ...task };
+  }
+
+  async block(feature: string, id: string, reason: string): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    task.status = 'blocked';
+    task.blockerReason = reason;
+    return { ...task };
+  }
+
+  async unblock(feature: string, id: string, decision: string): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    if (task.status !== 'blocked') throw new MaestroError(`Cannot unblock: status is '${task.status}'`);
+    task.status = 'pending';
+    task.blockerDecision = decision;
+    return { ...task };
+  }
+
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const tasks = [...this.getFeatureTasks(feature).values()];
     const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.folder));

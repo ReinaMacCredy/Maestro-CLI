@@ -113,6 +113,39 @@ export class BrTaskAdapter implements TaskPort {
     await this.exec(['close', String(brId), '-r', 'removed']);
   }
 
+  async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.exec(['update', String(brId), '-s', 'in_progress', '--notes', `claimed by ${agentId}`]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after claim`);
+    return result;
+  }
+
+  async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.exec(['update', String(brId), '--notes', summary]);
+    await this.exec(['close', String(brId)]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after done`);
+    return result;
+  }
+
+  async block(feature: string, id: string, reason: string): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.exec(['update', String(brId), '-s', 'deferred', '--notes', reason]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after block`);
+    return result;
+  }
+
+  async unblock(feature: string, id: string, decision: string): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.exec(['update', String(brId), '-s', 'open', '--notes', `unblocked: ${decision}`]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after unblock`);
+    return result;
+  }
+
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const args = ['ready', '-l', `feature:${feature}`, '--json', '--limit', '0'];
     const issues = await this.exec<BrIssue[]>(args);

@@ -11,6 +11,7 @@
 
 import type { TaskInfo, TaskStatus } from '../types.ts';
 import type { TaskPort, CreateOpts, ListOpts } from '../ports/tasks.ts';
+import { MaestroError } from '../lib/errors.ts';
 import {
   getTasksPath,
   getTaskPath,
@@ -96,6 +97,61 @@ export class FsTaskAdapter implements TaskPort {
     } catch {
       // Already removed
     }
+  }
+
+  async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'pending') {
+      throw new MaestroError(`Cannot claim task '${id}': status is '${status.status}', expected 'pending'`);
+    }
+    status.status = 'claimed';
+    status.claimedBy = agentId;
+    status.claimedAt = new Date().toISOString();
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
+  }
+
+  async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'claimed') {
+      throw new MaestroError(`Cannot complete task '${id}': status is '${status.status}', expected 'claimed'`);
+    }
+    status.status = 'done';
+    status.summary = summary;
+    status.completedAt = new Date().toISOString();
+    status.claimedBy = undefined;
+    status.claimedAt = undefined;
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
+  }
+
+  async block(feature: string, id: string, reason: string): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'pending' && status.status !== 'claimed') {
+      throw new MaestroError(`Cannot block task '${id}': status is '${status.status}'`);
+    }
+    status.status = 'blocked';
+    status.blockerReason = reason;
+    status.claimedBy = undefined;
+    status.claimedAt = undefined;
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
+  }
+
+  async unblock(feature: string, id: string, decision: string): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'blocked') {
+      throw new MaestroError(`Cannot unblock task '${id}': status is '${status.status}', expected 'blocked'`);
+    }
+    status.status = 'pending';
+    status.blockerDecision = decision;
+    status.blockerReason = undefined;
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
   }
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
