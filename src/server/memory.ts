@@ -76,4 +76,29 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       return respond({ scope: 'global', files });
     }),
   );
+
+  server.registerTool(
+    'maestro_memory_promote',
+    {
+      description:
+        'Promote a feature memory to global project memory. Copies from .maestro/features/<name>/memory/ to .maestro/memory/.',
+      inputSchema: {
+        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        name: z.string().describe('Memory file name to promote'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+
+      const content = services.memoryAdapter.read(feature, input.name);
+      if (!content) {
+        return respond({ success: false, error: `Memory '${input.name}' not found in feature '${feature}'` });
+      }
+
+      const path = services.memoryAdapter.writeGlobal(input.name, content);
+      return respond({ success: true, feature, name: input.name, promotedTo: path });
+    }),
+  );
 }

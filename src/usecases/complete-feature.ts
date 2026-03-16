@@ -1,23 +1,26 @@
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
+import type { MemoryPort } from '../ports/memory.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { FeatureJson } from '../types.ts';
 
 export interface CompleteFeatureServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
+  memoryAdapter: MemoryPort;
 }
 
 export interface CompleteFeatureResult {
   feature: FeatureJson;
   tasksSummary: { total: number; done: number };
+  suggestPromote: string[];
 }
 
 export async function completeFeature(
   services: CompleteFeatureServices,
   featureName: string,
 ): Promise<CompleteFeatureResult> {
-  const { taskPort, featureAdapter } = services;
+  const { taskPort, featureAdapter, memoryAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) throw new MaestroError(`Feature '${featureName}' not found`);
   if (feature.status === 'completed') throw new MaestroError(`Feature '${featureName}' is already completed`);
@@ -34,6 +37,10 @@ export async function completeFeature(
     );
   }
 
+  // Suggest promoting feature memories to global
+  const featureMemories = memoryAdapter.list(featureName);
+  const suggestPromote = featureMemories.map(m => m.name);
+
   const updated = featureAdapter.complete(featureName);
-  return { feature: updated, tasksSummary: { total: tasks.length, done } };
+  return { feature: updated, tasksSummary: { total: tasks.length, done }, suggestPromote };
 }
