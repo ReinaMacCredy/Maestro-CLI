@@ -1,22 +1,10 @@
 import { readStdin, writeOutput, resolveProjectDir, logHookError, HOOK_EVENTS } from './_helpers.ts';
 import { initServices } from '../services.ts';
-import { checkStatus, type StatusResult } from '../usecases/check-status.ts';
+import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
+import { derivePipelineStage, type PipelineStage } from '../utils/workflow.ts';
 
 const HOOK_NAME = 'sessionstart';
-
-type PipelineStage = 'discovery' | 'research' | 'planning' | 'approval' | 'execution' | 'done';
-
-function derivePipelineStage(result: StatusResult): PipelineStage {
-  if (!result.plan.exists && result.tasks.total === 0) {
-    return result.context.count > 0 ? 'research' : 'discovery';
-  }
-  if (result.plan.exists && !result.plan.approved) return 'planning';
-  if (result.plan.approved && result.tasks.total === 0) return 'planning';
-  if (result.tasks.total > 0 && result.tasks.done < result.tasks.total) return 'execution';
-  if (result.tasks.total > 0 && result.tasks.done === result.tasks.total) return 'done';
-  return 'discovery';
-}
 
 function buildResearchGuidance(tools: string[]): string[] {
   const lines: string[] = [];
@@ -80,7 +68,13 @@ async function main(): Promise<void> {
 
   const featureName = activeFeature.name;
   const status = await checkStatus(services, featureName);
-  const stage = derivePipelineStage(status);
+  const stage = derivePipelineStage({
+    planExists: status.plan.exists,
+    planApproved: status.plan.approved,
+    taskTotal: status.tasks.total,
+    taskDone: status.tasks.done,
+    contextCount: status.context.count,
+  });
   const researchTools = detectResearchTools(projectDir);
 
   const isCompact = source === 'compact' || source === 'resume';

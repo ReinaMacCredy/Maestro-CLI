@@ -1,0 +1,21 @@
+{
+  "eval_id": 0,
+  "config": "without_skill",
+  "expectations": [
+    {
+      "text": "asks-clarifying-question",
+      "passed": true,
+      "evidence": "Asks 'What layer are you thinking about caching?'"
+    },
+    {
+      "text": "offers-options",
+      "passed": true,
+      "evidence": "Numbered options for caching layers (filesystem, computed state, registry, cross-invocation)"
+    },
+    {
+      "text": "single-question-focus",
+      "passed": false,
+      "evidence": "Asks 4+ questions in one message (what layer, what's slow, staleness tolerance, multi-agent coherence) PLUS proposes 3 initial directions. Overwhelming wall of text."
+    }
+  ]
+}

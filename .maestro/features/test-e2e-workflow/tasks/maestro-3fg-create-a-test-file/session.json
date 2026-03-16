@@ -1,0 +1,11 @@
+{
+  "taskId": "maestro-3fg-create-a-test-file",
+  "sessionId": "3423b0ef-e0fa-4631-9f67-c2d2d10f5514",
+  "launcher": "codex",
+  "attempt": 1,
+  "startedAt": "2026-03-16T08:09:57.172Z",
+  "lastHeartbeatAt": "2026-03-16T08:13:03.659Z",
+  "workerPromptPath": ".maestro/features/test-e2e-workflow/tasks/maestro-3fg-create-a-test-file/worker-prompt.md",
+  "pid": 68512,
+  "signal": "SIGTERM"
+}

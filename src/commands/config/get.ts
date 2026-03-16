@@ -20,7 +20,7 @@ export default defineCommand({
     try {
       const { configAdapter } = getServices();
       const config = configAdapter.get();
-      const value = (config as Record<string, unknown>)[args.key];
+      const value = (config as unknown as Record<string, unknown>)[args.key];
       if (value === undefined) {
         console.error(formatError('config-get', `key '${args.key}' not found`));
         process.exit(1);

@@ -22,13 +22,14 @@ import {
 import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
 import { writeJsonAtomic } from '../utils/fs-io.ts';
 import * as fs from 'fs';
-import * as path from 'path';
 
 export class FsTaskAdapter implements TaskPort {
   private projectRoot: string;
+  private claimExpiresMinutes: number;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, claimExpiresMinutes = 120) {
     this.projectRoot = projectRoot;
+    this.claimExpiresMinutes = claimExpiresMinutes;
   }
 
   async create(feature: string, title: string, opts?: CreateOpts): Promise<TaskInfo> {
@@ -69,9 +70,10 @@ export class FsTaskAdapter implements TaskPort {
     const tasksDir = getTasksPath(this.projectRoot, feature);
     let folders: string[];
     try {
-      folders = fs.readdirSync(tasksDir).filter(f =>
-        fs.statSync(path.join(tasksDir, f)).isDirectory()
-      ).sort();
+      folders = fs.readdirSync(tasksDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name)
+        .sort();
     } catch {
       return [];
     }
@@ -157,6 +159,32 @@ export class FsTaskAdapter implements TaskPort {
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const all = await this.list(feature, { includeAll: true });
     const doneSet = new Set(all.filter(t => t.status === 'done').map(t => t.folder));
+    const now = Date.now();
+    const expiryMs = this.claimExpiresMinutes * 60 * 1000;
+
+    // Auto-expire stale claims back to pending (write directly, no re-read)
+    for (const t of all) {
+      if (t.status === 'claimed' && t.claimedAt) {
+        const claimedTime = new Date(t.claimedAt).getTime();
+        if (now - claimedTime > expiryMs) {
+          const expiredStatus: TaskStatus = {
+            schemaVersion: 2,
+            status: 'pending',
+            origin: t.origin,
+            planTitle: t.planTitle,
+            dependsOn: t.dependsOn,
+            summary: t.summary,
+            completedAt: t.completedAt,
+            blockerReason: t.blockerReason,
+            blockerDecision: t.blockerDecision,
+          };
+          this.writeStatus(feature, t.folder, expiredStatus);
+          t.status = 'pending';
+          t.claimedBy = undefined;
+          t.claimedAt = undefined;
+        }
+      }
+    }
 
     return all.filter(t => {
       if (t.status !== 'pending') return false;
@@ -217,9 +245,9 @@ export class FsTaskAdapter implements TaskPort {
   private getNextOrder(feature: string): number {
     const tasksDir = getTasksPath(this.projectRoot, feature);
     try {
-      const folders = fs.readdirSync(tasksDir).filter(f =>
-        fs.statSync(path.join(tasksDir, f)).isDirectory()
-      );
+      const folders = fs.readdirSync(tasksDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name);
       const orders = folders.map(f => {
         const match = f.match(/^(\d+)-/);
         return match ? parseInt(match[1], 10) : 0;

@@ -1,8 +1,6 @@
 /**
  * Task spec builder for maestroCLI.
- * Extracted from utils/worker/spec.ts.
- *
- * Builds task spec content from plan sections, context, and dependency info.
+ * Builds task spec content from plan sections, memory, and dependency info.
  */
 
 export interface BuildSpecParams {
@@ -11,7 +9,7 @@ export interface BuildSpecParams {
   dependsOn: string[];
   allTasks: Array<{ folder: string; name: string; order: number }>;
   planContent?: string | null;
-  contextFiles?: Array<{ name: string; content: string }>;
+  memoryFiles?: Array<{ name: string; content: string }>;
   completedTasks?: Array<{ name: string; summary: string }>;
 }
 
@@ -19,7 +17,7 @@ export interface BuildSpecParams {
  * Build spec content for a task.
  */
 export function buildSpecContent(params: BuildSpecParams): string {
-  const { featureName, task, dependsOn, allTasks, planContent, contextFiles = [], completedTasks = [] } = params;
+  const { featureName, task, dependsOn, allTasks, planContent, memoryFiles = [], completedTasks = [] } = params;
 
   const specLines: string[] = [
     `# Task: ${task.folder}`,
@@ -59,11 +57,11 @@ export function buildSpecContent(params: BuildSpecParams): string {
     specLines.push('## Task Type', '', taskType, '');
   }
 
-  if (contextFiles.length > 0) {
-    const contextCompiled = contextFiles
+  if (memoryFiles.length > 0) {
+    const memoryCompiled = memoryFiles
       .map(f => `## ${f.name}\n\n${f.content}`)
       .join('\n\n---\n\n');
-    specLines.push('## Context', '', contextCompiled, '');
+    specLines.push('## Memory', '', memoryCompiled, '');
   }
 
   if (completedTasks.length > 0) {

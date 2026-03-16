@@ -36,10 +36,10 @@ export function initServices(directory: string): MaestroServices {
   const memoryAdapter = new FsMemoryAdapter(directory);
 
   const configAdapter = new FsConfigAdapter();
-  const taskBackend = configAdapter.get().taskBackend;
-  const taskPort: TaskPort = taskBackend === 'br'
+  const config = configAdapter.get();
+  const taskPort: TaskPort = config.taskBackend === 'br'
     ? new BrTaskAdapter(directory)
-    : new FsTaskAdapter(directory);
+    : new FsTaskAdapter(directory, config.claimExpiresMinutes);
 
   _services = {
     taskPort,

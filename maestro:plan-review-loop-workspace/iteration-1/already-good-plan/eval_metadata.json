@@ -1,0 +1,9 @@
+{
+  "eval_id": 1,
+  "eval_name": "already-good-plan",
+  "prompt": "Deep review this plan and fix any issues: test-plans/good-plan.md",
+  "assertions": [
+    {"name": "passes-quickly", "description": "Passes in round 1 or 2 max. Does not over-iterate on a clean plan"},
+    {"name": "no-unnecessary-changes", "description": "Does not rewrite or restructure a plan that is already well-formed"}
+  ]
+}

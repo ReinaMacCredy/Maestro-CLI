@@ -1,0 +1,12 @@
+{
+  "folderToId": {
+    "maestro-38k-create-a-test-file": "maestro-38k",
+    "maestro-3fg-create-a-test-file": "maestro-3fg",
+    "maestro-8uq-remove-the-test-file": "maestro-8uq"
+  },
+  "idToFolder": {
+    "maestro-38k": "maestro-38k-create-a-test-file",
+    "maestro-3fg": "maestro-3fg-create-a-test-file",
+    "maestro-8uq": "maestro-8uq-remove-the-test-file"
+  }
+}

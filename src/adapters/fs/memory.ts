@@ -1,6 +1,5 @@
 /**
  * Filesystem-based memory adapter for maestroCLI.
- * Forked from FsContextAdapter; renamed context -> memory.
  * Supports both per-feature memory (.maestro/features/<name>/memory/)
  * and global memory (.maestro/memory/).
  */

@@ -1,0 +1,9 @@
+{
+  "eval_id": 2,
+  "config": "without_skill",
+  "expectations": [
+    {"text": "detects-circular-deps", "passed": true, "evidence": "Identified circular dependency deadlock between Tasks 1-2-3."},
+    {"text": "flags-vague-phase2", "passed": true, "evidence": "Identified Phase 2 tasks as too vague / mega-tasks."},
+    {"text": "fixes-or-escalates", "passed": true, "evidence": "Fixed structural problems in single pass. Broke circular dep, decomposed vague tasks, added acceptance criteria."}
+  ]
+}

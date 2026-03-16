@@ -1,108 +1,136 @@
-# maestro -- Agent-Optimized Development Orchestrator
+# maestro -- MCP Plugin for Agent-Optimized Development
 
 ## Getting Started
 
-At the start of every session:
+At the start of every session, call `maestro_status` (MCP) or `maestro status` (CLI).
+Load recommended skills with `maestro_skill('<name>')`.
 
-```bash
-maestro status
-maestro skill <name>
-```
+## Architecture
+
+maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
+Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
+
+- **4 task states**: pending, claimed, done, blocked
+- **20 MCP tools** across 5 groups
+- **Plain file backend** (default), optional br sync
+- **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
+- **Pipeline**: discovery --> research --> planning --> approval --> execution --> done (stages are skippable)
 
 ## Workflow Phases
 
-| Phase | Trigger | Commands |
-|-------|---------|----------|
-| Discovery | New feature request | `maestro feature-create <name>`, `maestro context-write --feature <name> --name <file> --content "..."` |
-| Planning | Feature exists, no plan | `maestro plan-write --feature <name> --content "..."`, `maestro plan-read --feature <name>` |
-| Approval | Plan written | `maestro plan-approve --feature <name>` |
-| Execution | Plan approved | `maestro task-sync --feature <name>`, `maestro task-start --feature <name> --task <id>` |
-| Completion | All tasks done | `maestro feature-complete --feature <name>` |
+| Phase | Trigger | MCP Tools / CLI Commands |
+|-------|---------|--------------------------|
+| Discovery | New feature request | `maestro_feature_create`, `maestro_memory_write` |
+| Research | Feature exists | Agent subagents, `maestro_memory_write` to capture findings |
+| Planning | Research done | `maestro_plan_write`, `maestro_plan_read` |
+| Approval | Plan written | `maestro_plan_approve` |
+| Execution | Plan approved | `maestro_tasks_sync`, `maestro_task_next`, `maestro_task_claim`, `maestro_task_done` |
+| Completion | All tasks done | `maestro_feature_complete`, `maestro_memory_promote` |
 
 ## Planning Mode
 
-1. Load `maestro:design` and `maestro:parallel-exploration`
-2. Ask clarifying questions about the feature
-3. Research the codebase and save findings with `context-write`
-4. Write the plan with `plan-write`
-5. Review comments with `plan-read`
-6. Approve with `plan-approve`
+1. Load `maestro:design` and `maestro:parallel-exploration` skills
+2. Research the codebase, save findings with `maestro_memory_write`
+3. Write the plan with `maestro_plan_write`
+4. Review comments with `maestro_plan_read`
+5. Approve with `maestro_plan_approve`
 
 ## Execution Mode
 
-1. `maestro task-sync --feature <name>`
-2. `maestro status`
-3. Start the next runnable task with `maestro task-start --feature <name> --task <id>`
-4. Let the worker CLI read and follow `.maestro/features/<feature>/tasks/<task>/worker-prompt.md`
-5. The worker finishes with `maestro task-finish`
-6. Repeat until all tasks are done
+1. `maestro_tasks_sync` -- generate tasks from approved plan
+2. `maestro_task_next` -- find runnable tasks with compiled specs
+3. `maestro_task_claim` -- claim a task for an agent
+4. Spawn Agent to implement (pre-agent hook auto-injects spec + worker rules)
+5. `maestro_task_done` -- mark complete with summary
+6. Repeat until all tasks done
 
-## Blocked Or Partial Tasks
+## Blocked Tasks
 
-If a worker reports a blocker:
+If a worker hits a blocker:
+1. Worker calls `maestro_task_block` with reason
+2. Review blocker in `maestro_status`
+3. Resolve and call `maestro_task_unblock` with decision
 
-1. Review the blocker in `task-report-read`
-2. Get the user decision
-3. Resume with:
+## Stale Claims
 
-```bash
-maestro task-start --feature <name> --task <id> --continue-from blocked --decision "user's answer"
-```
+Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-For partial work:
+## MCP Tools (20)
 
-```bash
-maestro task-start --feature <name> --task <id> --continue-from partial
-```
+| Group | Tools |
+|-------|-------|
+| Feature (3) | `feature_create`, `feature_list`, `feature_complete` |
+| Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
+| Task (7) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_block`, `task_unblock`, `task_list` |
+| Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
+| Meta (2) | `status`, `skill` |
 
-## Stale Tasks
+All tools are prefixed `maestro_` in MCP (e.g. `maestro_task_claim`).
 
-If `status` shows a stale task, recover it with:
+## CLI Commands
 
-```bash
-maestro task-start --feature <name> --task <id> --force
-```
-
-This marks the stale attempt failed and starts a new attempt from the current checkout state.
-
-## Command Reference
-
-61 commands organized by domain:
+Commands organized by domain:
 
 ### Feature (5)
-
 `feature-create`, `feature-list`, `feature-info`, `feature-active`, `feature-complete`
 
 ### Plan (6)
-
 `plan-write`, `plan-read`, `plan-approve`, `plan-revoke`, `plan-comment`, `plan-comments-clear`
 
-### Task (11)
+### Task (7)
+`task-sync`, `task-list`, `task-info`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
 
-`task-sync`, `task-create`, `task-update`, `task-list`, `task-info`, `task-start`, `task-finish`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
-
-### Subtask (9)
-
-`subtask-create`, `subtask-update`, `subtask-list`, `subtask-info`, `subtask-delete`, `subtask-spec-read`, `subtask-spec-write`, `subtask-report-read`, `subtask-report-write`
-
-### Context (7)
-
-`context-write`, `context-read`, `context-list`, `context-delete`, `context-compile`, `context-archive`, `context-stats`
-
-### Session (7)
-
-`session-track`, `session-list`, `session-master`, `session-fork`, `session-fresh`, `session-end`, `session-info`
-
-### Ask (4)
-
-`ask-create`, `ask-answer`, `ask-list`, `ask-cleanup`
+### Memory (7)
+`memory-write`, `memory-read`, `memory-list`, `memory-delete`, `memory-compile`, `memory-archive`, `memory-stats`
 
 ### Config (3)
-
 `config-get`, `config-set`, `config-agent`
 
-### Other (9)
-
-`init`, `status`, `agents-md`, `sandbox-status`, `sandbox-wrap`, `skill`, `skill-list`, `self-update`, `update`
+### Other (8)
+`init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `self-update`, `update`
 
 All commands accept `--json`. Use `maestro <command> --help` for full usage.
+
+
+# TypeScript Style Guide
+
+## Types
+- Prefer `interface` for object shapes and `type` for unions or intersections
+- Avoid `any`; use `unknown` and narrow with type guards
+- Use `readonly` for immutable data
+- Prefer `const` assertions for literal types
+- Use discriminated unions over optional fields for variant types
+
+## Naming
+- Types and interfaces: PascalCase
+- Variables and functions: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Enums: PascalCase for both enum names and members
+- Files: kebab-case
+
+## Functions
+- Prefer arrow functions for callbacks and short expressions
+- Use named functions for top-level declarations
+- Add explicit return types for public API functions
+- Use function overloads sparingly; prefer union types
+
+## Async
+- Always `await` promises; avoid fire-and-forget flows
+- Use `Promise.all()` for parallel independent operations
+- Handle errors with `try/catch` at the boundary rather than every call site
+- Prefer `async/await` over `.then()` chains
+
+## Imports
+- Group imports by built-in, external, internal, then relative
+- Use named imports instead of `import *`
+- Avoid circular dependencies
+
+## Nullability
+- Prefer `undefined` over `null`
+- Use optional chaining (`?.`) and nullish coalescing (`??`)
+- Avoid non-null assertions except in tests or tightly constrained cases
+
+## Testing
+- Use `describe` and `it` for structure
+- Mock external dependencies, not internal modules
+- Test error paths in addition to happy paths

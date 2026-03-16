@@ -1,0 +1,67 @@
+{
+  "skill_name": "maestro:plan-review-loop",
+  "iteration": 1,
+  "configurations": [
+    {"name": "with_skill", "description": "Plan review loop skill with iterative subagent review"},
+    {"name": "without_skill", "description": "Baseline -- no skill, natural Claude review"}
+  ],
+  "evals": [
+    {
+      "eval_name": "flawed-webhook-plan",
+      "results": {
+        "with_skill": {
+          "assertions": {"total": 3, "passed": 3, "pass_rate": 1.0},
+          "tokens": 40631, "duration_seconds": 213.5
+        },
+        "without_skill": {
+          "assertions": {"total": 3, "passed": 2, "pass_rate": 0.67},
+          "tokens": 22434, "duration_seconds": 90.1
+        }
+      }
+    },
+    {
+      "eval_name": "already-good-plan",
+      "results": {
+        "with_skill": {
+          "assertions": {"total": 2, "passed": 2, "pass_rate": 1.0},
+          "tokens": 27078, "duration_seconds": 63.0
+        },
+        "without_skill": {
+          "assertions": {"total": 2, "passed": 1, "pass_rate": 0.5},
+          "tokens": 25005, "duration_seconds": 70.1
+        }
+      }
+    },
+    {
+      "eval_name": "structurally-broken-plan",
+      "results": {
+        "with_skill": {
+          "assertions": {"total": 3, "passed": 3, "pass_rate": 1.0},
+          "tokens": 44160, "duration_seconds": 610.2
+        },
+        "without_skill": {
+          "assertions": {"total": 3, "passed": 3, "pass_rate": 1.0},
+          "tokens": 21956, "duration_seconds": 59.0
+        }
+      }
+    }
+  ],
+  "summary": {
+    "with_skill": {
+      "overall_pass_rate": 1.0,
+      "mean_tokens": 37290,
+      "mean_duration_seconds": 295.6
+    },
+    "without_skill": {
+      "overall_pass_rate": 0.75,
+      "mean_tokens": 23132,
+      "mean_duration_seconds": 73.1
+    },
+    "delta": {
+      "pass_rate": "+0.25 (skill perfect 8/8, baseline 6/8)",
+      "tokens": "+61% more tokens (multi-round review is more thorough but costs more)",
+      "duration": "+4x longer (iterative loop takes time, especially on broken plans)",
+      "notes": "Skill wins on correctness: catches issues baseline misses (multi-round verification, respecting good plans). Baseline wins on speed/cost. Key differentiator: skill re-reviews after fixing, baseline does single-pass and hopes fixes are right."
+    }
+  }
+}

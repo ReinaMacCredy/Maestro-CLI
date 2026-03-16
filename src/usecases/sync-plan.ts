@@ -35,6 +35,7 @@ export async function syncPlan(
 
   const existingTasks = await taskPort.list(featureName, { includeAll: true });
   const existingByFolder = new Map(existingTasks.map(t => [t.folder, t]));
+  const parsedFolderSet = new Set(parsedTasks.map(p => p.folder));
 
   const result: TasksSyncResult = {
     created: [],
@@ -55,7 +56,7 @@ export async function syncPlan(
       continue;
     }
 
-    const stillInPlan = parsedTasks.some(p => p.folder === existing.folder);
+    const stillInPlan = parsedFolderSet.has(existing.folder);
     if (!stillInPlan) {
       await taskPort.remove(featureName, existing.folder);
       result.removed.push(existing.folder);

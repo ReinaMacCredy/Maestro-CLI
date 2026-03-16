@@ -9,6 +9,7 @@ import cmdFeatureCreate from '../feature/create.ts';
 import cmdFeatureInfo from '../feature/info.ts';
 import cmdFeatureList from '../feature/list.ts';
 import cmdInit from '../init/run.ts';
+import cmdInstall from '../install/index.ts';
 import cmdMemoryArchive from '../memory/archive.ts';
 import cmdMemoryCompile from '../memory/compile.ts';
 import cmdMemoryDelete from '../memory/delete.ts';
@@ -46,6 +47,7 @@ export const subCommands = {
   'feature-info': cmdFeatureInfo,
   'feature-list': cmdFeatureList,
   'init': cmdInit,
+  'install': cmdInstall,
   'memory-archive': cmdMemoryArchive,
   'memory-compile': cmdMemoryCompile,
   'memory-delete': cmdMemoryDelete,

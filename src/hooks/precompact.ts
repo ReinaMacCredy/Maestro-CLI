@@ -33,7 +33,7 @@ async function main(): Promise<void> {
       runnable: [],
       nextAction: 'No active feature. Create one with maestro feature-create.',
       recentEvents: [],
-      contextFiles: [],
+      memoryFiles: [],
     };
     writeJsonAtomic(snapshotPath, snapshot);
     writeOutput({});
@@ -71,7 +71,7 @@ async function main(): Promise<void> {
 
   // Read memory file names
   const memoryEntries = services.memoryAdapter.list(featureName);
-  const contextFiles = memoryEntries.map((entry) => entry.name);
+  const memoryFiles = memoryEntries.map((entry) => entry.name);
 
   const snapshot = {
     timestamp: new Date().toISOString(),
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     runnable: status.runnable,
     nextAction: status.nextAction,
     recentEvents,
-    contextFiles,
+    memoryFiles,
   };
 
   writeJsonAtomic(snapshotPath, snapshot);

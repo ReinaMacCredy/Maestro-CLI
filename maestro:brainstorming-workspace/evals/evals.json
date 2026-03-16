@@ -1,0 +1,26 @@
+{
+  "skill_name": "maestro:brainstorming",
+  "evals": [
+    {
+      "id": 0,
+      "name": "vague-caching-request",
+      "prompt": "I want to add caching to the CLI",
+      "expected_output": "Should ask structured clarifying questions (what problem, current state, scope, constraints) before proposing any design. Should offer multiple-choice options. Should summarize understanding before moving to approaches.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "detailed-webhook-request",
+      "prompt": "I need to add webhook support to maestro so that when a task completes, it can POST a JSON payload to a configured URL. The payload should include task ID, status, duration, and feature name. It should support retries with exponential backoff. Config lives in .maestro/config.json. Only HTTP POST, no other methods.",
+      "expected_output": "Should recognize that most questions are already answered. Should skip problem space and scope questions. Should focus on remaining gaps: error handling, retry limits, auth/headers, testing approach. Should move to design faster than the vague prompt.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "simple-flag-addition",
+      "prompt": "Add a --verbose flag to the status command that shows full task descriptions instead of truncated ones",
+      "expected_output": "Should recognize this is a simple, well-understood change. Should ask minimal questions (maybe 1-2 about output format). Should not run a full 10-question interview. Should move to design quickly.",
+      "files": []
+    }
+  ]
+}

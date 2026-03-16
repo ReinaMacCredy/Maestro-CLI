@@ -4,6 +4,7 @@
 
 import { readJson } from './fs-io.ts';
 import * as path from 'path';
+import { homedir } from 'os';
 
 const KNOWN_TOOLS = ['context7', 'notebooklm'] as const;
 type ResearchTool = typeof KNOWN_TOOLS[number];
@@ -18,8 +19,7 @@ export function detectResearchTools(projectDir: string): ResearchTool[] {
   // Check project-level .mcp.json
   const projectMcp = readJson<McpConfig>(path.join(projectDir, '.mcp.json'));
   // Check user-level ~/.claude/mcp.json
-  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-  const userMcp = readJson<McpConfig>(path.join(homeDir, '.claude', 'mcp.json'));
+  const userMcp = readJson<McpConfig>(path.join(homedir(), '.claude', 'mcp.json'));
 
   const allServers = {
     ...userMcp?.mcpServers,

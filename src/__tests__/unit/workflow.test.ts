@@ -1,5 +1,8 @@
 import { describe, test, expect } from "bun:test";
 import { countTaskStatuses, getNextAction } from "../../utils/workflow";
+import type { TaskStatusType } from "../../types";
+
+type TaskEntry = { status: TaskStatusType; folder: string };
 
 describe("countTaskStatuses", () => {
   test("returns all zeros for empty list", () => {
@@ -8,7 +11,7 @@ describe("countTaskStatuses", () => {
   });
 
   test("counts mixed statuses correctly", () => {
-    const tasks = [
+    const tasks: Array<{ status: TaskStatusType }> = [
       { status: "pending" },
       { status: "pending" },
       { status: "claimed" },
@@ -25,7 +28,7 @@ describe("countTaskStatuses", () => {
   });
 
   test("ignores statuses outside pending/claimed/done/blocked", () => {
-    const tasks = [
+    const tasks: Array<{ status: TaskStatusType }> = [
       { status: "blocked" },
       { status: "done" },
     ];
@@ -38,7 +41,7 @@ describe("countTaskStatuses", () => {
   });
 
   test("handles all same status", () => {
-    const tasks = [
+    const tasks: Array<{ status: TaskStatusType }> = [
       { status: "claimed" },
       { status: "claimed" },
     ];
@@ -71,7 +74,7 @@ describe("getNextAction", () => {
   });
 
   test("suggests continuing claimed task", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "done", folder: "01-setup" },
       { status: "claimed", folder: "02-core" },
       { status: "pending", folder: "03-finish" },
@@ -82,7 +85,7 @@ describe("getNextAction", () => {
   });
 
   test("suggests claiming single runnable task", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "done", folder: "01-setup" },
       { status: "pending", folder: "02-core" },
     ];
@@ -92,7 +95,7 @@ describe("getNextAction", () => {
   });
 
   test("reports multiple runnable tasks", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "pending", folder: "01-a" },
       { status: "pending", folder: "02-b" },
     ];
@@ -103,7 +106,7 @@ describe("getNextAction", () => {
   });
 
   test("reports all tasks complete", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "done", folder: "01-a" },
       { status: "done", folder: "02-b" },
     ];
@@ -112,7 +115,7 @@ describe("getNextAction", () => {
   });
 
   test("reports blocked when pending tasks exist but none runnable", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "pending", folder: "01-blocked-task" },
     ];
     const action = getNextAction("approved", tasks, []);
@@ -121,7 +124,7 @@ describe("getNextAction", () => {
   });
 
   test("surfaces blocked tasks with unblock guidance", () => {
-    const tasks = [
+    const tasks: TaskEntry[] = [
       { status: "blocked", folder: "03-waiting" },
     ];
     const action = getNextAction("approved", tasks, []);

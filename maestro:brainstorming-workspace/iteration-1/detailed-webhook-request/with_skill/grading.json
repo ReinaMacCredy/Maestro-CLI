@@ -1,0 +1,21 @@
+{
+  "eval_id": 1,
+  "config": "with_skill",
+  "expectations": [
+    {
+      "text": "acknowledges-given-info",
+      "passed": true,
+      "evidence": "Explicit bullet list: trigger, method, payload, reliability, config location"
+    },
+    {
+      "text": "skips-answered-questions",
+      "passed": true,
+      "evidence": "Skips Q1 (problem space), Q5-Q7 (integration). Only asks Q2 (current workaround) and Q3 (MVP scope)."
+    },
+    {
+      "text": "asks-remaining-gaps",
+      "passed": true,
+      "evidence": "Asks about current workaround (relevant for delivery guarantees) and pushes back on exponential backoff complexity for MVP with YAGNI reasoning."
+    }
+  ]
+}

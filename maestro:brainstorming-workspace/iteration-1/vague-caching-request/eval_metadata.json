@@ -1,0 +1,19 @@
+{
+  "eval_id": 0,
+  "eval_name": "vague-caching-request",
+  "prompt": "I want to add caching to the CLI",
+  "assertions": [
+    {
+      "name": "asks-clarifying-question",
+      "description": "First response asks at least one clarifying question rather than jumping to design"
+    },
+    {
+      "name": "offers-options",
+      "description": "Provides multiple-choice options for at least one question"
+    },
+    {
+      "name": "single-question-focus",
+      "description": "Asks 1-2 questions max per message, not a wall of 5+"
+    }
+  ]
+}

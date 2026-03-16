@@ -4,21 +4,9 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
-import { checkStatus, type StatusResult } from '../usecases/check-status.ts';
+import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
-
-type PipelineStage = 'discovery' | 'research' | 'planning' | 'approval' | 'execution' | 'done';
-
-function derivePipelineStage(result: StatusResult): PipelineStage {
-  if (!result.plan.exists && result.tasks.total === 0) {
-    return result.context.count > 0 ? 'research' : 'discovery';
-  }
-  if (result.plan.exists && !result.plan.approved) return 'planning';
-  if (result.plan.approved && result.tasks.total === 0) return 'planning';
-  if (result.tasks.total > 0 && result.tasks.done < result.tasks.total) return 'execution';
-  if (result.tasks.total > 0 && result.tasks.done === result.tasks.total) return 'done';
-  return 'discovery';
-}
+import { derivePipelineStage } from '../utils/workflow.ts';
 
 export function registerStatusTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -37,7 +25,13 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       const feature = requireFeature(services, input.feature);
 
       const result = await checkStatus(services, feature);
-      const pipelineStage = derivePipelineStage(result);
+      const pipelineStage = derivePipelineStage({
+        planExists: result.plan.exists,
+        planApproved: result.plan.approved,
+        taskTotal: result.tasks.total,
+        taskDone: result.tasks.done,
+        contextCount: result.context.count,
+      });
       const researchTools = detectResearchTools(services.directory);
 
       const skills: { recommended: string[] } = { recommended: [] };

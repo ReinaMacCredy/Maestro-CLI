@@ -8,6 +8,7 @@ import type { FeaturePort } from '../ports/features.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
+import type { FsConfigAdapter } from '../adapters/fs/config.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
 export interface StatusServices {
@@ -15,6 +16,7 @@ export interface StatusServices {
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
+  configAdapter: FsConfigAdapter;
   directory: string;
 }
 
@@ -38,6 +40,7 @@ export interface StatusResult {
   };
   runnable: string[];
   blocked: string[];
+  expiredClaims: string[];
   context: {
     count: number;
     totalBytes: number;
@@ -49,27 +52,36 @@ export async function checkStatus(
   services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
-  const { taskPort, featureAdapter, planAdapter, memoryAdapter } = services;
+  const { taskPort, featureAdapter, planAdapter, memoryAdapter, configAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new Error(`Feature '${featureName}' not found`);
   }
 
   const plan = planAdapter.read(featureName);
-  const [tasks, runnable] = await Promise.all([
-    taskPort.list(featureName, { includeAll: true }),
-    taskPort.getRunnable(featureName),
-  ]);
+  const tasks = await taskPort.list(featureName, { includeAll: true });
   const memoryStats = memoryAdapter.stats(featureName);
   const comments = plan?.comments || [];
 
-  // Derive blocked tasks from the full task list
+  // Detect expired claims
+  const claimExpiresMinutes = configAdapter.get().claimExpiresMinutes ?? 120;
+  const expiryMs = claimExpiresMinutes * 60 * 1000;
+  const now = Date.now();
+  const expiredClaims = tasks
+    .filter(t => t.status === 'claimed' && t.claimedAt && now - new Date(t.claimedAt).getTime() > expiryMs)
+    .map(t => t.folder);
+
+  // Derive blocked and runnable from the already-loaded task list
   const blocked = tasks
     .filter((t) => t.status === 'blocked')
     .map((t) => t.folder);
 
+  const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.folder));
+  const runnableFolders = tasks
+    .filter(t => t.status === 'pending' && (t.dependsOn || []).every(d => doneSet.has(d)))
+    .map(t => t.folder);
+
   const counts = countTaskStatuses(tasks);
-  const runnableFolders = runnable.map((task) => task.folder);
 
   const planStatus = plan ? (plan.status === 'approved' ? 'approved' : 'draft') : null;
   const nextAction = getNextAction(
@@ -96,6 +108,7 @@ export async function checkStatus(
     },
     runnable: runnableFolders,
     blocked,
+    expiredClaims,
     context: {
       count: memoryStats.count,
       totalBytes: memoryStats.totalBytes,

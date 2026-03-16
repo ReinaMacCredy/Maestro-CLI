@@ -5,7 +5,26 @@
 
 import type { TaskStatusType } from '../types.ts';
 
-export function countTaskStatuses(tasks: Array<{ status: string }>): {
+export type PipelineStage = 'discovery' | 'research' | 'planning' | 'approval' | 'execution' | 'done';
+
+export function derivePipelineStage(opts: {
+  planExists: boolean;
+  planApproved: boolean;
+  taskTotal: number;
+  taskDone: number;
+  contextCount: number;
+}): PipelineStage {
+  if (!opts.planExists && opts.taskTotal === 0) {
+    return opts.contextCount > 0 ? 'research' : 'discovery';
+  }
+  if (opts.planExists && !opts.planApproved) return 'planning';
+  if (opts.planApproved && opts.taskTotal === 0) return 'planning';
+  if (opts.taskTotal > 0 && opts.taskDone < opts.taskTotal) return 'execution';
+  if (opts.taskTotal > 0 && opts.taskDone === opts.taskTotal) return 'done';
+  return 'discovery';
+}
+
+export function countTaskStatuses(tasks: Array<{ status: TaskStatusType }>): {
   pending: number;
   inProgress: number;
   done: number;
@@ -13,7 +32,7 @@ export function countTaskStatuses(tasks: Array<{ status: string }>): {
   const counts = { pending: 0, inProgress: 0, done: 0 };
   for (const t of tasks) {
     if (t.status === 'pending') counts.pending++;
-    else if (t.status === 'claimed' || t.status === 'in_progress') counts.inProgress++;
+    else if (t.status === 'claimed') counts.inProgress++;
     else if (t.status === 'done') counts.done++;
     // blocked tasks counted separately via filter
   }
@@ -22,7 +41,7 @@ export function countTaskStatuses(tasks: Array<{ status: string }>): {
 
 export function getNextAction(
   planStatus: string | null,
-  tasks: Array<{ status: string; folder: string }>,
+  tasks: Array<{ status: TaskStatusType; folder: string }>,
   runnableTasks: string[],
 ): string {
   if (!planStatus || planStatus === 'draft') {
@@ -39,7 +58,7 @@ export function getNextAction(
   let blockedFolder: string | undefined;
   let hasPending = false;
   for (const t of tasks) {
-    if (!claimedFolder && (t.status === 'claimed' || t.status === 'in_progress')) claimedFolder = t.folder;
+    if (!claimedFolder && t.status === 'claimed') claimedFolder = t.folder;
     if (!blockedFolder && t.status === 'blocked') blockedFolder = t.folder;
     if (!hasPending && t.status === 'pending') hasPending = true;
     if (claimedFolder && blockedFolder && hasPending) break;
@@ -61,13 +80,4 @@ export function getNextAction(
     return 'Pending tasks exist but are blocked by dependencies. Check blockedBy for details.';
   }
   return 'All tasks complete. Review the feature and mark it complete when ready.';
-}
-
-export function deriveTaskNextAction(status: TaskStatusType): string | undefined {
-  switch (status) {
-    case 'blocked':
-      return 'Review the blocker and unblock with task_unblock.';
-    default:
-      return undefined;
-  }
 }

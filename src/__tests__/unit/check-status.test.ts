@@ -16,7 +16,7 @@ describe('checkStatus', () => {
     });
 
     taskPort = new InMemoryTaskPort();
-    taskPort.seed('feat', '01-task', { status: 'in_progress' });
+    taskPort.seed('feat', '01-task', { status: 'claimed' });
   });
 
   afterEach(() => {
@@ -38,6 +38,9 @@ describe('checkStatus', () => {
       },
       memoryAdapter: {
         stats: () => ({ count: 0, totalBytes: 0 }),
+      },
+      configAdapter: {
+        get: () => ({ claimExpiresMinutes: 120 }),
       },
       directory: tmpDir,
     } as any;

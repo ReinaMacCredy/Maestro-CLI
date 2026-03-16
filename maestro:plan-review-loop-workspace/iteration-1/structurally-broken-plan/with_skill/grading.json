@@ -1,0 +1,9 @@
+{
+  "eval_id": 2,
+  "config": "with_skill",
+  "expectations": [
+    {"text": "detects-circular-deps", "passed": true, "evidence": "Round 1 identified circular dependency deadlock between Tasks 1/2/3 as a blocker."},
+    {"text": "flags-vague-phase2", "passed": true, "evidence": "Flagged 'build the entire UI', 'optimize all the things', 'test everything' as unbounded/vague tasks."},
+    {"text": "fixes-or-escalates", "passed": true, "evidence": "Fixed all structural problems: broke circular dep with spike task, decomposed vague tasks into 11 specific tasks. Converged in 2 rounds (10 -> 0)."}
+  ]
+}

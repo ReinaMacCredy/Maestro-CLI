@@ -1,12 +1,10 @@
 /**
  * Filesystem-based config adapter for maestroCLI.
- * Forked from hive-core/src/services/configService.ts.
- * Adapted: config path ~/.config/opencode/ --> ~/.config/maestro/.
- *          SandboxConfig imported from types.ts instead of dockerSandboxService.
- *          Constructor takes no directory arg (user-scoped).
+ * Config path: ~/.config/maestro/config.json (user-scoped, no directory arg).
  */
 
 import * as path from 'path';
+import { homedir } from 'os';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../types.ts';
 import type { AgentName } from '../../types.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
@@ -17,8 +15,7 @@ export class FsConfigAdapter {
   private cachedConfig: HiveConfig | null = null;
 
   constructor() {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-    const configDir = path.join(homeDir, '.config', 'maestro');
+    const configDir = path.join(homedir(), '.config', 'maestro');
     this.configPath = path.join(configDir, 'config.json');
   }
 

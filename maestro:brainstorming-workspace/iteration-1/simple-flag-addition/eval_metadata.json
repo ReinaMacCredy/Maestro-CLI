@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "simple-flag-addition",
+  "prompt": "Add a --verbose flag to the status command that shows full task descriptions instead of truncated ones",
+  "assertions": [
+    {
+      "name": "minimal-interview",
+      "description": "Asks 0-2 questions total, does not run a full 10-question interview for a simple change"
+    },
+    {
+      "name": "moves-toward-design",
+      "description": "Gets to design discussion or approach proposal quickly rather than prolonged questioning"
+    }
+  ]
+}

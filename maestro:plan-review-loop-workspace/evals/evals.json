@@ -1,0 +1,26 @@
+{
+  "skill_name": "maestro:plan-review-loop",
+  "evals": [
+    {
+      "id": 0,
+      "name": "flawed-webhook-plan",
+      "prompt": "Deep review this plan and fix any issues: maestro:plan-review-loop-workspace/test-plans/flawed-plan.md",
+      "expected_output": "Should identify gaps (vague tasks, missing acceptance criteria, no error handling spec, no payload format, no retry params), fix them, and loop until clean. Should take 2+ rounds.",
+      "files": ["maestro:plan-review-loop-workspace/test-plans/flawed-plan.md"]
+    },
+    {
+      "id": 1,
+      "name": "already-good-plan",
+      "prompt": "Deep review this plan and fix any issues: maestro:plan-review-loop-workspace/test-plans/good-plan.md",
+      "expected_output": "Should recognize this plan is already well-structured and pass in round 1 (or at most minor nit fixes). Should NOT over-iterate on a clean plan.",
+      "files": ["maestro:plan-review-loop-workspace/test-plans/good-plan.md"]
+    },
+    {
+      "id": 2,
+      "name": "structurally-broken-plan",
+      "prompt": "Deep review this plan and fix any issues: maestro:plan-review-loop-workspace/test-plans/broken-plan.md",
+      "expected_output": "Should detect circular dependencies (Task 1->3->2->3), vague Phase 2 tasks, scope explosion. Should fix or flag stall and report to user.",
+      "files": ["maestro:plan-review-loop-workspace/test-plans/broken-plan.md"]
+    }
+  ]
+}
