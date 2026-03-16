@@ -7,6 +7,7 @@
  * calls getServices().
  */
 
+import { FsTaskAdapter } from './adapters/fs-tasks.ts';
 import { BrTaskAdapter } from './adapters/br.ts';
 import { FsFeatureAdapter } from './adapters/fs/feature.ts';
 import { FsPlanAdapter } from './adapters/fs/plan.ts';
@@ -34,12 +35,18 @@ let _services: MaestroServices | undefined;
 export function initServices(directory: string): MaestroServices {
   const contextAdapter = new FsContextAdapter(directory);
 
+  const configAdapter = new FsConfigAdapter();
+  const taskBackend = configAdapter.get().taskBackend;
+  const taskPort: TaskPort = taskBackend === 'br'
+    ? new BrTaskAdapter(directory)
+    : new FsTaskAdapter(directory);
+
   _services = {
-    taskPort: new BrTaskAdapter(directory),
+    taskPort,
     featureAdapter: new FsFeatureAdapter(directory),
     planAdapter: new FsPlanAdapter(directory),
     contextAdapter,
-    configAdapter: new FsConfigAdapter(),
+    configAdapter,
     agentsMdAdapter: new AgentsMdAdapter(directory, contextAdapter),
     directory,
   };
