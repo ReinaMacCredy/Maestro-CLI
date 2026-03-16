@@ -1,16 +1,20 @@
 /**
- * ContextPort -- abstract interface for context storage.
- * Concrete implementation: FsContextAdapter.
+ * MemoryPort -- abstract interface for memory storage.
+ * Concrete implementation: FsMemoryAdapter.
  */
 
-import type { ContextFile } from '../types.ts';
+import type { MemoryFile } from '../types.ts';
 
-export interface ContextPort {
+export interface MemoryPort {
   write(featureName: string, fileName: string, content: string): string;
   read(featureName: string, fileName: string): string | null;
-  list(featureName: string): ContextFile[];
+  list(featureName: string): MemoryFile[];
   delete(featureName: string, fileName: string): boolean;
   compile(featureName: string): string;
   archive(featureName: string): { archived: string[]; archivePath: string };
   stats(featureName: string): { count: number; totalBytes: number; oldest?: string; newest?: string };
+  /** Global memory (not feature-scoped). */
+  writeGlobal(fileName: string, content: string): string;
+  readGlobal(fileName: string): string | null;
+  listGlobal(): MemoryFile[];
 }

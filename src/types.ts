@@ -98,10 +98,10 @@ export interface FeatureInfo {
 }
 
 // ============================================================================
-// Context Types
+// Memory Types
 // ============================================================================
 
-export interface ContextFile {
+export interface MemoryFile {
   name: string;
   content: string;
   updatedAt: string;

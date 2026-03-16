@@ -1,5 +1,5 @@
 /**
- * maestro context-list -- list context files for a feature.
+ * maestro memory-list -- list memory files for a feature.
  */
 
 import { defineCommand } from 'citty';
@@ -8,7 +8,7 @@ import { output, renderTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
-  meta: { name: 'context-list', description: 'List context files' },
+  meta: { name: 'memory-list', description: 'List memory files' },
   args: {
     feature: {
       type: 'string',
@@ -18,10 +18,10 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { contextAdapter } = getServices();
-      const files = contextAdapter.list(args.feature);
+      const { memoryAdapter } = getServices();
+      const files = memoryAdapter.list(args.feature);
       output(files, (items) => {
-        if (items.length === 0) return 'No context files found.';
+        if (items.length === 0) return 'No memory files found.';
         const rows = items.map((f: { name: string; updatedAt: string; content: string }) => [
           f.name,
           `${f.content.length} chars`,
@@ -30,7 +30,7 @@ export default defineCommand({
         return renderTable(['Name', 'Size', 'Updated'], rows);
       });
     } catch (err) {
-      handleCommandError('context-list', err);
+      handleCommandError('memory-list', err);
     }
   },
 });

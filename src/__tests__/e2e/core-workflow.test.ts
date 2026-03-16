@@ -98,15 +98,15 @@ describe('core workflow', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  test('context-write and context-read round-trip', async () => {
+  test('memory-write and memory-read round-trip', async () => {
     harness = await createTestHarness();
     await harness.run('init');
     await harness.run('feature-create', 'test-feature');
 
-    const writeResult = await harness.run('context-write', '--feature', 'test-feature', '--name', 'research.md', '--content', 'Found API at /api/v1');
+    const writeResult = await harness.run('memory-write', '--feature', 'test-feature', '--name', 'research.md', '--content', 'Found API at /api/v1');
     expect(writeResult.exitCode).toBe(0);
 
-    const readResult = await harness.run('context-read', '--feature', 'test-feature', '--name', 'research.md');
+    const readResult = await harness.run('memory-read', '--feature', 'test-feature', '--name', 'research.md');
     expect(readResult.exitCode).toBe(0);
     const parsed = JSON.parse(readResult.stdout);
     expect(typeof parsed === 'string' ? parsed : parsed.content).toContain('Found API');

@@ -11,20 +11,20 @@ import { FsTaskAdapter } from './adapters/fs-tasks.ts';
 import { BrTaskAdapter } from './adapters/br.ts';
 import { FsFeatureAdapter } from './adapters/fs/feature.ts';
 import { FsPlanAdapter } from './adapters/fs/plan.ts';
-import { FsContextAdapter } from './adapters/fs/context.ts';
+import { FsMemoryAdapter } from './adapters/fs/memory.ts';
 import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { MaestroError } from './lib/errors.ts';
 import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
-import type { ContextPort } from './ports/context.ts';
+import type { MemoryPort } from './ports/memory.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
-  contextAdapter: ContextPort;
+  memoryAdapter: MemoryPort;
   configAdapter: FsConfigAdapter;
   agentsMdAdapter: AgentsMdAdapter;
   directory: string;
@@ -33,7 +33,7 @@ export interface MaestroServices {
 let _services: MaestroServices | undefined;
 
 export function initServices(directory: string): MaestroServices {
-  const contextAdapter = new FsContextAdapter(directory);
+  const memoryAdapter = new FsMemoryAdapter(directory);
 
   const configAdapter = new FsConfigAdapter();
   const taskBackend = configAdapter.get().taskBackend;
@@ -45,9 +45,9 @@ export function initServices(directory: string): MaestroServices {
     taskPort,
     featureAdapter: new FsFeatureAdapter(directory),
     planAdapter: new FsPlanAdapter(directory),
-    contextAdapter,
+    memoryAdapter,
     configAdapter,
-    agentsMdAdapter: new AgentsMdAdapter(directory, contextAdapter),
+    agentsMdAdapter: new AgentsMdAdapter(directory, memoryAdapter),
     directory,
   };
 

@@ -10,7 +10,7 @@ import { registerStatusTools } from './server/status.ts';
 import { registerFeatureTools } from './server/feature.ts';
 import { registerPlanTools } from './server/plan.ts';
 import { registerTaskTools } from './server/task.ts';
-import { registerContextTools } from './server/context.ts';
+import { registerMemoryTools } from './server/memory.ts';
 import { registerSkillTools } from './server/skill.ts';
 import { registerInitTools } from './server/init.ts';
 
@@ -26,7 +26,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerFeatureTools(server, thunk);
   registerPlanTools(server, thunk);
   registerTaskTools(server, thunk);
-  registerContextTools(server, thunk);
+  registerMemoryTools(server, thunk);
   registerSkillTools(server, thunk, directory);
   registerInitTools(server, thunk, directory);
 

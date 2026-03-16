@@ -3,19 +3,19 @@ import cmdAgentsMd from '../agents-md/generate.ts';
 import cmdConfigAgent from '../config/agent.ts';
 import cmdConfigGet from '../config/get.ts';
 import cmdConfigSet from '../config/set.ts';
-import cmdContextArchive from '../context/archive.ts';
-import cmdContextCompile from '../context/compile.ts';
-import cmdContextDelete from '../context/delete.ts';
-import cmdContextList from '../context/list.ts';
-import cmdContextRead from '../context/read.ts';
-import cmdContextStats from '../context/stats.ts';
-import cmdContextWrite from '../context/write.ts';
 import cmdFeatureActive from '../feature/active.ts';
 import cmdFeatureComplete from '../feature/complete.ts';
 import cmdFeatureCreate from '../feature/create.ts';
 import cmdFeatureInfo from '../feature/info.ts';
 import cmdFeatureList from '../feature/list.ts';
 import cmdInit from '../init/run.ts';
+import cmdMemoryArchive from '../memory/archive.ts';
+import cmdMemoryCompile from '../memory/compile.ts';
+import cmdMemoryDelete from '../memory/delete.ts';
+import cmdMemoryList from '../memory/list.ts';
+import cmdMemoryRead from '../memory/read.ts';
+import cmdMemoryStats from '../memory/stats.ts';
+import cmdMemoryWrite from '../memory/write.ts';
 import cmdPlanApprove from '../plan/approve.ts';
 import cmdPlanComment from '../plan/comment.ts';
 import cmdPlanCommentsClear from '../plan/comments-clear.ts';
@@ -40,19 +40,19 @@ export const subCommands = {
   'config-agent': cmdConfigAgent,
   'config-get': cmdConfigGet,
   'config-set': cmdConfigSet,
-  'context-archive': cmdContextArchive,
-  'context-compile': cmdContextCompile,
-  'context-delete': cmdContextDelete,
-  'context-list': cmdContextList,
-  'context-read': cmdContextRead,
-  'context-stats': cmdContextStats,
-  'context-write': cmdContextWrite,
   'feature-active': cmdFeatureActive,
   'feature-complete': cmdFeatureComplete,
   'feature-create': cmdFeatureCreate,
   'feature-info': cmdFeatureInfo,
   'feature-list': cmdFeatureList,
   'init': cmdInit,
+  'memory-archive': cmdMemoryArchive,
+  'memory-compile': cmdMemoryCompile,
+  'memory-delete': cmdMemoryDelete,
+  'memory-list': cmdMemoryList,
+  'memory-read': cmdMemoryRead,
+  'memory-stats': cmdMemoryStats,
+  'memory-write': cmdMemoryWrite,
   'plan-approve': cmdPlanApprove,
   'plan-comment': cmdPlanComment,
   'plan-comments-clear': cmdPlanCommentsClear,

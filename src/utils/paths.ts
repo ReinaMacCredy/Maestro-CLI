@@ -9,7 +9,7 @@ import * as path from 'path';
 const MAESTRO_DIR = '.maestro';
 const FEATURES_DIR = 'features';
 const TASKS_DIR = 'tasks';
-const CONTEXT_DIR = 'context';
+const MEMORY_DIR = 'memory';
 const PLAN_FILE = 'plan.md';
 const COMMENTS_FILE = 'comments.json';
 const FEATURE_FILE = 'feature.json';
@@ -49,8 +49,17 @@ export function getFeatureJsonPath(projectRoot: string, featureName: string): st
   return path.join(getFeaturePath(projectRoot, featureName), FEATURE_FILE);
 }
 
+export function getMemoryPath(projectRoot: string, featureName: string): string {
+  return path.join(getFeaturePath(projectRoot, featureName), MEMORY_DIR);
+}
+
+export function getGlobalMemoryPath(projectRoot: string): string {
+  return path.join(getMaestroPath(projectRoot), MEMORY_DIR);
+}
+
+/** @deprecated Use getMemoryPath instead. */
 export function getContextPath(projectRoot: string, featureName: string): string {
-  return path.join(getFeaturePath(projectRoot, featureName), CONTEXT_DIR);
+  return getMemoryPath(projectRoot, featureName);
 }
 
 export function getTasksPath(projectRoot: string, featureName: string): string {

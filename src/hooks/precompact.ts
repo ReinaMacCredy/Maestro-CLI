@@ -69,9 +69,9 @@ async function main(): Promise<void> {
     if (fd !== undefined) fs.closeSync(fd);
   }
 
-  // Read context file names
-  const contextEntries = services.contextAdapter.list(featureName);
-  const contextFiles = contextEntries.map((entry) => entry.name);
+  // Read memory file names
+  const memoryEntries = services.memoryAdapter.list(featureName);
+  const contextFiles = memoryEntries.map((entry) => entry.name);
 
   const snapshot = {
     timestamp: new Date().toISOString(),

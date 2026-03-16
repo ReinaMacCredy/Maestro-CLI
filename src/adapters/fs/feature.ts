@@ -7,7 +7,7 @@
 import {
   getFeaturePath,
   getFeatureJsonPath,
-  getContextPath,
+  getMemoryPath,
   getTasksPath,
   getPlanPath,
   getCommentsPath,
@@ -40,7 +40,7 @@ export class FsFeatureAdapter implements FeaturePort {
     }
 
     ensureDir(featurePath);
-    ensureDir(getContextPath(this.projectRoot, name));
+    ensureDir(getMemoryPath(this.projectRoot, name));
     ensureDir(getTasksPath(this.projectRoot, name));
 
     const feature: FeatureJson = {

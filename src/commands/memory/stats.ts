@@ -1,5 +1,5 @@
 /**
- * maestro context-stats -- show context stats for a feature.
+ * maestro memory-stats -- show memory stats for a feature.
  */
 
 import { defineCommand } from 'citty';
@@ -8,7 +8,7 @@ import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
-  meta: { name: 'context-stats', description: 'Show context stats' },
+  meta: { name: 'memory-stats', description: 'Show memory stats' },
   args: {
     feature: {
       type: 'string',
@@ -18,8 +18,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { contextAdapter } = getServices();
-      const stats = contextAdapter.stats(args.feature);
+      const { memoryAdapter } = getServices();
+      const stats = memoryAdapter.stats(args.feature);
       output(stats, (s) => {
         const lines = [
           `files:  ${s.count}`,
@@ -30,7 +30,7 @@ export default defineCommand({
         return lines.join('\n');
       });
     } catch (err) {
-      handleCommandError('context-stats', err);
+      handleCommandError('memory-stats', err);
     }
   },
 });

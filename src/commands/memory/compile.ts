@@ -1,5 +1,5 @@
 /**
- * maestro context-compile -- compile all context into a single string.
+ * maestro memory-compile -- compile all memory into a single string.
  */
 
 import { defineCommand } from 'citty';
@@ -8,7 +8,7 @@ import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
-  meta: { name: 'context-compile', description: 'Compile all context into single string' },
+  meta: { name: 'memory-compile', description: 'Compile all memory into single string' },
   args: {
     feature: {
       type: 'string',
@@ -18,15 +18,15 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { contextAdapter } = getServices();
-      const compiled = contextAdapter.compile(args.feature);
+      const { memoryAdapter } = getServices();
+      const compiled = memoryAdapter.compile(args.feature);
       if (!compiled) {
-        console.error(formatError('context-compile', `no context files for feature '${args.feature}'`));
+        console.error(formatError('memory-compile', `no memory files for feature '${args.feature}'`));
         process.exit(1);
       }
       output(compiled, (c) => c);
     } catch (err) {
-      handleCommandError('context-compile', err);
+      handleCommandError('memory-compile', err);
     }
   },
 });

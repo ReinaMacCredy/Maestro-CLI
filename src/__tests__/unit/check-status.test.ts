@@ -36,7 +36,7 @@ describe('checkStatus', () => {
       planAdapter: {
         read: () => ({ content: '## Plan', status: 'approved', comments: [] }),
       },
-      contextAdapter: {
+      memoryAdapter: {
         stats: () => ({ count: 0, totalBytes: 0 }),
       },
       directory: tmpDir,

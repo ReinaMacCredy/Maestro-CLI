@@ -1,5 +1,5 @@
 /**
- * maestro context-delete -- delete a context file.
+ * maestro memory-delete -- delete a memory file.
  */
 
 import { defineCommand } from 'citty';
@@ -8,7 +8,7 @@ import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
-  meta: { name: 'context-delete', description: 'Delete a context file' },
+  meta: { name: 'memory-delete', description: 'Delete a memory file' },
   args: {
     feature: {
       type: 'string',
@@ -17,21 +17,21 @@ export default defineCommand({
     },
     name: {
       type: 'string',
-      description: 'Context file name',
+      description: 'Memory file name',
       required: true,
     },
   },
   async run({ args }) {
     try {
-      const { contextAdapter } = getServices();
-      const deleted = contextAdapter.delete(args.feature, args.name);
+      const { memoryAdapter } = getServices();
+      const deleted = memoryAdapter.delete(args.feature, args.name);
       if (!deleted) {
-        console.error(formatError('context-delete', `context '${args.name}' not found for feature '${args.feature}'`));
+        console.error(formatError('memory-delete', `memory '${args.name}' not found for feature '${args.feature}'`));
         process.exit(1);
       }
-      output(deleted, () => `[ok] context '${args.name}' deleted`);
+      output(deleted, () => `[ok] memory '${args.name}' deleted`);
     } catch (err) {
-      handleCommandError('context-delete', err);
+      handleCommandError('memory-delete', err);
     }
   },
 });

@@ -6,7 +6,7 @@
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { PlanPort } from '../ports/plans.ts';
-import type { ContextPort } from '../ports/context.ts';
+import type { MemoryPort } from '../ports/memory.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
@@ -14,7 +14,7 @@ export interface StatusServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
-  contextAdapter: ContextPort;
+  memoryAdapter: MemoryPort;
   directory: string;
 }
 
@@ -49,7 +49,7 @@ export async function checkStatus(
   services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
-  const { taskPort, featureAdapter, planAdapter, contextAdapter } = services;
+  const { taskPort, featureAdapter, planAdapter, memoryAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new Error(`Feature '${featureName}' not found`);
@@ -60,7 +60,7 @@ export async function checkStatus(
     taskPort.list(featureName, { includeAll: true }),
     taskPort.getRunnable(featureName),
   ]);
-  const contextStats = contextAdapter.stats(featureName);
+  const memoryStats = memoryAdapter.stats(featureName);
   const comments = plan?.comments || [];
 
   // Derive blocked tasks from the full task list
@@ -97,8 +97,8 @@ export async function checkStatus(
     runnable: runnableFolders,
     blocked,
     context: {
-      count: contextStats.count,
-      totalBytes: contextStats.totalBytes,
+      count: memoryStats.count,
+      totalBytes: memoryStats.totalBytes,
     },
     nextAction,
   };

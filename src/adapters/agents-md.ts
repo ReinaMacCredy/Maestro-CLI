@@ -6,8 +6,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileExists, readText, writeText } from '../utils/fs-io.ts';
-import type { ContextFile } from '../types.ts';
-import type { FsContextAdapter } from './fs/context.ts';
+import type { MemoryFile } from '../types.ts';
+import type { FsMemoryAdapter } from './fs/memory.ts';
 
 export interface InitResult {
   content: string;
@@ -28,7 +28,7 @@ export interface ApplyResult {
 export class AgentsMdAdapter {
   constructor(
     private readonly rootDir: string,
-    private readonly contextAdapter: FsContextAdapter,
+    private readonly memoryAdapter: FsMemoryAdapter,
   ) {}
 
   async init(): Promise<InitResult> {
@@ -45,7 +45,7 @@ export class AgentsMdAdapter {
   }
 
   async sync(featureName: string): Promise<SyncResult> {
-    const contexts: ContextFile[] = this.contextAdapter.list(featureName);
+    const contexts: MemoryFile[] = this.memoryAdapter.list(featureName);
     const agentsMdPath = path.join(this.rootDir, 'AGENTS.md');
     const current = await fs.promises.readFile(agentsMdPath, 'utf-8').catch(() => '');
     const findings = this.extractFindings(contexts);
@@ -60,7 +60,7 @@ export class AgentsMdAdapter {
     return { path: agentsMdPath, chars: content.length, isNew };
   }
 
-  private extractFindings(contexts: ContextFile[]): string[] {
+  private extractFindings(contexts: MemoryFile[]): string[] {
     const findings: string[] = [];
     const patterns = [
       /we\s+use\s+[^.\n]+/gi,
