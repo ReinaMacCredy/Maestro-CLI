@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   if (isCompact) {
     const lines = [
       `[maestro] Feature: ${featureName} (${status.feature.status})`,
-      `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} in-progress, ${status.tasks.done} done (${status.tasks.total} total)`,
+      `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} claimed, ${status.tasks.done} done (${status.tasks.total} total)`,
       `Next: ${status.nextAction}`,
     ];
     writeOutput({
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
     `[maestro] Feature: ${featureName} (${status.feature.status})`,
     '',
     `Plan: ${status.plan.exists ? (status.plan.approved ? 'approved' : 'draft') : 'none'}`,
-    `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} in-progress, ${status.tasks.done} done (${status.tasks.total} total)`,
+    `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} claimed, ${status.tasks.done} done (${status.tasks.total} total)`,
   ];
 
   if (status.runnable.length > 0) {
@@ -68,11 +68,11 @@ async function main(): Promise<void> {
     }
   }
 
-  if (status.zombies.length > 0) {
+  if (status.blocked.length > 0) {
     lines.push('');
-    lines.push('Stale tasks (in_progress with stale or missing session):');
-    for (const z of status.zombies) {
-      lines.push(`  - ${z}`);
+    lines.push('Blocked tasks:');
+    for (const b of status.blocked) {
+      lines.push(`  - ${b}`);
     }
   }
 
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
   }
 
   lines.push('');
-  lines.push('Use maestro MCP tools (maestro_status, maestro_task_start, maestro_task_finish, etc.) for workflow orchestration.');
+  lines.push('Use maestro MCP tools (maestro_status, maestro_task_claim, maestro_task_done, etc.) for workflow orchestration.');
 
   writeOutput({
     hookSpecificOutput: {

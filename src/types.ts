@@ -1,7 +1,6 @@
 /**
  * Core types for maestroCLI.
- * Forked from hive-core/src/types.ts with extensions for TaskPort and
- * types moved from service files to avoid cross-adapter imports.
+ * Updated for v2 plugin model -- 4-state task model, no worker/session/sandbox types.
  */
 
 // ============================================================================
@@ -24,40 +23,8 @@ export interface FeatureJson {
 // Task Types
 // ============================================================================
 
-export type TaskStatusType = 'pending' | 'in_progress' | 'done' | 'cancelled' | 'blocked' | 'failed' | 'partial';
+export type TaskStatusType = 'pending' | 'claimed' | 'done' | 'blocked';
 export type TaskOrigin = 'plan' | 'manual';
-export type SubtaskType = 'test' | 'implement' | 'review' | 'verify' | 'research' | 'debug' | 'custom';
-export type WorkerCliName = 'codex' | 'claude';
-
-export interface Subtask {
-  id: string;
-  name: string;
-  folder: string;
-  status: TaskStatusType;
-  type?: SubtaskType;
-  createdAt?: string;
-  completedAt?: string;
-}
-
-export interface SubtaskStatus {
-  status: TaskStatusType;
-  type?: SubtaskType;
-  createdAt: string;
-  completedAt?: string;
-}
-
-export interface WorkerSession {
-  taskId?: string;
-  sessionId: string;
-  startedAt?: string;
-  lastHeartbeatAt?: string;
-  attempt?: number;
-  pid?: number;
-  launcher?: WorkerCliName;
-  exitCode?: number;
-  signal?: string;
-  workerPromptPath?: string;
-}
 
 export interface TaskStatus {
   schemaVersion?: number;
@@ -65,12 +32,11 @@ export interface TaskStatus {
   origin: TaskOrigin;
   planTitle?: string;
   summary?: string;
-  startedAt?: string;
+  claimedBy?: string;
+  claimedAt?: string;
   completedAt?: string;
-  baseCommit?: string;
-  subtasks?: Subtask[];
-  idempotencyKey?: string;
-  workerSession?: WorkerSession;
+  blockerReason?: string;
+  blockerDecision?: string;
   dependsOn?: string[];
 }
 
@@ -81,11 +47,12 @@ export interface TaskInfo {
   origin: TaskOrigin;
   planTitle?: string;
   summary?: string;
-  startedAt?: string;
+  claimedBy?: string;
+  claimedAt?: string;
   completedAt?: string;
-  baseCommit?: string;
-  workerSession?: WorkerSession;
-  /** Task dependencies -- extended for TaskPort integration */
+  blockerReason?: string;
+  blockerDecision?: string;
+  /** Task dependencies */
   dependsOn?: string[];
 }
 
@@ -141,23 +108,6 @@ export interface ContextFile {
 }
 
 // ============================================================================
-// Session Types
-// ============================================================================
-
-export interface SessionInfo {
-  sessionId: string;
-  taskFolder?: string;
-  startedAt: string;
-  lastActiveAt: string;
-  messageCount?: number;
-}
-
-export interface SessionsJson {
-  master?: string;
-  sessions: SessionInfo[];
-}
-
-// ============================================================================
 // Task Spec
 // ============================================================================
 
@@ -196,13 +146,8 @@ export interface HiveConfig {
     'forager-worker'?: AgentModelConfig;
     'hygienic-reviewer'?: AgentModelConfig;
   };
-  workerCli?: WorkerCliName;
-  workerCliArgs?: string[];
-  workerCliModel?: string;
-  staleTaskThresholdMinutes: number;
-  sandbox?: 'none' | 'docker';
-  dockerImage?: string;
-  persistentContainers?: boolean;
+  claimExpiresMinutes: number;
+  taskBackend?: 'fs' | 'br';
   hook_cadence?: Record<string, number>;
 }
 
@@ -224,10 +169,8 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   disableSkills: [],
   disableMcps: [],
   agentMode: 'unified',
-  workerCli: 'codex',
-  workerCliArgs: [],
-  staleTaskThresholdMinutes: 120,
-  sandbox: 'none',
+  claimExpiresMinutes: 120,
+  taskBackend: 'fs',
   agents: {
     'hive-master': {
       model: DEFAULT_AGENT_MODELS['hive-master'],
@@ -266,13 +209,3 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
     },
   },
 };
-
-// ============================================================================
-// Sandbox Types (moved from dockerSandboxService to avoid cross-adapter import)
-// ============================================================================
-
-export interface SandboxConfig {
-  mode: 'none' | 'docker';
-  image?: string;
-  persistent?: boolean;
-}

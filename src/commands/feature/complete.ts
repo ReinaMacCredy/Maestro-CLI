@@ -23,8 +23,8 @@ export default defineCommand({
       const result = await completeFeature(services, args.feature);
 
       output(result, (r) => {
-        const { total, done, cancelled } = r.tasksSummary;
-        return `[ok] feature '${args.feature}' completed (${done} done, ${cancelled} cancelled, ${total} total)`;
+        const { total, done } = r.tasksSummary;
+        return `[ok] feature '${args.feature}' completed (${done}/${total} done)`;
       });
     } catch (err) {
       handleCommandError('feature-complete', err);

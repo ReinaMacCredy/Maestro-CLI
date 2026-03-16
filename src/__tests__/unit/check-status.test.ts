@@ -39,27 +39,38 @@ describe('checkStatus', () => {
       contextAdapter: {
         stats: () => ({ count: 0, totalBytes: 0 }),
       },
-      configAdapter: {
-        get: () => ({ staleTaskThresholdMinutes: 120 }),
-      },
       directory: tmpDir,
     } as any;
   }
 
-  test('does not flag manual in_progress tasks without worker metadata as stale', async () => {
+  test('returns status result with expected shape', async () => {
     const result = await checkStatus(services(), 'feat');
-    expect(result.zombies).toEqual([]);
+    expect(result.feature).toEqual({ name: 'feat', status: 'approved' });
+    expect(result.plan.exists).toBe(true);
+    expect(result.plan.approved).toBe(true);
+    expect(typeof result.tasks.total).toBe('number');
+    expect(Array.isArray(result.runnable)).toBe(true);
+    expect(Array.isArray(result.blocked)).toBe(true);
+    expect(typeof result.nextAction).toBe('string');
   });
 
-  test('flags worker-managed in_progress tasks with missing session as stale', async () => {
-    await taskPort.update('feat', '01-task', {
-      startedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      baseCommit: 'abc123',
-    });
+  test('blocked is a string array of blocked task folders', async () => {
+    taskPort.seed('feat', '02-blocked', { status: 'blocked' });
 
     const result = await checkStatus(services(), 'feat');
-    expect(result.zombies).toEqual(['01-task']);
-    expect(result.nextAction).toContain('task-start');
-    expect(result.nextAction).toContain('--force');
+    expect(result.blocked).toContain('02-blocked');
+    expect(Array.isArray(result.blocked)).toBe(true);
+  });
+
+  test('inProgress counts claimed status tasks', async () => {
+    taskPort.seed('feat', '03-claimed', { status: 'claimed' });
+
+    const result = await checkStatus(services(), 'feat');
+    expect(result.tasks.inProgress).toBeGreaterThanOrEqual(1);
+  });
+
+  test('does not include zombies field in result', async () => {
+    const result = await checkStatus(services(), 'feat');
+    expect((result as any).zombies).toBeUndefined();
   });
 });

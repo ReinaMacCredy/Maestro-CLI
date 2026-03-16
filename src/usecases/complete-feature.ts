@@ -10,7 +10,7 @@ export interface CompleteFeatureServices {
 
 export interface CompleteFeatureResult {
   feature: FeatureJson;
-  tasksSummary: { total: number; done: number; cancelled: number };
+  tasksSummary: { total: number; done: number };
 }
 
 export async function completeFeature(
@@ -24,17 +24,16 @@ export async function completeFeature(
 
   const tasks = await taskPort.list(featureName, { includeAll: true });
   const done = tasks.filter(t => t.status === 'done').length;
-  const cancelled = tasks.filter(t => t.status === 'cancelled').length;
-  const incomplete = tasks.filter(t => t.status !== 'done' && t.status !== 'cancelled');
+  const incomplete = tasks.filter(t => t.status !== 'done');
 
   if (incomplete.length > 0) {
     const incompleteList = incomplete.map(t => `${t.folder} (${t.status})`).join(', ');
     throw new MaestroError(
-      `Cannot complete feature: ${incomplete.length} task(s) not done/cancelled: ${incompleteList}`,
-      ['Complete or cancel all tasks before completing the feature']
+      `Cannot complete feature: ${incomplete.length} task(s) not done: ${incompleteList}`,
+      ['Complete all tasks before completing the feature']
     );
   }
 
   const updated = featureAdapter.complete(featureName);
-  return { feature: updated, tasksSummary: { total: tasks.length, done, cancelled } };
+  return { feature: updated, tasksSummary: { total: tasks.length, done } };
 }

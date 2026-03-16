@@ -11,7 +11,7 @@ describe("countTaskStatuses", () => {
     const tasks = [
       { status: "pending" },
       { status: "pending" },
-      { status: "in_progress" },
+      { status: "claimed" },
       { status: "done" },
       { status: "done" },
       { status: "done" },
@@ -24,11 +24,9 @@ describe("countTaskStatuses", () => {
     expect(counts.done).toBe(3);
   });
 
-  test("ignores statuses outside pending/in_progress/done", () => {
+  test("ignores statuses outside pending/claimed/done/blocked", () => {
     const tasks = [
-      { status: "cancelled" },
       { status: "blocked" },
-      { status: "failed" },
       { status: "done" },
     ];
 
@@ -41,8 +39,8 @@ describe("countTaskStatuses", () => {
 
   test("handles all same status", () => {
     const tasks = [
-      { status: "in_progress" },
-      { status: "in_progress" },
+      { status: "claimed" },
+      { status: "claimed" },
     ];
 
     const counts = countTaskStatuses(tasks);
@@ -72,35 +70,34 @@ describe("getNextAction", () => {
     expect(action).toContain("task-sync");
   });
 
-  test("suggests continuing in-progress task", () => {
+  test("suggests continuing claimed task", () => {
     const tasks = [
       { status: "done", folder: "01-setup" },
-      { status: "in_progress", folder: "02-core" },
+      { status: "claimed", folder: "02-core" },
       { status: "pending", folder: "03-finish" },
     ];
     const action = getNextAction("approved", tasks, ["03-finish"]);
     expect(action).toContain("02-core");
-    expect(action).toContain("Continue");
+    expect(action).toContain("Task in progress");
   });
 
-  test("suggests starting single runnable task", () => {
+  test("suggests claiming single runnable task", () => {
     const tasks = [
       { status: "done", folder: "01-setup" },
       { status: "pending", folder: "02-core" },
     ];
     const action = getNextAction("approved", tasks, ["02-core"]);
-    expect(action).toContain("task-start");
+    expect(action).toContain("task_claim");
     expect(action).toContain("02-core");
   });
 
-  test("reports multiple sequential runnable tasks", () => {
+  test("reports multiple runnable tasks", () => {
     const tasks = [
       { status: "pending", folder: "01-a" },
       { status: "pending", folder: "02-b" },
     ];
     const action = getNextAction("approved", tasks, ["01-a", "02-b"]);
-    expect(action).toContain("2 tasks");
-    expect(action).toContain("one at a time");
+    expect(action).toContain("task_claim");
     expect(action).toContain("01-a");
     expect(action).toContain("02-b");
   });
@@ -123,31 +120,13 @@ describe("getNextAction", () => {
     expect(action).toContain("dependencies");
   });
 
-  test("surfaces partial tasks before claiming the feature is complete", () => {
-    const tasks = [
-      { status: "done", folder: "01-setup" },
-      { status: "partial", folder: "02-core" },
-    ];
-    const action = getNextAction("approved", tasks, []);
-    expect(action).toContain("partial");
-    expect(action).toContain("02-core");
-  });
-
-  test("surfaces blocked tasks before claiming the feature is complete", () => {
+  test("surfaces blocked tasks with unblock guidance", () => {
     const tasks = [
       { status: "blocked", folder: "03-waiting" },
     ];
     const action = getNextAction("approved", tasks, []);
-    expect(action).toContain("blocked");
+    expect(action).toContain("blocker");
     expect(action).toContain("03-waiting");
-  });
-
-  test("surfaces failed tasks before claiming the feature is complete", () => {
-    const tasks = [
-      { status: "failed", folder: "04-retry" },
-    ];
-    const action = getNextAction("approved", tasks, []);
-    expect(action).toContain("task-update");
-    expect(action).toContain("04-retry");
+    expect(action).toContain("task_unblock");
   });
 });

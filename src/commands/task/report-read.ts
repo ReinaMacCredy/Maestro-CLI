@@ -1,2 +1,2 @@
 import { makeDocReadCommand } from '../_internal/task-factory.ts';
-export default makeDocReadCommand('task', 'report');
+export default makeDocReadCommand('report');

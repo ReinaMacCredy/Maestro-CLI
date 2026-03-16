@@ -11,29 +11,21 @@ import { BrTaskAdapter } from './adapters/br.ts';
 import { FsFeatureAdapter } from './adapters/fs/feature.ts';
 import { FsPlanAdapter } from './adapters/fs/plan.ts';
 import { FsContextAdapter } from './adapters/fs/context.ts';
-import { FsSessionAdapter } from './adapters/fs/session.ts';
 import { FsConfigAdapter } from './adapters/fs/config.ts';
-import { FsAskAdapter } from './adapters/fs/ask.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
-import { CliWorkerRunner } from './adapters/worker-runner.ts';
 import { MaestroError } from './lib/errors.ts';
 import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { ContextPort } from './ports/context.ts';
-import type { SessionPort } from './ports/sessions.ts';
-import type { WorkerRunnerPort } from './ports/worker-runner.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   contextAdapter: ContextPort;
-  sessionAdapter: SessionPort;
   configAdapter: FsConfigAdapter;
-  askAdapter: FsAskAdapter;
   agentsMdAdapter: AgentsMdAdapter;
-  workerRunner: WorkerRunnerPort;
   directory: string;
 }
 
@@ -47,11 +39,8 @@ export function initServices(directory: string): MaestroServices {
     featureAdapter: new FsFeatureAdapter(directory),
     planAdapter: new FsPlanAdapter(directory),
     contextAdapter,
-    sessionAdapter: new FsSessionAdapter(directory),
     configAdapter: new FsConfigAdapter(),
-    askAdapter: new FsAskAdapter(directory),
     agentsMdAdapter: new AgentsMdAdapter(directory, contextAdapter),
-    workerRunner: new CliWorkerRunner(),
     directory,
   };
 

@@ -23,27 +23,19 @@ function formatStatus(result: StatusResult): string {
   lines.push(renderStatusLine('plan', `${planLabel}${commentSuffix}`));
 
   const taskSummary = `${result.tasks.done}/${result.tasks.total} done, ` +
-    `${result.tasks.inProgress} in_progress, ${result.tasks.pending} pending`;
+    `${result.tasks.inProgress} claimed, ${result.tasks.pending} pending`;
   lines.push(renderStatusLine('tasks', taskSummary));
 
+  const blockedSet = new Set(result.blocked);
   const taskLines = result.tasks.items.map(t => {
-    const status = `[${t.status}]`.padEnd(14);
-    const blockedBy = result.blocked[t.folder];
-    const suffix = blockedBy ? ` (blocked by: ${blockedBy.join(', ')})` : '';
+    const status = `[${t.status}]`.padEnd(12);
+    const suffix = blockedSet.has(t.folder) ? ' (blocked)' : '';
     return `  ${status} ${t.folder}${suffix}`;
   });
   const { items: visibleTasks, truncated } = truncateList(taskLines, 20);
   lines.push(...visibleTasks);
   if (truncated > 0) {
     lines.push(`  ${formatTruncation(truncated, 'tasks')}`);
-  }
-
-  if (result.zombies.length > 0) {
-    lines.push('');
-    lines.push(renderStatusLine('zombies', `${result.zombies.length} stale task(s) in_progress`));
-    for (const z of result.zombies) {
-      lines.push(`  [!] ${z} -- session stale or missing, recover with task-start --force`);
-    }
   }
 
   if (result.context.count > 0) {

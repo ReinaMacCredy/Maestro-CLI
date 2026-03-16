@@ -8,7 +8,7 @@
 
 import * as path from 'path';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../types.ts';
-import type { SandboxConfig, AgentName } from '../../types.ts';
+import type { AgentName } from '../../types.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
 import { SKILL_ALIASES } from '../../skills/aliases.ts';
 
@@ -118,15 +118,6 @@ export class FsConfigAdapter {
   getDisabledMcps(): string[] {
     const config = this.get();
     return config.disableMcps ?? [];
-  }
-
-  getSandboxConfig(): SandboxConfig {
-    const config = this.get();
-    const mode = config.sandbox ?? 'none';
-    const image = config.dockerImage;
-    const persistent = config.persistentContainers ?? (mode === 'docker');
-
-    return { mode, ...(image && { image }), persistent };
   }
 
   getHookCadence(hookName: string, options?: { safetyCritical?: boolean }): number {

@@ -1,13 +1,13 @@
 /**
  * sync-plan use case.
  * Parse plan.md via parseTasksFromPlan(), validate, diff against existing
- * tasks in TaskPort, create/close/addDependency as needed.
+ * tasks in TaskPort, create/remove as needed.
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
-import { buildSpecContent } from '../utils/worker/spec.ts';
+import { buildSpecContent } from '../utils/spec-builder.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { TasksSyncResult } from '../types.ts';
 
@@ -50,20 +50,14 @@ export async function syncPlan(
       continue;
     }
 
-    if (existing.status === 'done' || existing.status === 'in_progress') {
+    if (existing.status === 'done' || existing.status === 'claimed') {
       result.kept.push(existing.folder);
-      continue;
-    }
-
-    if (existing.status === 'cancelled') {
-      await taskPort.close(featureName, existing.folder, 'cancelled');
-      result.removed.push(existing.folder);
       continue;
     }
 
     const stillInPlan = parsedTasks.some(p => p.folder === existing.folder);
     if (!stillInPlan) {
-      await taskPort.close(featureName, existing.folder, 'cancelled');
+      await taskPort.remove(featureName, existing.folder);
       result.removed.push(existing.folder);
     } else {
       result.kept.push(existing.folder);
@@ -88,6 +82,11 @@ export async function syncPlan(
       description: specContent,
       deps: dependsOn,
     });
+
+    // Update the parsed task's folder to match the actual folder assigned by
+    // the adapter (e.g. br prefixes the issue ID). This ensures subsequent
+    // tasks resolving dependencies find the correct name in the mapping.
+    parsedTask.folder = created.folder;
 
     result.created.push(created.folder);
   }

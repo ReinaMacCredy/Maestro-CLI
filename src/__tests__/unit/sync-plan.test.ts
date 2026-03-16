@@ -151,7 +151,7 @@ describe("syncPlan", () => {
   // Removal / preservation
   // -----------------------------------------------------------------------
 
-  test("cancels tasks removed from plan", async () => {
+  test("removes tasks removed from plan", async () => {
     setupFeatureDir(tmpDir, PLAN_3_TASKS, true);
     planAdapter = new FsPlanAdapter(tmpDir);
 
@@ -168,9 +168,9 @@ describe("syncPlan", () => {
     expect(result.kept).toContain("01-setup-database");
     expect(result.kept).toContain("02-build-api");
 
-    // Verify the removed task is cancelled
+    // Verify the removed task is deleted from the store
     const task = await taskPort.get(FEATURE, "03-add-tests");
-    expect(task?.status).toBe("cancelled");
+    expect(task).toBeNull();
   });
 
   test("preserves done tasks even if removed from plan", async () => {
@@ -194,12 +194,12 @@ describe("syncPlan", () => {
     expect(task?.status).toBe("done");
   });
 
-  test("preserves in_progress tasks even if removed from plan", async () => {
+  test("preserves claimed tasks even if removed from plan", async () => {
     setupFeatureDir(tmpDir, PLAN_3_TASKS, true);
     planAdapter = new FsPlanAdapter(tmpDir);
 
-    // Seed task 3 as in_progress
-    seedTask(taskPort, "03-add-tests", { status: "in_progress" });
+    // Seed task 3 as claimed
+    seedTask(taskPort, "03-add-tests", { status: "claimed" });
 
     // Sync with plan that only has 2 tasks
     const featureDir = path.join(tmpDir, ".maestro", "features", FEATURE);
@@ -211,7 +211,7 @@ describe("syncPlan", () => {
     expect(result.removed).not.toContain("03-add-tests");
 
     const task = await taskPort.get(FEATURE, "03-add-tests");
-    expect(task?.status).toBe("in_progress");
+    expect(task?.status).toBe("claimed");
   });
 
   test("preserves manual-origin tasks", async () => {

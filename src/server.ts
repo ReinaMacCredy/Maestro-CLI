@@ -5,7 +5,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServicesThunk, type ServicesThunk } from './server/_utils/services-thunk.ts';
+import { createServicesThunk } from './server/_utils/services-thunk.ts';
 import { registerStatusTools } from './server/status.ts';
 import { registerFeatureTools } from './server/feature.ts';
 import { registerPlanTools } from './server/plan.ts';
@@ -13,7 +13,6 @@ import { registerTaskTools } from './server/task.ts';
 import { registerContextTools } from './server/context.ts';
 import { registerSkillTools } from './server/skill.ts';
 import { registerInitTools } from './server/init.ts';
-import { registerSymphonyTools } from './server/symphony.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
@@ -30,7 +29,6 @@ export function createMaestroServer(directory: string): McpServer {
   registerContextTools(server, thunk);
   registerSkillTools(server, thunk, directory);
   registerInitTools(server, thunk, directory);
-  registerSymphonyTools(server, thunk, directory);
 
   return server;
 }

@@ -6,7 +6,11 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { ensureDir, writeJsonAtomic, readJson, deepMerge } from './fs-io.ts';
-import { isProcessAlive } from './process.ts';
+
+/** Check if a process is still running. */
+function isProcessAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
 
 /** Node-compatible synchronous sleep (replaces Bun.sleepSync). */
 function sleepSync(ms: number): void {

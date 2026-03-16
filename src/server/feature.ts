@@ -27,7 +27,7 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
   server.registerTool(
     'maestro_feature_complete',
     {
-      description: 'Mark a feature as completed. All tasks must be done or cancelled first.',
+      description: 'Mark a feature as completed. All tasks must be done first.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
       },

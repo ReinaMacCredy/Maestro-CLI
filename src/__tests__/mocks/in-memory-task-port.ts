@@ -1,17 +1,14 @@
 /**
- * InMemoryTaskPort -- mock TaskPort for unit testing use cases.
- * No br required.
+ * InMemoryTaskPort -- mock TaskPort for unit testing.
+ * Updated for 4-state model (pending/claimed/done/blocked).
  */
 
 import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
-import type { TaskPort, CreateOpts, UpdateFields, ListOpts } from '../../ports/tasks.ts';
-import { isValidTransition } from '../../ports/tasks.ts';
+import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
 import { MaestroError } from '../../lib/errors.ts';
 
 interface StoredTask extends TaskInfo {
   description?: string;
-  notes?: string;
-  dependsOnIds?: string[];
 }
 
 export class InMemoryTaskPort implements TaskPort {
@@ -48,36 +45,6 @@ export class InMemoryTaskPort implements TaskPort {
     return { ...task };
   }
 
-  async update(feature: string, id: string, fields: UpdateFields): Promise<TaskInfo> {
-    const tasks = this.getFeatureTasks(feature);
-    const task = tasks.get(id);
-    if (!task) throw new MaestroError(`Task '${id}' not found`);
-
-    if (fields.status) {
-      if (!isValidTransition(task.status, fields.status)) {
-        throw new MaestroError(
-          `Invalid transition: ${task.status} -> ${fields.status}`
-        );
-      }
-      task.status = fields.status;
-    }
-
-    if (fields.description !== undefined) task.description = fields.description;
-    if (fields.notes !== undefined) task.notes = fields.notes;
-    if (fields.summary !== undefined) task.summary = fields.summary;
-    if (fields.baseCommit !== undefined) task.baseCommit = fields.baseCommit;
-    if (fields.startedAt !== undefined) task.startedAt = fields.startedAt;
-    if (fields.completedAt !== undefined) task.completedAt = fields.completedAt;
-    if (fields.workerSession !== undefined) {
-      task.workerSession = {
-        ...(task.workerSession || { sessionId: 'test-session' }),
-        ...fields.workerSession,
-      };
-    }
-
-    return { ...task };
-  }
-
   async get(feature: string, id: string): Promise<TaskInfo | null> {
     const task = this.getFeatureTasks(feature).get(id);
     return task ? { ...task } : null;
@@ -91,25 +58,16 @@ export class InMemoryTaskPort implements TaskPort {
     }
 
     if (!opts?.includeAll) {
-      return tasks.filter(t => t.status !== 'cancelled' && t.status !== 'done').map(t => ({ ...t }));
+      return tasks.filter(t => t.status !== 'done').map(t => ({ ...t }));
     }
 
     return tasks.map(t => ({ ...t }));
   }
 
-  async close(feature: string, id: string, reason?: string): Promise<{ suggestNext?: string[] }> {
+  async remove(feature: string, id: string): Promise<void> {
     const tasks = this.getFeatureTasks(feature);
-    const task = tasks.get(id);
-    if (!task) throw new MaestroError(`Task '${id}' not found`);
-
-    task.status = reason === 'cancelled' ? 'cancelled' : reason === 'failed' ? 'failed' : 'done';
-    return { suggestNext: [] };
-  }
-
-  async addDependency(feature: string, taskId: string, dependsOnId: string): Promise<void> {
-    const task = this.getFeatureTasks(feature).get(taskId);
-    if (!task) throw new MaestroError(`Task '${taskId}' not found`);
-    task.dependsOn = [...(task.dependsOn || []), dependsOnId];
+    if (!tasks.has(id)) throw new MaestroError(`Task '${id}' not found`);
+    tasks.delete(id);
   }
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
@@ -121,23 +79,6 @@ export class InMemoryTaskPort implements TaskPort {
       const deps = t.dependsOn || [];
       return deps.every(d => doneSet.has(d));
     }).map(t => ({ ...t }));
-  }
-
-  async getBlocked(feature: string): Promise<Record<string, string[]>> {
-    const tasks = [...this.getFeatureTasks(feature).values()];
-    const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.folder));
-    const result: Record<string, string[]> = {};
-
-    for (const task of tasks) {
-      if (task.status !== 'pending') continue;
-      const deps = task.dependsOn || [];
-      const unmet = deps.filter(d => !doneSet.has(d));
-      if (unmet.length > 0) {
-        result[task.folder] = unmet;
-      }
-    }
-
-    return result;
   }
 
   async readSpec(feature: string, id: string): Promise<string | null> {
@@ -156,14 +97,6 @@ export class InMemoryTaskPort implements TaskPort {
     this.reports.set(this.specKey(feature, id), content);
   }
 
-  async isAvailable(): Promise<boolean> {
-    return true;
-  }
-
-  installHint(): string {
-    return 'InMemoryTaskPort is always available';
-  }
-
   // Test helpers
   reset(): void {
     this.tasks.clear();
@@ -178,7 +111,7 @@ export class InMemoryTaskPort implements TaskPort {
     if (task) task.status = status;
   }
 
-  /** Seed a task with an exact folder name (bypass create()'s auto-generated folder) */
+  /** Seed a task with an exact folder name */
   seed(feature: string, folder: string, overrides: { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {}): void {
     const map = this.getFeatureTasks(feature);
     map.set(folder, {

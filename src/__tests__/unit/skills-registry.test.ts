@@ -128,8 +128,8 @@ describe('skills registry', () => {
     expect(result).toHaveProperty('error');
   });
 
-  test('all 18 built-in skills load without error', async () => {
-    expect(BUILTIN_SKILL_NAMES).toHaveLength(18);
+  test('all 19 built-in skills load without error', async () => {
+    expect(BUILTIN_SKILL_NAMES).toHaveLength(19);
     for (const name of BUILTIN_SKILL_NAMES) {
       const result = await loadSkill(name, tmpDir);
       expect(result).toHaveProperty('content');
@@ -154,7 +154,7 @@ describe('skills registry', () => {
   });
 
   test('loadSkillReference returns error for skill with no references', async () => {
-    const result = await loadSkillReference('maestro:brainstorming', 'nonexistent.md', tmpDir);
+    const result = await loadSkillReference('maestro:docker', 'nonexistent.md', tmpDir);
     expect(result).toHaveProperty('error');
     expect((result as { error: string }).error).toContain('no reference files');
   });

@@ -5,8 +5,10 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTaskTable } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
-import { parseStatus } from '../_internal/task-factory.ts';
+import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import type { TaskStatusType } from '../../types.ts';
+
+const VALID_STATUSES: TaskStatusType[] = ['pending', 'claimed', 'done', 'blocked'];
 
 export default defineCommand({
   meta: { name: 'task-list', description: 'List tasks for a feature' },
@@ -22,13 +24,23 @@ export default defineCommand({
     },
     all: {
       type: 'boolean',
-      description: 'Include all tasks (including done/cancelled)',
+      description: 'Include all tasks (including done)',
       default: false,
     },
   },
   async run({ args }) {
     try {
-      const statusFilter = args.status ? parseStatus(args.status) : undefined;
+      let statusFilter: TaskStatusType | undefined;
+      if (args.status) {
+        if (!VALID_STATUSES.includes(args.status as TaskStatusType)) {
+          throw new MaestroError(
+            `Invalid status '${args.status}'`,
+            [`Valid values: ${VALID_STATUSES.join(', ')}`],
+          );
+        }
+        statusFilter = args.status as TaskStatusType;
+      }
+
       const { taskPort } = getServices();
       const tasks = await taskPort.list(args.feature, {
         status: statusFilter,
