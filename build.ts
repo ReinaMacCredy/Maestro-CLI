@@ -38,7 +38,7 @@ async function build() {
 
   // Step 2: Hook scripts (Node target, ESM) -- built in parallel
   console.log('[build] Bundling hooks...');
-  const hooks = ['sessionstart', 'pretooluse', 'posttooluse', 'precompact'];
+  const hooks = ['sessionstart', 'pretooluse', 'posttooluse', 'precompact', 'pre-agent'];
   const hookResults = await Promise.all(hooks.map(hook => Bun.build({
     entrypoints: [`./src/hooks/${hook}.ts`],
     outdir: './hooks',
