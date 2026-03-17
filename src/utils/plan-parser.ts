@@ -26,7 +26,7 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
   let currentTask: ParsedTask | null = null;
   let descriptionLines: string[] = [];
 
-  const dependsOnRegex = /^\s*\*{0,2}Depends\s+on\*{0,2}\s*:\s*(.+)$/i;
+  const dependsOnRegex = /^\s*(?:[-*]\s+)?\*{0,2}Depends\s+on\*{0,2}\s*:\s*(.+)$/i;
 
   for (const line of lines) {
     const taskMatch = line.match(/^###\s+(\d+)\.\s+(.+)$/);

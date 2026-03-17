@@ -17,7 +17,11 @@ async function build() {
     try { rmSync(p, { recursive: true }); } catch {}
   }
 
-  // Step 0: Run generators (MUST run before server bundle -- loadSkill depends on registry.generated.ts)
+  // Step 0a: Sync version from package.json to src/version.ts
+  const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+  writeFileSync('./src/version.ts', `export const VERSION = '${pkg.version}';\n`);
+
+  // Step 0b: Run generators (MUST run before server bundle -- loadSkill depends on registry.generated.ts)
   console.log('[build] Generating skills registry...');
   await $`bun src/skills/generate.ts`;
 

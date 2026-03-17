@@ -13,11 +13,12 @@ import { registerTaskTools } from './server/task.ts';
 import { registerMemoryTools } from './server/memory.ts';
 import { registerSkillTools } from './server/skill.ts';
 import { registerInitTools } from './server/init.ts';
+import { VERSION } from './version.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
     name: 'maestro',
-    version: '0.2.0',
+    version: VERSION,
   });
 
   const thunk = createServicesThunk(directory);

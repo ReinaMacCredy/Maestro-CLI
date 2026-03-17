@@ -62,6 +62,34 @@ describe("parseTasksFromPlan", () => {
     expect(tasks[2].dependsOnNumbers).toEqual([1, 2]);
   });
 
+  test("parses bullet-prefixed dependency annotations", () => {
+    const plan = [
+      "### 1. Foundation",
+      "Base work.",
+      "- Depends on: none",
+      "",
+      "### 2. Core logic",
+      "Main implementation.",
+      "- **Depends on**: 1",
+      "",
+      "### 3. Integration",
+      "Wire it together.",
+      "- **Depends on**: 1, 3",
+      "",
+      "### 4. Final",
+      "Wrap up.",
+      "* **Depends on**: 2",
+    ].join("\n");
+
+    const tasks = parseTasksFromPlan(plan);
+
+    expect(tasks).toHaveLength(4);
+    expect(tasks[0].dependsOnNumbers).toEqual([]);
+    expect(tasks[1].dependsOnNumbers).toEqual([1]);
+    expect(tasks[2].dependsOnNumbers).toEqual([1, 3]);
+    expect(tasks[3].dependsOnNumbers).toEqual([2]);
+  });
+
   test("leaves dependsOnNumbers null when no annotation present", () => {
     const plan = "### 1. Solo task\nDo the thing.";
     const tasks = parseTasksFromPlan(plan);
