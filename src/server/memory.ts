@@ -45,12 +45,16 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
-      if (input.feature) {
+      // Try feature-scoped first (resolves active feature when param omitted)
+      try {
         const feature = requireFeature(services, input.feature);
         const content = services.memoryAdapter.read(feature, input.name);
-        return respond({ feature, name: input.name, content });
+        if (content !== null) {
+          return respond({ feature, name: input.name, content });
+        }
+      } catch {
+        // No active feature -- fall through to global
       }
-      // Try global
       const content = services.memoryAdapter.readGlobal(input.name);
       return respond({ scope: 'global', name: input.name, content });
     }),
@@ -67,10 +71,13 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
-      if (input.feature) {
+      // Try feature-scoped first (resolves active feature when param omitted)
+      try {
         const feature = requireFeature(services, input.feature);
         const files = services.memoryAdapter.list(feature);
         return respond({ feature, files });
+      } catch {
+        // No active feature -- fall through to global
       }
       const files = services.memoryAdapter.listGlobal();
       return respond({ scope: 'global', files });
