@@ -286,14 +286,17 @@ Use NEEDS_DISCUSSION (instead of REQUEST_CHANGES) when:
 
 Recommended workflow:
 
-- `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:design` -- Create a feature with spec and plan
-- `/maestro:implement` -- Execute the implementation
-- `/maestro:review` -- **You are here.** Verify implementation correctness
-- `/maestro:status` -- Check progress across all features
-- `/maestro:revert` -- Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
+- `maestro init` -- Initialize maestro for the project
+- `maestro_feature_create` -- Create a feature to work on
+- `maestro:design` -- Deep discovery for ambitious features
+- `maestro_plan_write` -- Write the implementation plan
+- `maestro_plan_approve` -- Approve the plan for execution
+- `maestro_tasks_sync` -- Generate tasks from approved plan
+- `maestro:implement` -- Execute the implementation
+- `maestro:review` -- **You are here.** Verify implementation correctness
+- `maestro_feature_complete` -- Mark feature done
+- `maestro:revert` -- Undo implementation if needed
 
-Review works best after commits are made, as it analyzes git history to understand what was implemented. It compares the implementation against the plan and task specs. If issues are found, use `/maestro:revert` to undo and re-implement, or apply fixes directly.
+Review works best after commits are made, as it analyzes git history to understand what was implemented. It compares the implementation against the plan and task specs. If issues are found, use `maestro:revert` to undo and re-implement, or apply fixes directly.
 
 Remember: Good validation catches issues before they reach production. Be constructive but thorough in identifying gaps or improvements.

@@ -219,14 +219,16 @@ After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, au
 
 Recommended workflow:
 
-- `maestro init` / `maestro_init` -- Initialize maestro directory structure
-- `/maestro:setup` -- **You are here.** Scaffold project context (run after init)
-- `/maestro:AGENTS.md` -- Generate AGENTS.md context file (offered at end of setup)
-- `maestro feature-create` / `maestro_feature_create` -- Create a feature to work on
-- `/maestro:design` -- Deep discovery for ambitious features
-- `maestro plan-write` / `maestro_plan_write` -- Write the implementation plan
-- `/maestro:implement` -- Execute the implementation
-- `/maestro:review` -- Verify implementation correctness
-- `maestro status` / `maestro_status` -- Check progress across all features
+- `maestro init` -- Initialize maestro directory structure
+- `maestro:setup` -- **You are here.** Scaffold project context (run after init)
+- `maestro:agents-md` -- Generate AGENTS.md context file (offered at end of setup)
+- `maestro_feature_create` -- Create a feature to work on
+- `maestro:design` -- Deep discovery for ambitious features
+- `maestro_plan_write` -- Write the implementation plan
+- `maestro_plan_approve` -- Approve the plan for execution
+- `maestro_tasks_sync` -- Generate tasks from approved plan
+- `maestro:implement` -- Execute the implementation
+- `maestro:review` -- Verify implementation correctness
+- `maestro_status` -- Check progress across all features
 
-Setup is the entry point for all maestro workflows. All other commands depend on the context files it creates. Run this once per project, then use `maestro feature-create` to start building.
+Setup is the entry point for all maestro workflows. All other commands depend on the memory entries it creates. Run this once per project, then use `maestro_feature_create` to start building.

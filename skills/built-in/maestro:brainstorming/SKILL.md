@@ -43,7 +43,7 @@ Brainstorming produces understanding, not documents. The validated design feeds 
 2. **Save discovery context**: `maestro memory-write --feature <name> --name brainstorm --content "<validated design>"` -- persists the brainstorming output where the planner can reference it
 3. **Choose the planning path** based on complexity:
    - **Simple/well-understood**: `maestro plan-write --feature <name>` -- write the plan directly from the brainstorming output
-   - **Ambitious/multi-component**: Load `maestro:design` or `maestro:new-track` for deeper discovery and structured spec generation
+   - **Ambitious/multi-component**: Load `maestro:design` or `maestro:new-feature` for deeper discovery and structured spec generation
 
 The brainstorming output becomes the `## Discovery` section that `plan-write` requires. Do not write design docs to `docs/plans/` -- that bypasses the maestro workflow and leaves the design disconnected from execution.
 

@@ -312,14 +312,15 @@ These two files are the complete handoff. The `maestro:implement` skill consumes
 
 ## Relationship to Other Commands
 
-- `maestro init` / `maestro_init` -- Initialize maestro for the project (run first)
-- `maestro feature-create` / `maestro_feature_create` -- Create a feature to work on
-- `/maestro:design` -- **You are here.** Deep discovery for ambitious features
-- `maestro plan-write` / `maestro_plan_write` -- Write the plan from design output (feeds into task-sync)
-- `maestro plan-approve` / `maestro_plan_approve` -- Approve the plan for execution
-- `maestro tasks-sync` / `maestro_tasks_sync` -- Generate tasks from approved plan
-- `/maestro:implement` -- Execute the implementation plan
-- `/maestro:review` -- Verify implementation against spec
-- `maestro status` / `maestro_status` -- Check progress across all features
+- `maestro init` -- Initialize maestro for the project (run first)
+- `maestro_feature_create` -- Create a feature to work on
+- `maestro:design` -- **You are here.** Deep discovery for ambitious features
+- `maestro_plan_write` -- Write the plan from design output
+- `maestro_plan_approve` -- Approve the plan for execution
+- `maestro_tasks_sync` -- Generate tasks from approved plan
+- `maestro:implement` -- Execute the implementation plan
+- `maestro:review` -- Verify implementation against spec
+- `maestro_status` -- Check progress across all features
+- `maestro_feature_complete` -- Mark feature done
 
 A feature created here produces `spec.md` and `plan.md` that `maestro:implement` or `maestro plan-write` consumes. The enriched spec serves as the baseline for `maestro:review`. Deep specs lead to better implementations -- invest in the discovery.
