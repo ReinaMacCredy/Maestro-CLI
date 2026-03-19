@@ -5,6 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
+import { translatePlan } from '../usecases/translate-plan.ts';
 import type { ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 
@@ -23,7 +24,10 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const result = await syncPlan(services, feature);
+      const config = services.configAdapter.get();
+      const result = config.taskBackend === 'br'
+        ? await translatePlan(services, feature)
+        : await syncPlan(services, feature);
       return respond({ success: true, ...result });
     }),
   );

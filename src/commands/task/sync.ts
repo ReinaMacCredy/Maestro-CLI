@@ -5,6 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { syncPlan } from '../../usecases/sync-plan.ts';
+import { translatePlan } from '../../usecases/translate-plan.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 
@@ -20,7 +21,10 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      const result = await syncPlan(services, args.feature);
+      const config = services.configAdapter.get();
+      const result = config.taskBackend === 'br'
+        ? await translatePlan(services, args.feature)
+        : await syncPlan(services, args.feature);
 
       output(result, (r) => {
         const lines = [`[ok] tasks synced for '${args.feature}'`];
