@@ -17,6 +17,7 @@ import cmdMemoryList from '../memory/list.ts';
 import cmdMemoryRead from '../memory/read.ts';
 import cmdMemoryStats from '../memory/stats.ts';
 import cmdMemoryWrite from '../memory/write.ts';
+import cmdPing from '../ping/run.ts';
 import cmdPlanApprove from '../plan/approve.ts';
 import cmdPlanComment from '../plan/comment.ts';
 import cmdPlanCommentsClear from '../plan/comments-clear.ts';
@@ -55,6 +56,7 @@ export const subCommands = {
   'memory-read': cmdMemoryRead,
   'memory-stats': cmdMemoryStats,
   'memory-write': cmdMemoryWrite,
+  'ping': cmdPing,
   'plan-approve': cmdPlanApprove,
   'plan-comment': cmdPlanComment,
   'plan-comments-clear': cmdPlanCommentsClear,
