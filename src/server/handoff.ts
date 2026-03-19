@@ -36,7 +36,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
         handoff.criticalContext = input.additional_context;
       }
       const result = await services.handoffPort.sendHandoff(feature, handoff, input.target_agent);
-      return respond({ success: true, feature, task: input.task, ...result });
+      return respond({ feature, task: input.task, ...result });
     }),
   );
 
@@ -57,7 +57,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       }
       const feature = requireFeature(services, undefined);
       const handoffs = await services.handoffPort.receiveHandoffs(feature, input.agent_id);
-      return respond({ success: true, count: handoffs.length, handoffs });
+      return respond({ handoffs });
     }),
   );
 
@@ -76,7 +76,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
         throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
       }
       await services.handoffPort.acknowledgeHandoff(input.thread_id);
-      return respond({ success: true, threadId: input.thread_id });
+      return respond({ threadId: input.thread_id });
     }),
   );
 }

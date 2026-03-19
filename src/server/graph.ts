@@ -27,7 +27,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
         throw new MaestroError('bv not available', ['Install bv (beads viewer) for graph intelligence']);
       }
       const insights = await services.graphPort.getInsights();
-      return respond({ success: true, ...insights });
+      return respond({ ...insights });
     }),
   );
 
@@ -47,9 +47,9 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
       }
       const recommendation = await services.graphPort.getNextRecommendation();
       if (!recommendation) {
-        return respond({ success: true, message: 'No recommendations available (all beads may be closed)' });
+        return respond({ message: 'No recommendations available (all beads may be closed)' });
       }
-      return respond({ success: true, ...recommendation });
+      return respond({ ...recommendation });
     }),
   );
 
@@ -70,7 +70,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
         throw new MaestroError('bv not available', ['Install bv (beads viewer) for graph intelligence']);
       }
       const plan = await services.graphPort.getExecutionPlan(input.agents);
-      return respond({ success: true, ...plan });
+      return respond({ ...plan });
     }),
   );
 }

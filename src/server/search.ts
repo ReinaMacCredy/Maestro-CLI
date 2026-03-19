@@ -34,7 +34,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
         limit: input.limit,
         days: input.days,
       });
-      return respond({ success: true, count: results.length, results });
+      return respond({ results });
     }),
   );
 
@@ -55,7 +55,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
         throw new MaestroError('CASS not available', ['Install cass: https://github.com/Dicklesworthstone/coding_agent_session_search']);
       }
       const results = await services.searchPort.findRelatedSessions(input.file_path, input.limit);
-      return respond({ success: true, count: results.length, results });
+      return respond({ results });
     }),
   );
 }

@@ -25,21 +25,35 @@ export function withErrorHandling<T>(
 
 const MAX_RESPONSE_BYTES = 102400; // 100KB
 
+/** Recursively strip keys with null or undefined values from plain objects. */
+function stripNulls(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(stripNulls);
+  if (typeof obj === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      if (v !== null && v !== undefined) out[k] = stripNulls(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
 /**
  * Format a payload as an MCP text content response.
- * Handles circular references and truncates oversized output.
+ * Strips null/undefined fields, uses compact JSON, handles circular refs and truncation.
  */
 export function respond(payload: Record<string, unknown>): { content: Array<{ type: 'text'; text: string }> } {
   let text: string;
   try {
-    text = JSON.stringify(payload, null, 2);
+    text = JSON.stringify(stripNulls(payload));
   } catch (err) {
     text = JSON.stringify({
       success: false,
       terminal: true,
       reason: 'serialization_error',
       error: `Failed to serialize response: ${err instanceof Error ? err.message : String(err)}`,
-    }, null, 2);
+    });
   }
 
   if (text.length > MAX_RESPONSE_BYTES) {
@@ -48,7 +62,7 @@ export function respond(payload: Record<string, unknown>): { content: Array<{ ty
       truncated: true,
       original_keys: Object.keys(payload),
       truncation_message: `Response exceeded ${MAX_RESPONSE_BYTES} byte limit (was ${text.length} bytes). Use more specific queries to reduce output size.`,
-    }, null, 2);
+    });
   }
 
   return { content: [{ type: 'text' as const, text }] };

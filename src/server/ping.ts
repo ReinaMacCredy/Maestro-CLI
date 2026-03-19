@@ -16,7 +16,7 @@ export function registerPingTools(server: McpServer, thunk: ServicesThunk): void
     withErrorHandling(async () => {
       const services = thunk.get();
       const result = ping(services);
-      return respond({ success: true, ...result });
+      return respond({ ...result });
     }),
   );
 }

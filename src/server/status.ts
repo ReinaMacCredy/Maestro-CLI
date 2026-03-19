@@ -44,7 +44,6 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       }
 
       return respond({
-        success: true,
         ...result,
         pipelineStage,
         researchTools,

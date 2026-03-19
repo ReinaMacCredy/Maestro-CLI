@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import * as path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -43,7 +42,6 @@ export function registerInitTools(server: McpServer, thunk: ServicesThunk, direc
       thunk.forceInit();
 
       return respond({
-        success: true,
         projectRoot: dir,
         maestroPath,
         brInitialized,

@@ -25,7 +25,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const result = await writePlan(services, feature, input.content);
-      return respond({ success: true, ...result });
+      return respond({ ...result });
     }),
   );
 
@@ -47,7 +47,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
         throw new MaestroError(`No plan found for feature '${feature}'`, ['Write a plan with maestro_plan_write']);
       }
 
-      return respond({ success: true, feature, plan });
+      return respond({ feature, plan });
     }),
   );
 
@@ -64,7 +64,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const result = await approvePlan(services, feature);
-      return respond({ success: true, ...result });
+      return respond({ ...result });
     }),
   );
 
@@ -88,7 +88,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
         line: input.line ?? 0,
         author: input.author ?? 'agent',
       });
-      return respond({ success: true, feature, comment });
+      return respond({ feature, comment });
     }),
   );
 }

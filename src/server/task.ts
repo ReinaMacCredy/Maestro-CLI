@@ -28,7 +28,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const result = config.taskBackend === 'br'
         ? await translatePlan(services, feature)
         : await syncPlan(services, feature);
-      return respond({ success: true, ...result });
+      return respond({ ...result });
     }),
   );
 
@@ -55,7 +55,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
         })
       );
 
-      return respond({ success: true, feature, tasks: tasksWithSpecs, count: tasksWithSpecs.length });
+      return respond({ feature, tasks: tasksWithSpecs, count: tasksWithSpecs.length });
     }),
   );
 
@@ -76,7 +76,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const task = await services.taskPort.claim(feature, input.task, input.agent_id);
-      return respond({ success: true, feature, task });
+      return respond({ feature, task });
     }),
   );
 
@@ -97,7 +97,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const task = await services.taskPort.done(feature, input.task, input.summary);
-      return respond({ success: true, feature, task });
+      return respond({ feature, task });
     }),
   );
 
@@ -117,7 +117,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const task = await services.taskPort.block(feature, input.task, input.reason);
-      return respond({ success: true, feature, task });
+      return respond({ feature, task });
     }),
   );
 
@@ -137,7 +137,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const task = await services.taskPort.unblock(feature, input.task, input.decision);
-      return respond({ success: true, feature, task });
+      return respond({ feature, task });
     }),
   );
 
@@ -156,11 +156,17 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
 
+      // Warn if the feature doesn't exist
+      const featureInfo = services.featureAdapter.get(feature);
+      if (!featureInfo) {
+        return respond({ feature, tasks: [], warning: `Feature '${feature}' not found` });
+      }
+
       const opts: ListOpts = {};
       if (input.status !== undefined) opts.status = input.status as TaskStatusType;
       if (input.includeAll !== undefined) opts.includeAll = input.includeAll;
       const tasks = await services.taskPort.list(feature, opts);
-      return respond({ success: true, feature, tasks, count: tasks.length });
+      return respond({ feature, tasks });
     }),
   );
 }

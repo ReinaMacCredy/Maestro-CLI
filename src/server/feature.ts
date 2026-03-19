@@ -20,7 +20,7 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const result = services.featureAdapter.create(input.name, input.ticket);
-      return respond({ success: true, feature: result });
+      return respond({ feature: result });
     }),
   );
 
@@ -36,10 +36,8 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
       const features = services.featureAdapter.list();
       const active = services.featureAdapter.getActive();
       return respond({
-        success: true,
         features,
         active: active?.name ?? null,
-        count: features.length,
       });
     }),
   );
@@ -57,7 +55,7 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const result = await completeFeature(services, feature);
-      return respond({ success: true, ...result });
+      return respond({ ...result });
     }),
   );
 }

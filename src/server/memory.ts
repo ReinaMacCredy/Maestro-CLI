@@ -25,11 +25,11 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       const services = thunk.get();
       if (input.global) {
         const path = services.memoryAdapter.writeGlobal(input.name, input.content);
-        return respond({ success: true, scope: 'global', name: input.name, path });
+        return respond({ scope: 'global', name: input.name, path });
       }
       const feature = requireFeature(services, input.feature);
       const path = services.memoryAdapter.write(feature, input.name, input.content);
-      return respond({ success: true, feature, name: input.name, path });
+      return respond({ feature, name: input.name, path });
     }),
   );
 
@@ -105,7 +105,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       }
 
       const path = services.memoryAdapter.writeGlobal(input.name, content);
-      return respond({ success: true, feature, name: input.name, promotedTo: path });
+      return respond({ feature, name: input.name, promotedTo: path });
     }),
   );
 }
