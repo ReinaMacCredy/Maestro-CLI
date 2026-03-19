@@ -10,7 +10,7 @@
  */
 
 import type { TaskInfo, TaskStatus } from '../types.ts';
-import type { TaskPort, CreateOpts, ListOpts } from '../ports/tasks.ts';
+import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import {
   getTasksPath,
@@ -240,6 +240,23 @@ export class FsTaskAdapter implements TaskPort {
       blockerDecision: status.blockerDecision,
       dependsOn: status.dependsOn,
     };
+  }
+
+  // Optional rich methods -- stubs for fs backend (br adapter implements these)
+  async getRichFields(_feature: string, _id: string): Promise<RichTaskFields | null> {
+    return null;
+  }
+
+  async updateRichFields(_feature: string, _id: string, _fields: Partial<RichTaskFields>): Promise<void> {
+    // no-op for fs backend
+  }
+
+  async suggestNext(_feature: string, _id: string): Promise<TaskInfo[]> {
+    return [];
+  }
+
+  async addComment(_feature: string, _id: string, _body: string): Promise<void> {
+    // no-op for fs backend
   }
 
   private getNextOrder(feature: string): number {

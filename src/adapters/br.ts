@@ -12,19 +12,12 @@
  */
 
 import type { TaskInfo, TaskStatusType } from '../types.ts';
-import type { TaskPort, CreateOpts, ListOpts } from '../ports/tasks.ts';
+import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
 import { readJson, writeJson, ensureDir, readText, writeText } from '../utils/fs-io.ts';
+import { CliRunner } from '../utils/cli-runner.ts';
 import * as path from 'path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const execFileAsync = promisify(execFile);
-
-/** br returns exit code 5 when its database is locked (transient). */
-const TRANSIENT_EXIT_CODE = 5;
-const RETRY_DELAYS = [100, 300, 1000];
 
 const BR_STATUS = {
   OPEN: 'open',
@@ -40,9 +33,23 @@ interface BrIssue {
   status: BrStatus;
   labels?: string[];
   description?: string;
+  design?: string;
+  acceptance_criteria?: string;
   notes?: string;
   close_reason?: string;
   dependencies?: number[];
+  dependents?: number[];
+  issue_type?: string;
+  priority?: number;
+  estimated_minutes?: number;
+  assignee?: string;
+  comments?: BrComment[];
+}
+
+interface BrComment {
+  body: string;
+  author?: string;
+  created_at?: string;
 }
 
 interface BrMapping {
@@ -54,9 +61,16 @@ interface BrMapping {
 
 export class BrTaskAdapter implements TaskPort {
   private projectRoot: string;
+  private cli: CliRunner;
 
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
+    this.cli = new CliRunner('br', {
+      cwd: projectRoot,
+      toolName: 'br',
+      retryExitCodes: [5],
+      installHint: 'br (beads_rust) is required. Install: cargo install beads_rust',
+    });
   }
 
   // --------------------------------------------------------------------------
@@ -72,6 +86,14 @@ export class BrTaskAdapter implements TaskPort {
       }
     }
     if (opts?.description) args.push('--description', opts.description);
+    if (opts?.type) args.push('-t', opts.type);
+    if (opts?.priority != null) args.push('-p', String(opts.priority));
+    if (opts?.estimate != null) args.push('-e', String(opts.estimate));
+    if (opts?.labels) {
+      for (const label of opts.labels) {
+        args.push('-l', label);
+      }
+    }
     args.push('--json');
 
     const raw = await this.exec<BrIssue | BrIssue[]>(args);
@@ -79,6 +101,15 @@ export class BrTaskAdapter implements TaskPort {
     const folder = this.titleToFolder(title, issue.id);
 
     this.saveMappingEntry(feature, folder, issue.id);
+
+    // br create doesn't support --design/--acceptance; set them via update
+    if (opts?.design || opts?.acceptanceCriteria || opts?.notes) {
+      const updateArgs = ['update', String(issue.id)];
+      if (opts.design) updateArgs.push('--design', opts.design);
+      if (opts.acceptanceCriteria) updateArgs.push('--acceptance', opts.acceptanceCriteria);
+      if (opts.notes) updateArgs.push('--notes', opts.notes);
+      await this.exec(updateArgs);
+    }
 
     return this.toTaskInfo(issue, folder);
   }
@@ -115,7 +146,8 @@ export class BrTaskAdapter implements TaskPort {
 
   async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
-    await this.exec(['update', String(brId), '-s', 'in_progress', '--notes', `claimed by ${agentId}`]);
+    // --claim is atomic: sets assignee=actor + status=in_progress
+    await this.exec(['update', String(brId), '--claim', '--actor', agentId]);
     const result = await this.get(feature, id);
     if (!result) throw new MaestroError(`Task '${id}' not found after claim`);
     return result;
@@ -180,51 +212,73 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   // --------------------------------------------------------------------------
+  // Rich bead methods (optional TaskPort extensions)
+  // --------------------------------------------------------------------------
+
+  async getRichFields(feature: string, id: string): Promise<RichTaskFields | null> {
+    const brId = this.resolveBrId(feature, id);
+    const issue = await this.getBrIssue(brId);
+    if (!issue) return null;
+
+    return {
+      description: issue.description ?? undefined,
+      design: issue.design ?? undefined,
+      acceptanceCriteria: issue.acceptance_criteria ?? undefined,
+      notes: issue.notes ?? undefined,
+      type: issue.issue_type ?? undefined,
+      priority: issue.priority ?? undefined,
+      estimate: issue.estimated_minutes ?? undefined,
+      labels: issue.labels,
+      assignee: issue.assignee ?? undefined,
+      comments: issue.comments?.map(c => ({
+        body: c.body,
+        author: c.author ?? 'unknown',
+        timestamp: c.created_at ?? '',
+      })),
+    };
+  }
+
+  async updateRichFields(feature: string, id: string, fields: Partial<RichTaskFields>): Promise<void> {
+    const brId = this.resolveBrId(feature, id);
+    const args = ['update', String(brId)];
+
+    if (fields.description != null) args.push('--description', fields.description);
+    if (fields.design != null) args.push('--design', fields.design);
+    if (fields.acceptanceCriteria != null) args.push('--acceptance', fields.acceptanceCriteria);
+    if (fields.notes != null) args.push('--notes', fields.notes);
+    if (fields.type != null) args.push('-t', fields.type);
+    if (fields.priority != null) args.push('-p', String(fields.priority));
+    if (fields.estimate != null) args.push('-e', String(fields.estimate));
+    if (fields.assignee != null) args.push('--assignee', fields.assignee);
+
+    if (args.length > 2) {
+      await this.exec(args);
+    }
+  }
+
+  async suggestNext(feature: string, id: string): Promise<TaskInfo[]> {
+    const brId = this.resolveBrId(feature, id);
+    try {
+      const result = await this.exec<BrIssue[]>(
+        ['close', String(brId), '--suggest-next', '--json']
+      );
+      return this.mapIssuesToTasks(feature, Array.isArray(result) ? result : []);
+    } catch {
+      return [];
+    }
+  }
+
+  async addComment(feature: string, id: string, body: string): Promise<void> {
+    const brId = this.resolveBrId(feature, id);
+    await this.exec(['comments', 'add', String(brId), '--message', body]);
+  }
+
+  // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
 
-  private async exec<T = unknown>(args: string[]): Promise<T> {
-    for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
-      try {
-        const { stdout } = await execFileAsync('br', args, {
-          cwd: this.projectRoot,
-          maxBuffer: 10 * 1024 * 1024,
-        });
-
-        try {
-          return JSON.parse(stdout) as T;
-        } catch {
-          return stdout as unknown as T;
-        }
-      } catch (err) {
-        if (err instanceof MaestroError) throw err;
-
-        const error = err as NodeJS.ErrnoException & { code?: string; exitCode?: number; status?: number; stdout?: string; stderr?: string };
-
-        if (error.code === 'ENOENT') {
-          throw new MaestroError(
-            'br not found',
-            ['br (beads_rust) is required. Install: cargo install beads_rust']
-          );
-        }
-
-        const exitCode = error.exitCode ?? error.status ?? 1;
-        const stdout = error.stdout || '';
-        const stderr = error.stderr || '';
-
-        if (exitCode === TRANSIENT_EXIT_CODE && attempt < RETRY_DELAYS.length) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
-          continue;
-        }
-
-        throw new MaestroError(
-          `br command failed (exit ${exitCode}): ${stderr.trim() || stdout.trim()}`,
-          exitCode === TRANSIENT_EXIT_CODE ? ['Database locked. Retry or check for other br processes.'] : []
-        );
-      }
-    }
-
-    throw new MaestroError('br command failed after retries');
+  private exec<T = unknown>(args: string[]): Promise<T> {
+    return this.cli.exec<T>(args);
   }
 
   private async getBrIssue(brId: number | string): Promise<BrIssue | null> {
