@@ -13,6 +13,7 @@
 
 import type { TaskInfo, TaskStatusType } from '../types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
+import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
 import { readJson, writeJson, ensureDir, readText, writeText } from '../utils/fs-io.ts';
@@ -37,8 +38,8 @@ interface BrIssue {
   acceptance_criteria?: string;
   notes?: string;
   close_reason?: string;
-  dependencies?: number[];
-  dependents?: number[];
+  dependencies?: Array<number | { id: number | string; [key: string]: unknown }>;
+  dependents?: Array<number | { id: number | string; [key: string]: unknown }>;
   issue_type?: string;
   priority?: number;
   estimated_minutes?: number;
@@ -160,6 +161,7 @@ export class BrTaskAdapter implements TaskPort {
 
   async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
+    await this.requireTransition(feature, id, 'done');
     await this.exec(['update', String(brId), '--notes', summary]);
     await this.exec(['close', String(brId)]);
     const result = await this.get(feature, id);
@@ -169,6 +171,7 @@ export class BrTaskAdapter implements TaskPort {
 
   async block(feature: string, id: string, reason: string): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
+    await this.requireTransition(feature, id, 'blocked');
     await this.exec(['update', String(brId), '-s', 'deferred', '--notes', reason]);
     const result = await this.get(feature, id);
     if (!result) throw new MaestroError(`Task '${id}' not found after block`);
@@ -177,6 +180,7 @@ export class BrTaskAdapter implements TaskPort {
 
   async unblock(feature: string, id: string, decision: string): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
+    await this.requireTransition(feature, id, 'pending');
     // Clear assignee so the task can be re-claimed by any agent
     await this.exec(['update', String(brId), '-s', 'open', '--assignee', '', '--notes', `unblocked: ${decision}`]);
     const result = await this.get(feature, id);
@@ -282,6 +286,17 @@ export class BrTaskAdapter implements TaskPort {
   // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
+
+  private async requireTransition(feature: string, id: string, to: TaskStatusType): Promise<void> {
+    const current = await this.get(feature, id);
+    if (!current) throw new MaestroError(`Task '${id}' not found`);
+    if (!isValidTransition(current.status, to)) {
+      throw new MaestroError(
+        `Cannot transition task from '${current.status}' to '${to}'`,
+        [`Current status is '${current.status}'. Valid transitions: ${VALID_TRANSITIONS[current.status]?.join(', ') || 'none'}`],
+      );
+    }
+  }
 
   private exec<T = unknown>(args: string[]): Promise<T> {
     return this.cli.exec<T>(args);
@@ -395,9 +410,10 @@ export class BrTaskAdapter implements TaskPort {
       origin: 'plan',
       planTitle: issue.title,
       summary: issue.notes || undefined,
-      dependsOn: issue.dependencies?.map(depId =>
-        mapping?.idToFolder[String(depId)] || `unknown-${depId}`
-      ),
+      dependsOn: issue.dependencies?.map(dep => {
+        const depId = typeof dep === 'object' && dep !== null ? dep.id : dep;
+        return mapping?.idToFolder[String(depId)] || `unknown-${depId}`;
+      }),
     };
   }
 

@@ -1,10 +1,12 @@
 import type { PlanPort } from '../ports/plans.ts';
 import type { FeaturePort } from '../ports/features.ts';
+import type { TaskPort } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 
 export interface WritePlanServices {
   planAdapter: PlanPort;
   featureAdapter: FeaturePort;
+  taskPort?: TaskPort;
 }
 
 export interface WritePlanResult {
@@ -41,6 +43,16 @@ export async function writePlan(
   const taskHeadings = content.match(/^###\s+\d+\.\s+.+$/gm) || [];
 
   const wasApproved = planAdapter.isApproved(featureName);
+  if (wasApproved && services.taskPort) {
+    const tasks = await services.taskPort.list(featureName, { includeAll: true });
+    if (tasks.length > 0) {
+      throw new MaestroError(
+        `Plan is approved with ${tasks.length} task(s). Revoke approval first before overwriting.`,
+        [`Run: maestro plan-revoke --feature ${featureName}`],
+      );
+    }
+  }
+
   const planPath = planAdapter.write(featureName, content);
   if (wasApproved) {
     featureAdapter.updateStatus(featureName, 'planning');

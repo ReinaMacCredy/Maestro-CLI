@@ -29,6 +29,13 @@ export async function completeFeature(
   const done = tasks.filter(t => t.status === 'done').length;
   const incomplete = tasks.filter(t => t.status !== 'done');
 
+  if (tasks.length === 0) {
+    throw new MaestroError(
+      'Cannot complete feature: no tasks exist',
+      ['Create and complete tasks before marking the feature as done'],
+    );
+  }
+
   if (incomplete.length > 0) {
     const incompleteList = incomplete.map(t => `${t.folder} (${t.status})`).join(', ');
     throw new MaestroError(

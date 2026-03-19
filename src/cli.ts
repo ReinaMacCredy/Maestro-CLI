@@ -32,7 +32,10 @@ const main = defineCommand({
       setOutputMode('json');
     }
 
-    const isMetaCommand = process.argv.some(a => metaCommands.has(a));
+    // Find the actual subcommand (first argv that matches a known subcommand name).
+    // Avoids false positives like `agents-md --action init` matching `init`.
+    const subCommand = process.argv.find(a => subCommandNames.includes(a));
+    const isMetaCommand = subCommand != null && metaCommands.has(subCommand);
     if (!isMetaCommand) {
       const projectRoot = findProjectRoot(process.cwd());
       if (projectRoot) {

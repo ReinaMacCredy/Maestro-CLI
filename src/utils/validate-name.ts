@@ -26,5 +26,9 @@ export function validateName(raw: string, label = 'name'): { ok: true; name: str
   if (/^\.+$/.test(trimmed)) {
     return { ok: false, error: `${label} cannot be "." or ".."` };
   }
+  // Reject whitespace in names (causes directory issues)
+  if (/\s/.test(trimmed)) {
+    return { ok: false, error: `${label} cannot contain whitespace` };
+  }
   return { ok: true, name: trimmed };
 }

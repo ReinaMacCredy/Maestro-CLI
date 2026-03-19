@@ -17,4 +17,5 @@ export interface MemoryPort {
   writeGlobal(fileName: string, content: string): string;
   readGlobal(fileName: string): string | null;
   listGlobal(): MemoryFile[];
+  deleteGlobal(fileName: string): boolean;
 }

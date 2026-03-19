@@ -77,7 +77,9 @@ export function makeDocWriteCommand(docType: 'spec' | 'report') {
     async run({ args }) {
       try {
         const { taskPort } = getServices();
-        await taskPort[portMethod](args.feature, args.task, args.content);
+        // Unescape literal \n from CLI args to actual newlines
+        const content = args.content.replace(/\\n/g, '\n');
+        await taskPort[portMethod](args.feature, args.task, content);
         output({ task: args.task }, () =>
           `[ok] ${docType} written for task '${args.task}'`,
         );

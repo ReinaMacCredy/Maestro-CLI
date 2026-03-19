@@ -17,16 +17,22 @@ import { acquireLockSync } from '../../utils/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../../types.ts';
 import { listFeatures } from '../../utils/detection.ts';
 import { MaestroError } from '../../lib/errors.ts';
+import { validateName } from '../../utils/validate-name.ts';
 import type { FeaturePort } from '../../ports/features.ts';
 
 export class FsFeatureAdapter implements FeaturePort {
   constructor(private projectRoot: string) {}
 
   create(name: string, ticket?: string): FeatureJson {
-    const featurePath = getFeaturePath(this.projectRoot, name);
+    const validation = validateName(name, 'Feature name');
+    if (!validation.ok) {
+      throw new MaestroError(validation.error);
+    }
+
+    const featurePath = getFeaturePath(this.projectRoot, validation.name);
 
     if (fileExists(featurePath)) {
-      throw new Error(`Feature '${name}' already exists`);
+      throw new Error(`Feature '${validation.name}' already exists`);
     }
 
     // Detect case-insensitive filesystem collisions (macOS HFS+/APFS)

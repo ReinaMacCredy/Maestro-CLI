@@ -77,6 +77,17 @@ export class FsMemoryAdapter implements MemoryPort {
     return this._stats(memoryPath);
   }
 
+  deleteGlobal(fileName: string): boolean {
+    const globalPath = getGlobalMemoryPath(this.projectRoot);
+    const filePath = path.join(globalPath, this.normalizeFileName(fileName));
+
+    if (fileExists(filePath)) {
+      fs.unlinkSync(filePath);
+      return true;
+    }
+    return false;
+  }
+
   // -- Global memory (project-scoped, not feature-scoped) --
 
   writeGlobal(fileName: string, content: string): string {

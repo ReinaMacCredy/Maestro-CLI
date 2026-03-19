@@ -42,12 +42,24 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
       const folderName = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const folder = `${String(order).padStart(2, '0')}-${folderName}`;
 
+      // Parse [depends: N, M] from task title
+      let titleDeps: number[] | null = null;
+      const titleDepsMatch = rawName.match(/\[depends?:\s*(.+?)\]/i);
+      if (titleDepsMatch) {
+        const value = titleDepsMatch[1].trim().toLowerCase();
+        if (value === 'none') {
+          titleDeps = [];
+        } else {
+          titleDeps = value.split(/[,\s]+/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        }
+      }
+
       currentTask = {
         folder,
         order,
         name: rawName,
         description: '',
-        dependsOnNumbers: null,
+        dependsOnNumbers: titleDeps,
       };
       descriptionLines = [];
     } else if (currentTask) {

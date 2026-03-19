@@ -82,13 +82,15 @@ function normalizeNext(raw: Record<string, unknown>): NextRecommendation | null 
 }
 
 function normalizePlan(raw: Record<string, unknown>): ExecutionPlan {
-  const tracks = asArray(raw.tracks ?? raw.execution_tracks ?? raw.phases);
+  // bv nests tracks under raw.plan.tracks
+  const planObj = (raw.plan ?? raw) as Record<string, unknown>;
+  const tracks = asArray(planObj.tracks ?? raw.tracks ?? raw.execution_tracks ?? raw.phases);
 
   return {
     tracks: tracks.map((t, i) => {
       const track = t as Record<string, unknown>;
       return {
-        name: String(track.name ?? track.label ?? `Track ${i + 1}`),
+        name: String(track.name ?? track.track_id ?? track.label ?? `Track ${i + 1}`),
         beads: asArray(track.beads ?? track.issues ?? track.items).map((b, j) => {
           const bead = b as Record<string, unknown>;
           return {
