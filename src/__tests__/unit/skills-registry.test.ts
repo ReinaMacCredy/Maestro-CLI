@@ -86,8 +86,8 @@ describe('skills registry', () => {
     });
   });
 
-  test('SKILL_ALIASES contains all 12 mappings', () => {
-    expect(Object.keys(SKILL_ALIASES)).toHaveLength(12);
+  test('SKILL_ALIASES contains all 14 mappings', () => {
+    expect(Object.keys(SKILL_ALIASES)).toHaveLength(14);
     expect(SKILL_ALIASES['writing-plans']).toBe('maestro:design');
     expect(SKILL_ALIASES['executing-plans']).toBe('maestro:implement');
     expect(SKILL_ALIASES['code-reviewer']).toBe('maestro:review');
@@ -100,6 +100,8 @@ describe('skills registry', () => {
     expect(SKILL_ALIASES['systematic-debugging']).toBe('maestro:debugging');
     expect(SKILL_ALIASES['test-driven-development']).toBe('maestro:tdd');
     expect(SKILL_ALIASES['verification-before-completion']).toBe('maestro:verification');
+    expect(SKILL_ALIASES['new-track']).toBe('maestro:new-feature');
+    expect(SKILL_ALIASES['maestro:new-track']).toBe('maestro:new-feature');
   });
 
   test('loadSkillReference loads from external skill filesystem', async () => {
