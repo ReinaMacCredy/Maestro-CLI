@@ -82,15 +82,15 @@ export async function checkStatus(
     .filter(t => t.status === 'claimed' && t.claimedAt && now - new Date(t.claimedAt).getTime() > expiryMs)
     .map(t => t.folder);
 
-  // Derive blocked and runnable from the already-loaded task list
+  // Derive blocked from task list
   const blocked = tasks
     .filter((t) => t.status === 'blocked')
     .map((t) => t.folder);
 
-  const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.folder));
-  const runnableFolders = tasks
-    .filter(t => t.status === 'pending' && (t.dependsOn || []).every(d => doneSet.has(d)))
-    .map(t => t.folder);
+  // Use getRunnable() for accurate dependency-aware resolution
+  // (br list doesn't include dependency data, so local computation misses deps)
+  const runnable = await taskPort.getRunnable(featureName);
+  const runnableFolders = runnable.map(t => t.folder);
 
   const counts = countTaskStatuses(tasks);
 

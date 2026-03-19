@@ -78,7 +78,12 @@ export class BrTaskAdapter implements TaskPort {
   // --------------------------------------------------------------------------
 
   async create(feature: string, title: string, opts?: CreateOpts): Promise<TaskInfo> {
-    const args = ['create', '--title', title, '-l', `feature:${feature}`];
+    const args = ['create', '--title', title];
+    // Add feature label unless opts.labels already includes it
+    const hasFeatureLabel = opts?.labels?.some(l => l === `feature:${feature}`);
+    if (!hasFeatureLabel) {
+      args.push('-l', `feature:${feature}`);
+    }
     if (opts?.deps) {
       for (const dep of opts.deps) {
         const depId = this.resolveBrId(feature, dep);
