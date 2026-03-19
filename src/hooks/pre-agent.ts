@@ -12,7 +12,7 @@
 import { readStdin, writeOutput, resolveProjectDir, logHookError } from './_helpers.ts';
 import { initServices } from '../services.ts';
 
-const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))(\d{2}-[a-z0-9-]+)/i;
+const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
 
 const WORKER_RULES = `
 ## Worker Rules
