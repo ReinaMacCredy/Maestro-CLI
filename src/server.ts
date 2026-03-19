@@ -13,6 +13,7 @@ import { registerTaskTools } from './server/task.ts';
 import { registerMemoryTools } from './server/memory.ts';
 import { registerSkillTools } from './server/skill.ts';
 import { registerInitTools } from './server/init.ts';
+import { registerGraphTools } from './server/graph.ts';
 import { VERSION } from './version.ts';
 
 export function createMaestroServer(directory: string): McpServer {
@@ -30,6 +31,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerMemoryTools(server, thunk);
   registerSkillTools(server, thunk, directory);
   registerInitTools(server, thunk, directory);
+  registerGraphTools(server, thunk);
 
   return server;
 }

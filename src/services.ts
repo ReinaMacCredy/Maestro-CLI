@@ -9,6 +9,7 @@
 
 import { FsTaskAdapter } from './adapters/fs-tasks.ts';
 import { BrTaskAdapter } from './adapters/br.ts';
+import { BvGraphAdapter } from './adapters/bv-graph.ts';
 import { FsFeatureAdapter } from './adapters/fs/feature.ts';
 import { FsPlanAdapter } from './adapters/fs/plan.ts';
 import { FsMemoryAdapter } from './adapters/fs/memory.ts';
@@ -19,6 +20,8 @@ import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { MemoryPort } from './ports/memory.ts';
+import type { GraphPort } from './ports/graph.ts';
+import { execFileSync } from 'node:child_process';
 
 export interface MaestroServices {
   taskPort: TaskPort;
@@ -28,6 +31,8 @@ export interface MaestroServices {
   configAdapter: FsConfigAdapter;
   agentsMdAdapter: AgentsMdAdapter;
   directory: string;
+  // Optional ports -- initialized based on tool availability
+  graphPort?: GraphPort;
 }
 
 let _services: MaestroServices | undefined;
@@ -41,6 +46,13 @@ export function initServices(directory: string): MaestroServices {
     ? new BrTaskAdapter(directory)
     : new FsTaskAdapter(directory, config.claimExpiresMinutes);
 
+  // Graph port: only if bv is installed
+  let graphPort: GraphPort | undefined;
+  try {
+    execFileSync('command', ['-v', 'bv'], { stdio: 'pipe', shell: true });
+    graphPort = new BvGraphAdapter(directory);
+  } catch { /* bv not available */ }
+
   _services = {
     taskPort,
     featureAdapter: new FsFeatureAdapter(directory),
@@ -49,6 +61,7 @@ export function initServices(directory: string): MaestroServices {
     configAdapter,
     agentsMdAdapter: new AgentsMdAdapter(directory, memoryAdapter),
     directory,
+    graphPort,
   };
 
   return _services;
