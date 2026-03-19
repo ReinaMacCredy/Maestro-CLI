@@ -16,6 +16,7 @@ import { registerInitTools } from './server/init.ts';
 import { registerGraphTools } from './server/graph.ts';
 import { registerHandoffTools } from './server/handoff.ts';
 import { registerSearchTools } from './server/search.ts';
+import { registerPingTools } from './server/ping.ts';
 import { VERSION } from './version.ts';
 
 export function createMaestroServer(directory: string): McpServer {
@@ -36,6 +37,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerGraphTools(server, thunk);
   registerHandoffTools(server, thunk);
   registerSearchTools(server, thunk);
+  registerPingTools(server, thunk);
 
   return server;
 }
