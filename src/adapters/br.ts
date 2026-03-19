@@ -177,7 +177,8 @@ export class BrTaskAdapter implements TaskPort {
 
   async unblock(feature: string, id: string, decision: string): Promise<TaskInfo> {
     const brId = this.resolveBrId(feature, id);
-    await this.exec(['update', String(brId), '-s', 'open', '--notes', `unblocked: ${decision}`]);
+    // Clear assignee so the task can be re-claimed by any agent
+    await this.exec(['update', String(brId), '-s', 'open', '--assignee', '', '--notes', `unblocked: ${decision}`]);
     const result = await this.get(feature, id);
     if (!result) throw new MaestroError(`Task '${id}' not found after unblock`);
     return result;
@@ -376,10 +377,14 @@ export class BrTaskAdapter implements TaskPort {
 
   private mapIssuesToTasks(feature: string, issues: BrIssue[]): TaskInfo[] {
     const mapping = this.getMapping(feature);
-    return issues.map(issue => {
-      const folder = mapping.idToFolder[String(issue.id)] || `unknown-${issue.id}`;
-      return this.toTaskInfo(issue, folder, mapping);
-    });
+    // Only include beads that have mapping entries -- orphaned beads
+    // (e.g. from deleted/recreated features) should be excluded
+    return issues
+      .filter(issue => mapping.idToFolder[String(issue.id)] !== undefined)
+      .map(issue => {
+        const folder = mapping.idToFolder[String(issue.id)]!;
+        return this.toTaskInfo(issue, folder, mapping);
+      });
   }
 
   private toTaskInfo(issue: BrIssue, folder: string, mapping?: BrMapping): TaskInfo {
