@@ -36,8 +36,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     'maestro_task_next',
     {
       description:
-        'Return all runnable (unclaimed, dependencies met) tasks with compiled specs. ' +
-        'Use this to find what to work on next.',
+        'Return runnable tasks (unclaimed, dependencies met). ' +
+        'Includes compiled spec for the recommended (first) task only. Use task_claim to start it.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
       },
@@ -48,14 +48,13 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const feature = requireFeature(services, input.feature);
       const runnable = await services.taskPort.getRunnable(feature);
 
-      const tasksWithSpecs = await Promise.all(
-        runnable.map(async (task) => {
-          const spec = await services.taskPort.readSpec(feature, task.folder);
-          return { ...task, spec };
-        })
-      );
+      // Metadata for all runnable tasks; compiled spec only for the recommended (first) task
+      const tasks = runnable.map(({ folder, name, dependsOn }) => ({ folder, name, dependsOn }));
+      const recommendedSpec = runnable.length > 0
+        ? await services.taskPort.readSpec(feature, runnable[0].folder)
+        : undefined;
 
-      return respond({ feature, tasks: tasksWithSpecs, count: tasksWithSpecs.length });
+      return respond({ feature, tasks, ...(recommendedSpec !== undefined && { recommendedSpec }) });
     }),
   );
 
