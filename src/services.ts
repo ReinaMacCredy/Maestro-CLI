@@ -42,12 +42,14 @@ export interface MaestroServices {
 }
 
 let _services: MaestroServices | undefined;
+let _taskBackend: string | undefined;
 
 export function initServices(directory: string): MaestroServices {
   const memoryAdapter = new FsMemoryAdapter(directory);
 
   const configAdapter = new FsConfigAdapter();
   const config = configAdapter.get();
+  _taskBackend = config.taskBackend ?? 'fs';
   const taskPort: TaskPort = config.taskBackend === 'br'
     ? new BrTaskAdapter(directory)
     : new FsTaskAdapter(directory, config.claimExpiresMinutes);
@@ -94,5 +96,16 @@ export function getServices(): MaestroServices {
       ['Run maestro from a project directory with .maestro/ or run: maestro init'],
     );
   }
+
+  // Hot-swap taskPort if taskBackend config changed mid-session
+  const config = _services.configAdapter.get();
+  const currentBackend = config.taskBackend ?? 'fs';
+  if (currentBackend !== _taskBackend) {
+    _taskBackend = currentBackend;
+    _services.taskPort = currentBackend === 'br'
+      ? new BrTaskAdapter(_services.directory)
+      : new FsTaskAdapter(_services.directory, config.claimExpiresMinutes);
+  }
+
   return _services;
 }

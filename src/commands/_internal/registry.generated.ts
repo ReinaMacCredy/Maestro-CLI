@@ -28,6 +28,9 @@ import cmdSelfUpdate from '../update/self.ts';
 import cmdSkill from '../skill/load.ts';
 import cmdSkillList from '../skill/list.ts';
 import cmdStatus from '../status/show.ts';
+import cmdTaskBlock from '../task/block.ts';
+import cmdTaskClaim from '../task/claim.ts';
+import cmdTaskDone from '../task/done.ts';
 import cmdTaskInfo from '../task/info.ts';
 import cmdTaskList from '../task/list.ts';
 import cmdTaskReportRead from '../task/report-read.ts';
@@ -35,6 +38,7 @@ import cmdTaskReportWrite from '../task/report-write.ts';
 import cmdTaskSpecRead from '../task/spec-read.ts';
 import cmdTaskSpecWrite from '../task/spec-write.ts';
 import cmdTaskSync from '../task/sync.ts';
+import cmdTaskUnblock from '../task/unblock.ts';
 import cmdUpdate from '../update/run.ts';
 
 export const subCommands = {
@@ -67,6 +71,9 @@ export const subCommands = {
   'skill': cmdSkill,
   'skill-list': cmdSkillList,
   'status': cmdStatus,
+  'task-block': cmdTaskBlock,
+  'task-claim': cmdTaskClaim,
+  'task-done': cmdTaskDone,
   'task-info': cmdTaskInfo,
   'task-list': cmdTaskList,
   'task-report-read': cmdTaskReportRead,
@@ -74,5 +81,6 @@ export const subCommands = {
   'task-spec-read': cmdTaskSpecRead,
   'task-spec-write': cmdTaskSpecWrite,
   'task-sync': cmdTaskSync,
+  'task-unblock': cmdTaskUnblock,
   'update': cmdUpdate,
 } as const;
