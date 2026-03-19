@@ -10,6 +10,8 @@
 import { FsTaskAdapter } from './adapters/fs-tasks.ts';
 import { BrTaskAdapter } from './adapters/br.ts';
 import { BvGraphAdapter } from './adapters/bv-graph.ts';
+import { CassSearchAdapter } from './adapters/cass-search.ts';
+import { AgentMailHandoffAdapter } from './adapters/agent-mail-handoff.ts';
 import { FsFeatureAdapter } from './adapters/fs/feature.ts';
 import { FsPlanAdapter } from './adapters/fs/plan.ts';
 import { FsMemoryAdapter } from './adapters/fs/memory.ts';
@@ -21,6 +23,8 @@ import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { MemoryPort } from './ports/memory.ts';
 import type { GraphPort } from './ports/graph.ts';
+import type { HandoffPort } from './ports/handoff.ts';
+import type { SearchPort } from './ports/search.ts';
 import { execFileSync } from 'node:child_process';
 
 export interface MaestroServices {
@@ -33,6 +37,8 @@ export interface MaestroServices {
   directory: string;
   // Optional ports -- initialized based on tool availability
   graphPort?: GraphPort;
+  handoffPort?: HandoffPort;
+  searchPort?: SearchPort;
 }
 
 let _services: MaestroServices | undefined;
@@ -53,6 +59,18 @@ export function initServices(directory: string): MaestroServices {
     graphPort = new BvGraphAdapter(directory);
   } catch { /* bv not available */ }
 
+  // Search port: only if cass is installed
+  let searchPort: SearchPort | undefined;
+  try {
+    execFileSync('command', ['-v', 'cass'], { stdio: 'pipe', shell: true });
+    searchPort = new CassSearchAdapter();
+  } catch { /* cass not available */ }
+
+  // Handoff port: Agent Mail (lazy -- actual connectivity check on first call)
+  const handoffPort: HandoffPort | undefined = new AgentMailHandoffAdapter(
+    directory, taskPort, memoryAdapter,
+  );
+
   _services = {
     taskPort,
     featureAdapter: new FsFeatureAdapter(directory),
@@ -62,6 +80,8 @@ export function initServices(directory: string): MaestroServices {
     agentsMdAdapter: new AgentsMdAdapter(directory, memoryAdapter),
     directory,
     graphPort,
+    handoffPort,
+    searchPort,
   };
 
   return _services;

@@ -1,0 +1,81 @@
+/**
+ * MCP tools for cross-agent handoff via Agent Mail.
+ */
+
+import { z } from 'zod';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ServicesThunk } from './_utils/services-thunk.ts';
+import { respond, withErrorHandling } from './_utils/respond.ts';
+import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
+import { requireFeature } from './_utils/resolve.ts';
+import { MaestroError } from '../lib/errors.ts';
+
+export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): void {
+  server.registerTool(
+    'maestro_handoff_send',
+    {
+      description:
+        'Build and send a handoff document for a task to another agent via Agent Mail. ' +
+        'Includes bead state, decisions, modified files, blockers, and CASS search pointers.',
+      inputSchema: {
+        feature: z.string().optional().describe('Feature name (defaults to active)'),
+        task: z.string().describe('Task/bead ID or folder name'),
+        target_agent: z.string().optional().describe('Target agent name (omit for broadcast)'),
+        additional_context: z.string().optional().describe('Extra context to include'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      if (!services.handoffPort) {
+        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
+      }
+      const feature = requireFeature(services, input.feature);
+      const handoff = await services.handoffPort.buildHandoff(feature, input.task);
+      if (input.additional_context) {
+        handoff.criticalContext = input.additional_context;
+      }
+      const result = await services.handoffPort.sendHandoff(handoff, input.target_agent);
+      return respond({ success: true, feature, task: input.task, ...result });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_handoff_receive',
+    {
+      description:
+        'Check for pending handoffs addressed to this agent via Agent Mail.',
+      inputSchema: {
+        agent_id: z.string().describe('Your agent name/ID'),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      if (!services.handoffPort) {
+        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
+      }
+      const handoffs = await services.handoffPort.receiveHandoffs(input.agent_id);
+      return respond({ success: true, count: handoffs.length, handoffs });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_handoff_ack',
+    {
+      description: 'Acknowledge receipt of a handoff message.',
+      inputSchema: {
+        thread_id: z.string().describe('Thread ID of the handoff to acknowledge'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      if (!services.handoffPort) {
+        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
+      }
+      await services.handoffPort.acknowledgeHandoff(input.thread_id);
+      return respond({ success: true, threadId: input.thread_id });
+    }),
+  );
+}
