@@ -1,11 +1,11 @@
 # Implementation Plan Template
 
-Enhanced plan template with FR traceability. Same TDD structure as new-track but each task references which functional requirements it addresses.
+Enhanced plan template with FR traceability. Same TDD structure as a standard feature but each task references which functional requirements it addresses.
 
 ```markdown
 # Implementation Plan: {title}
 
-> Track: {track_id}
+> Feature: <feature-name>
 > Type: {feature | bug | chore}
 > Created: {YYYY-MM-DD}
 
@@ -89,7 +89,7 @@ Every phase ends with a verification meta-task:
 
 ## Sizing Guidelines
 
-Design tracks are shifted up one tier from new-track because deeper specs produce larger plans.
+Design features are shifted up one tier from standard features because deeper specs produce larger plans.
 
 | Scope | Phases | Tasks/Phase |
 |-------|--------|-------------|

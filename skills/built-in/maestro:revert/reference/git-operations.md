@@ -1,6 +1,6 @@
 # Git Operations for Revert
 
-Detailed protocols for SHA resolution, reconciliation, execution, plan state management, and advanced recovery strategies.
+Detailed protocols for SHA resolution, reconciliation, execution, task state management, and advanced recovery strategies.
 
 ---
 
@@ -8,38 +8,38 @@ Detailed protocols for SHA resolution, reconciliation, execution, plan state man
 
 ### 3a: Extract Implementation SHAs
 
-**BR-enhanced path**: If `metadata.json` has `beads_epic_id`:
+**Task state source**: Call `maestro_task_list` or `maestro_status` to get all tasks with their summaries. Task summaries from `maestro_task_done` include commit SHAs (format: `sha: {7char}` in the summary text).
+
+**BR-enhanced path**: If `feature.json` has `beads_epic_id`:
 - Use `br list --status closed --parent {epic_id} --all --json` to get all closed issues
 - Parse the `close_reason` field for SHAs (format: `sha:{7char}`)
 - Scope by labels: `--label "phase:{N}"` for phase-level, match task title for task-level
-- Falls back to plan.md parsing if BR command fails or returns no results
+- Falls back to task summary parsing if BR command fails or returns no results
 
-**Legacy path**: Read `.maestro/tracks/{track_id}/plan.md`.
-
-Extract `[x] {sha}` markers from the appropriate scope:
-- **Track**: All `[x] {sha}` markers
-- **Phase N**: Only markers under `## Phase N`
-- **Task**: Only the marker for the matching task
+**Task summary path**: Parse commit SHAs from the task summaries available via `maestro_task_list`:
+- **Feature**: All tasks in `done` state, extract SHAs from summaries
+- **Phase N**: Only `done` tasks belonging to phase N
+- **Task**: Only the specific task's summary
 
 ### 3b: Identify Plan-Update Commits
 
-Search for commits that marked tasks as done in this track's plan.md:
+Search for commits that updated maestro state for this feature:
 
 ```bash
-git log --oneline --all --grep="maestro(plan): mark task" -- .maestro/tracks/{track_id}/plan.md
+git log --oneline --all --grep="maestro(plan): mark task" -- .maestro/features/{feature-name}/plan.md
 ```
 
 Add any matching SHAs to the revert list alongside the implementation commits.
 
-### 3c: Identify Track Creation Commit (track-level revert only)
+### 3c: Identify Feature Creation Commit (feature-level revert only)
 
-If reverting the entire track:
+If reverting the entire feature:
 
 ```bash
-git log --oneline --all --grep="chore(maestro:new-track): add track {track_id}"
+git log --oneline --all --grep="chore(maestro)" -- .maestro/features/{feature-name}/
 ```
 
-If found, add this SHA to the revert list so the track entry itself is removed from tracks.md.
+If found, add this SHA to the revert list so the feature files are also removed.
 
 If no SHAs found in scope (no implementation SHAs from 3a, and no plan-update commits from 3b):
 - Report: "No completed tasks found in the specified scope. Nothing to revert."
@@ -47,7 +47,7 @@ If no SHAs found in scope (no implementation SHAs from 3a, and no plan-update co
 
 ### 3d: Edge Case -- Commits on Multiple Branches
 
-If the track's commits span multiple branches (e.g., feature branch merged to main):
+If the feature's commits span multiple branches (e.g., feature branch merged to main):
 
 ```bash
 # Find all branches containing each SHA
@@ -62,7 +62,7 @@ If a commit exists on multiple branches, reverting it on one branch does not aff
 
 ### 3e: Edge Case -- Interactive Rebase Has Rewritten History
 
-If plan.md references SHAs that no longer exist (due to `git rebase -i`):
+If task summaries reference SHAs that no longer exist (due to `git rebase -i`):
 
 ```bash
 # Check reflog for original commits
@@ -206,44 +206,43 @@ git revert -n {sha_next}
 # ...for each SHA
 
 # Create single commit
-git commit -m "Revert {scope}: {track_description}"
+git commit -m "Revert {scope}: {feature_description}"
 ```
 
 Trade-off: cleaner history but harder to undo individual parts of the batch.
 
 ---
 
-## Step 8: Update Plan State
+## Step 8: Update Task State
 
-Edit `plan.md`: For each reverted implementation task, change `[x] {sha}` back to `[ ]`.
+For each reverted task, reset its state to `pending`. Update the task state files in `.maestro/features/{feature-name}/tasks/`.
 
-**BR mirror**: If `metadata.json` has `beads_epic_id`, also reopen the corresponding BR issues:
+**BR mirror**: If `feature.json` has `beads_epic_id`, also reopen the corresponding BR issues:
 
 ```bash
 br update {issue_id} --status open --json
 ```
 
-Look up `{issue_id}` from `metadata.json` `beads_issue_map` for each reverted task.
+Look up `{issue_id}` from `feature.json` `beads_issue_map` for each reverted task.
 
 ```bash
-git add .maestro/tracks/{track_id}/plan.md
-git commit -m "maestro(revert): update plan state for reverted {scope}"
+git add .maestro/features/{feature-name}/
+git commit -m "maestro(revert): update task state for reverted {scope}"
 ```
 
 CRITICAL: Validate the commit succeeds.
 
-## Step 9: Update Registry (if track-level revert)
+## Step 9: Update Feature State (if feature-level revert)
 
-If the entire track was reverted and the track creation commit was NOT in the revert list:
-- Edit `.maestro/tracks.md`: Change track status from `[x]` or `[~]` to `[ ]`
-- Update metadata.json: set `"status": "new"`
+If the entire feature was reverted and the feature creation commit was NOT in the revert list:
+- Update `feature.json`: set status back to `approved` or `executing` as appropriate
 
 ```bash
-git add .maestro/tracks.md .maestro/tracks/{track_id}/metadata.json
-git commit -m "maestro(revert): reset track {track_id} status"
+git add .maestro/features/{feature-name}/feature.json
+git commit -m "maestro(revert): reset feature {feature-name} status"
 ```
 
-If the track creation commit WAS reverted, the tracks.md entry was already removed -- skip this step.
+If the feature creation commit WAS reverted, the feature files were already removed -- skip this step.
 
 ## Step 10: Verify
 
@@ -273,17 +272,17 @@ When history is too tangled for `git revert` (e.g., extensive rebasing, squashin
 ### Steps
 
 ```bash
-# 1. Identify the known-good point (before track implementation started)
-git log --oneline --before="{track_start_date}" | head -5
-# Or use the commit just before the first track commit
-good_point={sha_before_track}
+# 1. Identify the known-good point (before feature implementation started)
+git log --oneline --before="{feature_start_date}" | head -5
+# Or use the commit just before the first feature commit
+good_point={sha_before_feature}
 
 # 2. Create new branch from the good point
 git checkout -b {branch}-recreated $good_point
 
-# 3. Cherry-pick any commits you want to KEEP (non-track commits that happened after)
+# 3. Cherry-pick any commits you want to KEEP (non-feature commits that happened after)
 git log --oneline $good_point..{original_branch} --no-merges
-# Review each commit -- cherry-pick only non-track ones
+# Review each commit -- cherry-pick only non-feature ones
 git cherry-pick {keeper_sha1}
 git cherry-pick {keeper_sha2}
 
@@ -298,6 +297,6 @@ git branch -m {branch}-recreated {original_branch}
 ### After branch recreation
 
 - The `-backup` branch preserves the original history
-- Update plan.md: all track tasks reset to `[ ]`
+- Update maestro task state: all feature tasks reset to `pending`
 - Keep the backup branch for at least 30 days
 - Delete with `git branch -D {original_branch}-backup` only after confirming everything works

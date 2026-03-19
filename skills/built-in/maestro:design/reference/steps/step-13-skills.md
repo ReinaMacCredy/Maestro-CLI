@@ -3,11 +3,11 @@
 **Progress: Step 13 of 16** -- Next: Plan-to-BR Sync
 
 ## Goal
-Scan the runtime's installed skill list for skills whose description matches this track's domain or technology. Store matches in metadata.json `skills` array.
+Scan the runtime's installed skill list for skills whose description matches this feature's domain or technology. Store matches in feature.json `skills` array.
 
 ## Execution Rules
 - This step is automated -- no user interaction needed
-- Scan skill descriptions against track keywords (tech stack, domain, capability areas)
+- Scan skill descriptions against feature keywords (tech stack, domain, capability areas)
 - Skip silently if no skills match
 - Do NOT install or suggest installing new skills
 
@@ -28,11 +28,11 @@ Scan the runtime's installed skill list for skills whose description matches thi
 2. **Scan Skill List**
    For each installed skill visible in the runtime:
    - Compare skill description against gathered keywords
-   - A skill matches if its description contains 2+ keywords from the track
+   - A skill matches if its description contains 2+ keywords from the feature
    - Record matched skills with the keywords that triggered the match
 
 3. **Store Results**
-   Format matches for metadata.json `skills` array:
+   Format matches for feature.json `skills` array:
    ```json
    {
      "name": "skill-name",
@@ -52,7 +52,7 @@ Scan the runtime's installed skill list for skills whose description matches thi
 - [ok] Keywords extracted from classification + spec + plan
 - [ok] All installed skills scanned
 - [ok] Matches based on 2+ keyword overlap (not single-word false positives)
-- [ok] Results stored for metadata.json consumption in step 16
+- [ok] Results stored for feature.json consumption in step 16
 
 ## Anti-patterns
 - [x] Suggesting users install new skills -- only detect what is already installed

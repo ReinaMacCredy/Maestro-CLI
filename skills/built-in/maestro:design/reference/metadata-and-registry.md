@@ -1,13 +1,15 @@
-# Metadata, Index, and Registry
+# Feature Metadata and Registry
 
-## metadata.json
+## feature.json
+
+The `feature.json` file is created by `maestro_feature_create` / `maestro feature-create`. After design completes, update it with additional fields:
 
 ```json
 {
-  "track_id": "{track_id}",
+  "name": "<feature-name>",
   "type": "{feature | bug | chore}",
-  "status": "new",
-  "description": "{track description}",
+  "status": "planning",
+  "description": "{feature description}",
   "created_at": "{ISO 8601 timestamp}",
   "updated_at": "{ISO 8601 timestamp}",
   "phases": {phase_count},
@@ -29,66 +31,36 @@
 
 Note: `"skills"` is `[]` if no skills were detected.
 
-Note: `"beads_epic_id"` and `"beads_issue_map"` are set by the plan-to-BR sync step (Step 9.5). If BR sync was skipped or failed, omit both fields. When present, `beads_epic_id` is the discriminator that tells downstream skills to use BR for state tracking.
+Note: `"beads_epic_id"` and `"beads_issue_map"` are set by the plan-to-BR sync step (Step 14). If BR sync was skipped or failed, omit both fields. When present, `beads_epic_id` is the discriminator that tells downstream skills to use BR for state tracking.
 
-Write to `.maestro/tracks/{track_id}/metadata.json`.
+Lives at `.maestro/features/<feature-name>/feature.json`.
 
-## Track Index (index.md)
+## Feature Listing
 
-```markdown
-# Track: {track description}
-
-> ID: {track_id}
-> Type: {type}
-> Status: New
-> Created: {date}
-
-## Files
-- [Specification](./spec.md)
-- [Implementation Plan](./plan.md)
-- [Metadata](./metadata.json)
-
-## Quick Links
-- Registry: [tracks.md](../../tracks.md)
-- Implement: `/maestro:implement {track_id}`
-- Status: `/maestro:status`
-```
-
-Write to `.maestro/tracks/{track_id}/index.md`.
-
-## Registry Update
-
-Append to `.maestro/tracks.md`:
-
-```markdown
----
-- [ ] **Track: {track description}**
-  *Type: {type} | ID: [{track_id}](./tracks/{track_id}/)*
-```
+Use `maestro feature-list` (CLI) or `maestro_feature_list` (MCP) to view all features. There is no manual registry file to maintain -- the feature list is derived from `.maestro/features/` directory contents.
 
 ## Commit
 
 ```bash
-git add .maestro/tracks/{track_id} .maestro/tracks.md
-git commit -m "chore(maestro:design): add track {track_id}"
+git add .maestro/features/<feature-name>
+git commit -m "chore(maestro:design): add feature <feature-name>"
 ```
 
 ## Summary Output
 
 ```
-## Track Created
+## Feature Created
 
-**{track description}**
-- ID: `{track_id}`
+**{feature description}**
+- Name: `<feature-name>`
 - Type: {type}
 - Phases: {count}
 - Tasks: {count}
 
 **Files**:
-- `.maestro/tracks/{track_id}/spec.md`
-- `.maestro/tracks/{track_id}/plan.md`
-- `.maestro/tracks/{track_id}/metadata.json`
-- `.maestro/tracks/{track_id}/index.md`
+- `.maestro/features/<feature-name>/spec.md`
+- `.maestro/features/<feature-name>/plan.md`
+- `.maestro/features/<feature-name>/feature.json`
 
-**Next**: `/maestro:implement {track_id}`
+**Next**: `maestro plan-approve --feature <feature-name>` then `maestro tasks-sync --feature <feature-name>`
 ```

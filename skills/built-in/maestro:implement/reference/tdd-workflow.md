@@ -4,7 +4,7 @@
 
 ### Red: Write Failing Tests
 
-1. **Identify test scope** from task description and spec requirements
+1. **Identify test scope** from the task spec (compiled by `maestro_task_next`)
 2. **Create test file** following project conventions:
    - Python: `tests/test_{module}.py` or `{module}_test.py`
    - TypeScript/JavaScript: `{module}.test.ts` or `__tests__/{module}.test.ts`

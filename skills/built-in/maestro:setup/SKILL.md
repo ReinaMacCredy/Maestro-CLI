@@ -1,6 +1,6 @@
 ---
 name: maestro:setup
-description: "Scaffolds project context (product, tech stack, coding guidelines, product guidelines, workflow) and initializes track registry. Use for first-time project onboarding."
+description: "Scaffolds project context (product, tech stack, coding guidelines, product guidelines, workflow) and initializes maestro. Use for first-time project onboarding."
 argument-hint: "[--reset]"
 ---
 
@@ -22,7 +22,7 @@ Interview the user to create persistent project context documents. These files a
 ## Step 1: Handle --reset
 
 If `$ARGUMENTS` contains `--reset`:
-1. Confirm with user before deleting `.maestro/context/`, `.maestro/tracks.md`, `.maestro/setup_state.json`
+1. Confirm with user before deleting `.maestro/memory/` and `.maestro/` contents
 2. If confirmed: delete and report. Stop.
 3. If declined: stop without changes.
 
@@ -30,7 +30,7 @@ If `$ARGUMENTS` contains `--reset`:
 
 See `reference/resume-protocol.md` for full state machine, step name registry, and skip logic.
 
-Check `.maestro/setup_state.json`. If interrupted run found, offer resume or start over.
+Check whether `.maestro/` directory exists and what memory files are present. If an interrupted run is detected (partial memory files), offer resume or start over.
 
 **Verification:** Display which steps were completed and which remain. The user must see the list before choosing.
 
@@ -38,7 +38,7 @@ Check `.maestro/setup_state.json`. If interrupted run found, offer resume or sta
 
 _Skip if resumed past this step._
 
-Search for `.maestro/context/*.md`.
+Check for existing memory files via `maestro memory-list --global` (CLI) or `maestro_memory_list` (MCP).
 
 **If context exists:**
 
@@ -99,11 +99,9 @@ Check these indicators in order. If ANY brownfield indicator is true, classify a
 Confirm the classification with the user: "I've classified this as a {brownfield/greenfield} project. Is that correct?"
 - If wrong: switch to the other flow.
 
-## Step 5: Create Context Directory
+## Step 5: Initialize Maestro
 
-```bash
-mkdir -p .maestro/context
-```
+Run `maestro init` (CLI) or `maestro_init` (MCP) to create the `.maestro/` directory structure.
 
 ### 5a: Bootstrap Beads Workspace
 
@@ -111,7 +109,7 @@ If `.beads/` does not exist and `br` is available: `br init --prefix maestro --j
 
 ## Steps 6-10: Interview & File Generation
 
-Each step generates one context file. For each step, follow this decision tree:
+Each step generates one context file saved to `.maestro/memory/` (global memory). For each step, follow this decision tree:
 
 ### Auto-generate vs. Interview Decision Tree
 
@@ -122,7 +120,7 @@ Is this a brownfield project with scan data?
   |     |
   |     +-- YES --> Default to "Autogenerate" option.
   |     |           Present inferred content. Ask: "Does this look right?"
-  |     |           If yes: write file, move on.
+  |     |           If yes: write file via maestro memory-write --global, move on.
   |     |           If no: fall through to interactive interview.
   |     |
   |     +-- NO  --> Default to "Interactive" option.
@@ -136,13 +134,15 @@ Is this a brownfield project with scan data?
 **Per-step interview details and question flows are in `reference/interviews.md`.**
 **File format templates are in `reference/templates.md`.**
 
-| Step | File Generated | State Key | Skip Condition |
-|------|---------------|-----------|----------------|
-| 6 | `.maestro/context/product.md` | `product_definition` | Never -- always required |
-| 7 | `.maestro/context/tech-stack.md` | `tech_stack` | Never -- always required |
-| 8 | `.maestro/context/guidelines.md` | `coding_guidelines` | Never -- always required |
-| 9 | `.maestro/context/product-guidelines.md` | `product_guidelines` | User may skip (CLI tools, pure libraries) |
-| 10 | `.maestro/context/workflow.md` (use `reference/workflow-template.md`) | `workflow_config` | Never -- always required |
+| Step | Memory Key | Description | Skip Condition |
+|------|------------|-------------|----------------|
+| 6 | `product` | Product definition | Never -- always required |
+| 7 | `tech-stack` | Technology stack | Never -- always required |
+| 8 | `guidelines` | Coding guidelines | Never -- always required |
+| 9 | `product-guidelines` | Product guidelines | User may skip (CLI tools, pure libraries) |
+| 10 | `workflow` | Workflow config (use `reference/workflow-template.md`) | Never -- always required |
+
+Files are saved using `maestro memory-write --global --key <key>` (CLI) or `maestro_memory_write` (MCP).
 
 ### Per-Step Verification Protocol
 
@@ -151,21 +151,13 @@ After writing each file, verify it before moving on:
 1. **Display the generated file** to the user in full.
 2. **Ask:** "Does this accurately describe your project? Any corrections?"
 3. **If corrections needed:** Edit the file, display again, re-ask.
-4. **If confirmed:** Write state, move to next step.
+4. **If confirmed:** Move to next step.
 
 **Never skip verification.** An inaccurate context file will poison every downstream skill. Catching errors here costs seconds; catching them during implementation costs hours.
 
-Write state after each step completes.
+## Step 11: Code Style Guides (Optional)
 
-## Step 11: Initialize Tracks Registry
-
-Create `.maestro/tracks.md` with registry header. See `reference/templates.md`.
-
-**Verification:** Confirm `.maestro/tracks.md` was written and is valid markdown.
-
-## Step 12: Code Style Guides (Optional)
-
-Offer to copy style guides from `reference/styleguides/` to `.maestro/context/code_styleguides/`.
+Offer to copy style guides from `reference/styleguides/` to `.maestro/memory/code_styleguides/`.
 See `reference/interviews.md` for the question format.
 
 **Decision logic:**
@@ -173,21 +165,21 @@ See `reference/interviews.md` for the question format.
 - If greenfield with known tech stack (from Step 7): pre-select matching guides.
 - If no languages detected: show full list.
 
-## Step 13: Generate Index File
+## Step 12: Generate Index File
 
-Write `.maestro/context/index.md` linking all context files and the tracks registry. See `reference/templates.md`.
+Write a memory entry `index` via `maestro memory-write --global --key index` linking all context memory entries. See `reference/templates.md`.
 
-**Verification:** Confirm every file listed in the index actually exists on disk. If a file is missing (user skipped product-guidelines, etc.), omit it from the index rather than linking to a nonexistent file.
+**Verification:** Confirm every entry listed in the index actually exists. If an entry is missing (user skipped product-guidelines, etc.), omit it from the index rather than linking to a nonexistent entry.
 
-## Step 14: First Track (Optional)
+## Step 13: First Feature (Optional)
 
-Offer to create the first track. See `reference/interviews.md` for the flow and `reference/templates.md` for file formats.
+Offer to create the first feature using `maestro feature-create` (CLI) or `maestro_feature_create` (MCP). See `reference/interviews.md` for the flow and `reference/templates.md` for file formats.
 
-**When to recommend creating a track:**
+**When to recommend creating a feature:**
 - User mentioned a specific feature or bug during the interview --> recommend yes.
 - User is exploring / just setting up --> recommend skip.
 
-## Step 15: Summary and Commit
+## Step 14: Summary and Commit
 
 Display summary of all generated files. See `reference/templates.md` for output format and commit messages.
 
@@ -196,9 +188,7 @@ Display summary of all generated files. See `reference/templates.md` for output 
 2. Confirm no secrets, credentials, or sensitive data in any context file.
 3. If no `.git/`: skip commit, warn user that files are untracked.
 
-Remove `.maestro/setup_state.json` on successful completion.
-
-## Step 16: Auto-Generate AGENTS.md
+## Step 15: Auto-Generate AGENTS.md
 
 After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, automatically invoke `/maestro:AGENTS.md` (no arguments, no user prompt). If `AGENTS.md` already exists, skip silently.
 
@@ -214,7 +204,6 @@ After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, au
 | Scan finds multiple languages | List all. Ask which are primary vs. incidental (e.g., shell scripts for CI). |
 | User wants to skip all interviews | Use autogenerate for everything. Still verify each file. |
 | User disagrees with autogenerated content | Switch to interactive for that step. Don't argue with the user about their own project. |
-| Resume finds corrupted state file | Delete it, start fresh. Inform the user. |
 
 ## Red Flags -- STOP and Ask
 
@@ -230,13 +219,14 @@ After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, au
 
 Recommended workflow:
 
-- `/maestro:setup` -- **You are here.** Scaffold project context (run first)
+- `maestro init` / `maestro_init` -- Initialize maestro directory structure
+- `/maestro:setup` -- **You are here.** Scaffold project context (run after init)
 - `/maestro:AGENTS.md` -- Generate AGENTS.md context file (offered at end of setup)
-- `/maestro:new-track` -- Create a feature/bug track with spec and plan
+- `maestro feature-create` / `maestro_feature_create` -- Create a feature to work on
+- `/maestro:design` -- Deep discovery for ambitious features
+- `maestro plan-write` / `maestro_plan_write` -- Write the implementation plan
 - `/maestro:implement` -- Execute the implementation
 - `/maestro:review` -- Verify implementation correctness
-- `/maestro:status` -- Check progress across all tracks
-- `/maestro:revert` -- Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
+- `maestro status` / `maestro_status` -- Check progress across all features
 
-Setup is the entry point for all maestro workflows. All other commands depend on the context files it creates. Run this once per project, then use `/maestro:new-track` to start building.
+Setup is the entry point for all maestro workflows. All other commands depend on the context files it creates. Run this once per project, then use `maestro feature-create` to start building.

@@ -168,13 +168,13 @@ fi
 
 ```bash
 # Create a revert branch
-git checkout -b revert/{track_id}-$(date +%Y%m%d)
+git checkout -b revert/{feature-name}-$(date +%Y%m%d)
 
 # Execute reverts on this branch
 git revert --no-edit {sha1} {sha2} ...
 
 # Push and create PR
-git push -u origin revert/{track_id}-$(date +%Y%m%d)
+git push -u origin revert/{feature-name}-$(date +%Y%m%d)
 ```
 
 This approach:

@@ -1,6 +1,6 @@
 # Specification Template
 
-Enriched specification template for design tracks. Compose from discovery steps 4-9.
+Enriched specification template for design features. Compose from discovery steps 4-9.
 
 ```markdown
 # Specification: {title}
@@ -64,7 +64,7 @@ Enriched specification template for design tracks. Compose from discovery steps 
 1. {Edge case}: {expected behavior}
 
 ## Out of Scope
-- {Thing 1 this track explicitly does NOT cover}
+- {Thing 1 this feature explicitly does NOT cover}
 
 ## Acceptance Criteria
 - [ ] {Criterion 1 -- testable, specific, references FR-N}

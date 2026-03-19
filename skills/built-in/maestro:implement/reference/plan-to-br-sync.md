@@ -1,12 +1,12 @@
 # Plan-to-BR Sync Protocol
 
-Protocol for converting a track's `plan.md` into `br` issues during `/maestro:new-track`.
+Protocol for converting a feature's `plan.md` into `br` issues during feature creation.
 
 ## Prerequisites
 
-- `.beads/` directory exists (bootstrapped by setup or new-track Step 4.5)
+- `.beads/` directory exists (bootstrapped by setup or feature creation)
 - `plan.md` has been written and approved
-- `metadata.json` exists with track metadata
+- `feature.json` exists with feature metadata
 
 ## Sync Steps
 
@@ -20,12 +20,12 @@ Extract the plan structure:
 
 ### 2. Create Epic
 
-Create a parent epic representing the entire track:
+Create a parent epic representing the entire feature:
 
 ```bash
-br create --title "Track: {track_description}" \
-  --labels "type:{track_type}" \
-  --description "Maestro track: {track_id}" \
+br create --title "Feature: {feature_description}" \
+  --labels "type:{feature_type}" \
+  --description "Maestro feature: {feature-name}" \
   --json
 ```
 
@@ -38,7 +38,7 @@ For each task in the plan, create a br issue:
 ```bash
 br create --title "P{N}T{M}: {task_title}" \
   --parent {epic_id} \
-  --labels "phase:{N}-{kebab_phase_title},type:{track_type}" \
+  --labels "phase:{N}-{kebab_phase_title},type:{feature_type}" \
   --description "{sub_tasks_as_markdown}\n\n## Acceptance Criteria\n{criteria}" \
   --json
 ```
@@ -78,9 +78,9 @@ br dep cycles --json
 
 If cycles detected: report and ask user to resolve before continuing.
 
-### 6. Store in metadata.json
+### 6. Store in feature.json
 
-Add two fields to the existing `metadata.json`:
+Add two fields to the existing `feature.json`:
 
 ```json
 {
@@ -100,17 +100,17 @@ br sync --flush-only
 git add .beads/
 ```
 
-The `.beads/` directory is included in the new-track commit (Step 13 of SKILL.md).
+The `.beads/` directory is included in the feature creation commit.
 
 ## Error Handling
 
-- If `br create` fails: report the error and fall back to plan.md-only mode (do NOT set `beads_epic_id`)
+- If `br create` fails: report the error and fall back to maestro-only mode (do NOT set `beads_epic_id`)
 - If `br dep cycles` finds cycles: warn user, attempt to remove the cycle-causing dep, re-validate
-- If any step fails after epic creation: clean up by closing the incomplete epic and removing `beads_epic_id` from metadata
+- If any step fails after epic creation: clean up by closing the incomplete epic and removing `beads_epic_id` from feature.json
 
 ## Label Conventions
 
 | Label | Format | Example |
 |-------|--------|---------|
 | Phase | `phase:{N}-{kebab-title}` | `phase:1-authentication-setup` |
-| Type | `type:{track_type}` | `type:feature` |
+| Type | `type:{feature_type}` | `type:feature` |

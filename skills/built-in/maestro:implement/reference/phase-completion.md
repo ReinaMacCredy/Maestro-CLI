@@ -2,28 +2,31 @@
 
 ## When to Run
 
-Execute this protocol when the last task in a phase is completed (marked `[x]`).
+Execute this protocol when the last task in a phase is completed (marked `done` via `maestro_task_done`).
 
-**BR-based completion detection**: If `metadata.json` has `beads_epic_id`:
+**BR-based completion detection**: If `feature.json` has `beads_epic_id`:
 
 ```bash
 br list --status open --label "phase:{N}-{kebab}" --json
 ```
 
-If the result is empty (no open issues for this phase), the phase is complete. Falls back to plan.md checkbox counting if no `beads_epic_id`.
+If the result is empty (no open issues for this phase), the phase is complete. Falls back to checking `maestro_task_list` for remaining `pending` or `claimed` tasks if no `beads_epic_id`.
+
+**maestro-based completion detection**: Call `maestro_task_list` or `maestro_status`. If all tasks in the current phase are in `done` state, the phase is complete.
 
 ## Steps
 
-### 0. Commit Plan State
+### 0. Verify Task State
 
-Stage and commit all accumulated plan.md state changes from this phase:
+Confirm all tasks in the phase are `done`:
 
-```bash
-git add .maestro/tracks/{track_id}/plan.md
-git commit -m "maestro(plan): mark phase {N} tasks complete"
+```
+maestro_task_list  (or maestro_status)
 ```
 
-**BR mirror**: If `metadata.json` has `beads_epic_id`:
+All tasks for this phase should show state `done`. If any are `pending`, `claimed`, or `blocked`, the phase is not yet complete.
+
+**BR mirror**: If `feature.json` has `beads_epic_id`:
 ```bash
 br sync --flush-only
 ```
@@ -106,5 +109,4 @@ After user approval:
 CHECKPOINT_SHA=$(git rev-parse --short HEAD)
 ```
 
-Store in metadata or plan.md for future reference (used by `/maestro:revert` for phase-level reverts).
-
+Store in memory via `maestro_memory_write` for future reference (used by `maestro:revert` for phase-level reverts).

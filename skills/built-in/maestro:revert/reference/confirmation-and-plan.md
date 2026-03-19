@@ -7,27 +7,27 @@ Show the user exactly what will be reverted:
 ```
 ## Revert Plan
 
-**Scope**: {track | phase N | task name}
-**Track**: {track_description} ({track_id})
+**Scope**: {feature | phase N | task name}
+**Feature**: {feature_description} ({feature-name})
 
 **Commits to revert** (reverse chronological order):
 1. `{sha7}` -- {commit message}
 2. `{sha7}` -- {commit message} [plan-update]
-3. `{sha7}` -- {commit message} [track creation]
+3. `{sha7}` -- {commit message} [feature creation]
 
 **Affected files**:
 {list of files changed by these commits}
 
-**Plan updates**:
-- {task_name}: `[x] {sha}` --> `[ ]`
-- {task_name}: `[x] {sha}` --> `[ ]`
+**Task state updates**:
+- {task_name}: done --> pending
+- {task_name}: done --> pending
 
 **Safety measures**:
 - Backup tag: `pre-revert-{timestamp}` at `{current_sha7}`
 - Strategy: `git revert` (additive, history preserved)
 ```
 
-Use `[plan-update]` and `[track creation]` labels to distinguish commit types from implementation commits.
+Use `[plan-update]` and `[feature creation]` labels to distinguish commit types from implementation commits.
 
 ---
 
@@ -35,7 +35,7 @@ Use `[plan-update]` and `[track creation]` labels to distinguish commit types fr
 
 **Confirmation 1** -- Target:
 
-Ask the user: "Revert {scope} of track '{description}'? This will undo {N} commits."
+Ask the user: "Revert {scope} of feature '{description}'? This will undo {N} commits."
 Options:
 - **Yes, continue** -- Show me the execution plan
 - **Cancel** -- Abort revert
@@ -86,15 +86,15 @@ When the user wants to undo a previous revert, present this confirmation:
 ```
 ## Undo Revert
 
-**Original revert scope**: {scope} of track '{description}'
+**Original revert scope**: {scope} of feature '{description}'
 **Revert commits to undo**: {list}
 **Strategy**: {revert-the-revert | cherry-pick originals | reset to backup tag}
 
 This will re-apply the original changes that were previously reverted.
 
 After this operation:
-- Plan state will be updated: `[ ]` --> `[x] {sha}` for re-applied tasks
-- Track status will be restored
+- Task state will be updated: pending --> done for re-applied tasks
+- Feature status will be restored
 - Tests will be re-run
 
 Proceed with undo? (yes/no)
@@ -107,17 +107,17 @@ Proceed with undo? (yes/no)
 ```
 ## Revert Complete
 
-**Scope**: {track | phase N | task name}
-**Track**: {track_description}
-**Commits reverted**: {count} ({impl_count} implementation, {plan_count} plan-update, {track_count} track creation)
+**Scope**: {feature | phase N | task name}
+**Feature**: {feature_description}
+**Commits reverted**: {count} ({impl_count} implementation, {plan_count} plan-update, {feature_count} feature creation)
 **Duplicates removed**: {dedup_count} cherry-pick duplicates excluded
 **Tests**: {pass | fail}
 **Backup tag**: pre-revert-{timestamp}
 
-**Plan state updated**: {N} tasks reset to `[ ]`
+**Task state updated**: {N} tasks reset to pending
 
 **Next**:
-- `/maestro:implement {track_id}` -- Re-implement reverted tasks
-- `/maestro:status` -- Check overall progress
+- `maestro:implement {feature-name}` -- Re-implement reverted tasks
+- `maestro_status` / `maestro status` -- Check overall progress
 - To undo this revert: `git revert --no-edit {revert_sha}` (or see Rollback-of-Rollback in SKILL.md)
 ```

@@ -1,14 +1,14 @@
 ---
 name: maestro:design
-description: "Deep discovery and specification for ambitious features. Full BMAD-inspired interview with classification, vision, journeys, domain analysis, and FR synthesis. Same output contract (spec.md + plan.md) as new-track but far richer. Use for multi-component systems, regulated domains, or unclear requirements."
-argument-hint: "<track description>"
+description: "Deep discovery and specification for ambitious features. Full BMAD-inspired interview with classification, vision, journeys, domain analysis, and FR synthesis. Same output contract (spec.md + plan.md) as a standard feature but far richer. Use for multi-component systems, regulated domains, or unclear requirements."
+argument-hint: "<feature description>"
 ---
 
 # Design -- Deep Discovery & Specification
 
-Full-ceremony specification process for ambitious features. Produces the same `spec.md` + `plan.md` output as `/maestro:new-track` but through deep, multi-step discovery inspired by BMAD methodology.
+Full-ceremony specification process for ambitious features. Produces the same `spec.md` + `plan.md` output as a standard feature but through deep, multi-step discovery inspired by BMAD methodology.
 
-**When to use this instead of `/maestro:new-track`:**
+**When to use this instead of a quick feature:**
 - Multi-component systems with many moving parts
 - Regulated domains (healthcare, fintech, govtech)
 - Unclear or complex requirements that need thorough discovery
@@ -18,7 +18,7 @@ Full-ceremony specification process for ambitious features. Produces the same `s
 
 `$ARGUMENTS`
 
-The track description. Examples: `"Add user authentication with OAuth and RBAC"`, `"Build real-time collaboration engine"`, `"Implement HIPAA-compliant patient portal"`
+The feature description. Examples: `"Add user authentication with OAuth and RBAC"`, `"Build real-time collaboration engine"`, `"Implement HIPAA-compliant patient portal"`
 
 ---
 
@@ -33,15 +33,15 @@ This skill uses a step-file architecture. Each step is a self-contained file in 
 - Steps 4-9 include an A/P/C menu -- the user MUST select [C] before you proceed
 
 ### Step 1: Validate Prerequisites
-Check product.md and tracks.md exist.
+Check `maestro_status` for initialized project.
 --> Read and follow `reference/steps/step-01-init.md`
 
-### Step 2: Parse Input & Generate Track ID
-Extract description, infer type, generate `{shortname}_{YYYYMMDD}` ID.
+### Step 2: Parse Input & Generate Feature Name
+Extract description, infer type, generate kebab-case feature name.
 --> Read and follow `reference/steps/step-02-parse-input.md`
 
-### Step 3: Create Track Directory
-Create `.maestro/tracks/{track_id}/`.
+### Step 3: Create Feature
+Create feature via `maestro_feature_create` or `maestro feature-create`.
 --> Read and follow `reference/steps/step-03-create-dir.md`
 
 ### Step 4: Project Classification
@@ -69,19 +69,19 @@ Performance, security, scalability, compatibility. Measurable format.
 --> Read and follow `reference/steps/step-09-nonfunctional.md`
 
 ### Step 10: Spec Draft & Approval
-Compose enriched spec from all discovery. Present for approval. Write spec.md.
+Compose enriched spec from all discovery. Present for approval. Save spec to feature memory.
 --> Read and follow `reference/steps/step-10-spec-approval.md`
 
 ### Step 11: Codebase Pattern Scan
-Scan codebase for existing patterns relevant to this track. Feed into plan context.
+Scan codebase for existing patterns relevant to this feature. Feed into plan context.
 --> Read and follow `reference/steps/step-11-codebase-scan.md`
 
 ### Step 12: Implementation Plan with Traceability
-Generate plan with FR traceability and coverage matrix. Present for approval. Write plan.md.
+Generate plan with FR traceability and coverage matrix. Present for approval. Write plan via `maestro_plan_write`.
 --> Read and follow `reference/steps/step-12-plan.md`
 
 ### Step 13: Detect Relevant Skills
-Scan runtime skill list for skills matching this track's domain/tech. Store matches in metadata.json.
+Scan runtime skill list for skills matching this feature's domain/tech. Store matches in feature.json.
 --> Read and follow `reference/steps/step-13-skills.md`
 
 ### Step 14: Plan-to-BR Sync
@@ -92,8 +92,8 @@ If Beads (BR) is available and initialized, sync plan into BR epics/issues. Skip
 Validate FR coverage, AC coverage, dependency sanity, scope alignment. Pass/fail gate.
 --> Read and follow `reference/steps/step-15-readiness.md`
 
-### Step 16: Metadata, Registry, Commit & Summary
-Write metadata.json, update tracks.md, commit, display summary.
+### Step 16: Feature Registration, Commit & Summary
+Update feature.json, commit, display summary.
 --> Read and follow `reference/steps/step-16-commit.md`
 
 ---
@@ -137,12 +137,12 @@ Design produces `spec.md`. Plan-write consumes it. The bridge between them is ho
 
 ### The plan-write Connection
 
-After design completes, the approved spec feeds directly into `maestro plan-write --feature <name>`. The plan-write command expects:
+After design completes, the approved spec feeds directly into `maestro plan-write --feature <name>` (CLI) or `maestro_plan_write` (MCP). The plan-write command expects:
 
 1. **A `## Discovery` section** (min 100 chars) -- summarize what design discovered
 2. **FR references** -- plan tasks trace back to spec FRs via `Addresses: FR-N`
 3. **Non-Goals / Ghost Diffs** -- derived from the spec's Out of Scope section
-4. **Context files** -- design should save key findings via `maestro context-write` so plan-write can reference them
+4. **Context files** -- design should save key findings via `maestro memory-write` so plan-write can reference them
 
 **Output contract**: Design produces `spec.md` + `plan.md`. The `maestro:implement` skill consumes both. The spec is the "what", the plan is the "how and in what order."
 
@@ -288,7 +288,7 @@ Design invites over-engineering. Recognize these patterns and cut them.
 After saving the plan, the design phase is complete. The handoff artifact is:
 
 ```
-.maestro/tracks/{track_id}/
+.maestro/features/<feature-name>/
   spec.md    -- What to build (from step 10)
   plan.md    -- How to build it, in what order (from step 12)
 ```
@@ -297,7 +297,7 @@ These two files are the complete handoff. The `maestro:implement` skill consumes
 
 **Transition options:**
 
-1. **maestro plan-write** (recommended for hive workflows) -- Run `maestro plan-write --feature <name>` with the plan content. This enters the standard hive workflow: plan-approve, tasks-sync, worktree-start.
+1. **maestro plan-write** (recommended for hive workflows) -- Run `maestro plan-write --feature <name>` or `maestro_plan_write` with the plan content. This enters the standard hive workflow: plan-approve, tasks-sync, worktree-start.
 
 2. **maestro:implement** (direct execution) -- Open new session with `maestro:implement`. The skill reads spec.md and plan.md, then executes tasks sequentially with checkpoints.
 
@@ -305,21 +305,21 @@ These two files are the complete handoff. The `maestro:implement` skill consumes
 
 **Before handing off**, verify:
 - Readiness gate passed (step 15)
-- All context files saved via `maestro context-write`
-- Track metadata committed (step 16)
+- All context files saved via `maestro memory-write` or `maestro_memory_write`
+- Feature metadata committed (step 16)
 
 ---
 
 ## Relationship to Other Commands
 
-- `maestro init` -- Initialize maestro for the project (run first)
-- `maestro feature-create` -- Create a feature to work on
+- `maestro init` / `maestro_init` -- Initialize maestro for the project (run first)
+- `maestro feature-create` / `maestro_feature_create` -- Create a feature to work on
 - `/maestro:design` -- **You are here.** Deep discovery for ambitious features
-- `maestro plan-write` -- Write the plan from design output (feeds into task-sync)
-- `maestro plan-approve` -- Approve the plan for execution
-- `maestro task-sync` -- Generate tasks from approved plan
+- `maestro plan-write` / `maestro_plan_write` -- Write the plan from design output (feeds into task-sync)
+- `maestro plan-approve` / `maestro_plan_approve` -- Approve the plan for execution
+- `maestro tasks-sync` / `maestro_tasks_sync` -- Generate tasks from approved plan
 - `/maestro:implement` -- Execute the implementation plan
 - `/maestro:review` -- Verify implementation against spec
-- `maestro status` -- Check progress across all features
+- `maestro status` / `maestro_status` -- Check progress across all features
 
-A track created here produces `spec.md` and `plan.md` that `maestro:implement` or `maestro plan-write` consumes. The enriched spec serves as the baseline for `maestro:review`. Deep specs lead to better implementations -- invest in the discovery.
+A feature created here produces `spec.md` and `plan.md` that `maestro:implement` or `maestro plan-write` consumes. The enriched spec serves as the baseline for `maestro:review`. Deep specs lead to better implementations -- invest in the discovery.

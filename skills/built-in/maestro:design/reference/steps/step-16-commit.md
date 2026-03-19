@@ -1,78 +1,61 @@
-# Step 16: Metadata, Registry, Commit & Summary
+# Step 16: Feature Registration, Commit & Summary
 
 **Progress: Step 16 of 16** -- Complete
 
 ## Goal
-Write metadata, update registry, commit all track files, and display summary.
+Update feature.json, commit all feature files, and display summary.
 
 ## Execution Rules
 - You MUST follow `reference/metadata-and-registry.md` for all schemas and formats
-- Commit message format: `chore(maestro:design): add track {track_id}`
-- Summary MUST include track ID, type, phase/task counts, and next step
+- Commit message format: `chore(maestro:design): add feature <feature-name>`
+- Summary MUST include feature name, type, phase/task counts, and next step
 
 ## Execution Sequence
 
 1. **Read Schema**
-   Read `reference/metadata-and-registry.md` for metadata.json schema, index.md template, and tracks.md format.
+   Read `reference/metadata-and-registry.md` for feature.json schema and summary format.
 
-2. **Write metadata.json**
-   Set:
-   - track_id, type, status ("new"), description
-   - created_at and updated_at (ISO 8601)
+2. **Update feature.json**
+   The feature.json was created by `maestro_feature_create` in step 3. Update it with:
    - phases and tasks counts (from plan.md)
    - skills: [] (or detected skills from step 13)
+   - beads_epic_id and beads_issue_map (from step 14, if applicable)
 
-   Write to `.maestro/tracks/{track_id}/metadata.json`.
+   The feature.json lives at `.maestro/features/<feature-name>/feature.json`.
 
-3. **Write index.md**
-   Follow the template in `reference/metadata-and-registry.md`.
-   Write to `.maestro/tracks/{track_id}/index.md`.
-
-4. **Update Registry**
-   Append to `.maestro/tracks.md`:
-   ```markdown
-   ---
-   - [ ] **Track: {track description}**
-     *Type: {type} | ID: [{track_id}](./tracks/{track_id}/)*
-   ```
-
-5. **Commit**
+3. **Commit**
    ```bash
-   git add .maestro/tracks/{track_id} .maestro/tracks.md
+   git add .maestro/features/<feature-name>
    # Include beads state if BR sync was performed
    [ -d ".beads" ] && git add .beads/
-   git commit -m "chore(maestro:design): add track {track_id}"
+   git commit -m "chore(maestro:design): add feature <feature-name>"
    ```
 
-6. **Display Summary**
+4. **Display Summary**
    ```
-   ## Track Created
+   ## Feature Created
 
-   **{track description}**
-   - ID: `{track_id}`
+   **{feature description}**
+   - Name: `<feature-name>`
    - Type: {type}
    - Phases: {count}
    - Tasks: {count}
 
    **Files**:
-   - `.maestro/tracks/{track_id}/spec.md`
-   - `.maestro/tracks/{track_id}/plan.md`
-   - `.maestro/tracks/{track_id}/metadata.json`
-   - `.maestro/tracks/{track_id}/index.md`
+   - `.maestro/features/<feature-name>/spec.md`
+   - `.maestro/features/<feature-name>/plan.md`
+   - `.maestro/features/<feature-name>/feature.json`
 
-   **Next**: `/maestro:implement {track_id}`
+   **Next**: `maestro plan-approve --feature <feature-name>` then `maestro tasks-sync --feature <feature-name>`
    ```
 
 ## Quality Checks
-- [ok] metadata.json matches schema from reference
-- [ok] index.md written per template
-- [ok] tracks.md updated with new entry
+- [ok] feature.json updated with phase/task counts and skills
 - [ok] Git commit successful with correct message format
 - [ok] Summary displayed with correct counts and next step
 
 ## Anti-patterns
-- [x] Forgetting to update tracks.md registry
-- [x] Wrong commit message format (must be `chore(maestro:design):` not `chore(maestro:new-track):`)
+- [x] Wrong commit message format (must be `chore(maestro:design):` prefix)
 - [x] Missing phase/task counts in summary
-- [x] Not showing the next step (`/maestro:implement`)
+- [x] Not showing the next step
 - [x] Committing before all files are written

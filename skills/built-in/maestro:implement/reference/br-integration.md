@@ -11,10 +11,10 @@ Central reference for all `br`/`bv` patterns used by maestro skills.
 
 ## Discriminator
 
-The `beads_epic_id` field in `metadata.json` determines which path to use:
+The `beads_epic_id` field in `feature.json` determines which path to use:
 
 - **Present**: Use br/bv for state tracking. Plan.md is updated alongside as a human-readable mirror.
-- **Absent**: Use legacy plan.md checkbox parsing (unchanged behavior).
+- **Absent**: Use maestro task state management (the default behavior).
 
 ## CLI Conventions
 
@@ -25,8 +25,8 @@ The `beads_epic_id` field in `metadata.json` determines which path to use:
 ## Issue Lifecycle
 
 ```
-create (open) --> claim (in_progress) --> close (closed)
-                                     --> reopen (open)  [revert path]
+create (open) --> claim (claimed) --> close (closed)
+                                  --> reopen (open)  [revert path]
 ```
 
 ### Create
@@ -39,13 +39,13 @@ br create --title "P{N}T{M}: {title}" \
   --json
 ```
 
-### Claim (mark in-progress)
+### Claim (mark claimed)
 
 ```bash
 br update {issue_id} --claim --json
 ```
 
-Sets assignee to actor and status to `in_progress` atomically.
+Sets assignee to actor and status to `claimed` atomically.
 
 ### Close (mark complete)
 
@@ -63,10 +63,10 @@ br update {issue_id} --status open --json
 
 ## Epic Management
 
-### Create epic (track-level)
+### Create epic (feature-level)
 
 ```bash
-br create --title "Track: {description}" \
+br create --title "Feature: {description}" \
   --labels "type:{type}" \
   --json
 ```
@@ -113,7 +113,7 @@ br dep tree {epic_id} --json
 br list --status open --label "phase:{N}-{kebab}" --json
 ```
 
-### List all closed issues for a track type
+### List all closed issues for a feature type
 
 ```bash
 br list --status closed --label "type:{type}" --all --json
@@ -160,16 +160,16 @@ br sync --flush-only && git add .beads/ && git commit -m "sync beads"
 ```
 
 This runs at:
-- Track/phase completion boundaries
+- Feature/phase completion boundaries
 - Session end (if br state changed)
-- After plan-to-br sync during new-track creation
+- After plan-to-br sync during feature creation
 
 ## Plan.md Mirror Protocol
 
-BR is the source of truth for task state. Plan.md is updated alongside for human readability:
+BR is the source of truth for task state when `br_enabled`. Plan.md is updated alongside for human readability. The maestro task state (`maestro_task_claim`, `maestro_task_done`) is the primary mechanism -- BR is a supplementary mirror:
 
-1. When claiming a task: edit plan.md `[ ]` -> `[~]` AND run `br update {id} --claim --json`
-2. When completing a task: edit plan.md `[~]` -> `[x] {sha}` AND run `br close {id} --reason "sha:{sha7} | {evidence}" --json`
-3. When reverting: edit plan.md `[x] {sha}` -> `[ ]` AND run `br update {id} --status open --json`
+1. When claiming a task: `maestro_task_claim` AND `br update {id} --claim --json`
+2. When completing a task: `maestro_task_done` AND `br close {id} --reason "sha:{sha7} | {evidence}" --json`
+3. When reverting: `maestro_task_unblock` (reset to pending) AND `br update {id} --status open --json`
 
 Both updates happen together. If one fails, report the inconsistency.

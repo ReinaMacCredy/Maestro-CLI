@@ -3,7 +3,7 @@
 **Progress: Step 10 of 16** -- Next: Codebase Pattern Scan
 
 ## Goal
-Compose the complete specification from all discovery steps (4-9), present for approval, and write to disk.
+Compose the complete specification from all discovery steps (4-9), present for approval, and save to feature memory.
 
 ## Execution Rules
 - You MUST use `reference/spec-template.md` as the structure
@@ -24,7 +24,7 @@ Compose the complete specification from all discovery steps (4-9), present for a
 
 2. **Assemble Spec**
    Map discovery outputs to template sections:
-   - Overview: synthesize from track description and vision
+   - Overview: synthesize from feature description and vision
    - Type: from step 2
    - Vision & Differentiator: from step 5
    - Success Criteria: from step 5
@@ -58,9 +58,9 @@ Compose the complete specification from all discovery steps (4-9), present for a
    - **[A]**: Read `reference/elicitation-methods.md`. Suggest 3-5 methods for the full spec. User picks, apply, show improvements, user accepts/rejects. Return to approval prompt.
    - **[P]**: Read `reference/party-mode.md`. Run full 5-perspective review on complete spec. Present consolidated findings. User accepts/rejects. Return to approval prompt.
 
-6. **Write Spec**
-   Once approved, write the spec to `.maestro/tracks/{track_id}/spec.md`.
-   Confirm: "Spec written to `.maestro/tracks/{track_id}/spec.md`."
+6. **Save Spec**
+   Once approved, save the spec via `maestro_memory_write` (MCP) to the feature's memory, or write directly to `.maestro/features/<feature-name>/spec.md`.
+   Confirm: "Spec saved to `.maestro/features/<feature-name>/spec.md`."
 
 ## Quality Checks
 - [ok] All template sections populated from discovery
@@ -78,7 +78,7 @@ Before showing the spec to the user, verify these internally:
 | Every FR is testable | FR says what happens, not "handles" or "supports" |
 | No FR is a design decision | FRs say WHAT, not HOW. "User can log in" not "Use JWT for auth" |
 | Success criteria have numbers | "< 200ms p95" not "fast". "99.9% uptime" not "reliable" |
-| MVP scope is small | 3-8 FRs for simple tracks, 8-15 for complex. More than 15 MVP FRs = over-specification |
+| MVP scope is small | 3-8 FRs for simple features, 8-15 for complex. More than 15 MVP FRs = over-specification |
 | Edge cases come from journeys | Error paths from step 6, not invented in isolation |
 | Out of scope is explicit | At least 2-3 items. If nothing is out of scope, the scope is too vague |
 

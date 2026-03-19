@@ -2,16 +2,16 @@
 
 ## Overview
 
-Parallel mode uses Task sub-agents to execute independent plan tasks concurrently. You (the main session) analyze the plan for parallelism opportunities, spawn sub-agents in isolated worktrees, then verify and merge their results before committing. Sub-agents can read, write, and edit files but cannot commit, touch BR state, or modify plan.md.
+Parallel mode uses Task sub-agents to execute independent tasks concurrently. You (the main session) analyze the task graph for parallelism opportunities, spawn sub-agents in isolated worktrees, then verify and merge their results before committing. Sub-agents can read, write, and edit files but cannot commit, touch BR state, or modify maestro state.
 
 ## When to Use
 
-- 3-8 tasks in a phase with 2+ independent tasks
+- 3-8 tasks with 2+ independent tasks
 - Tasks modify different files (low file scope overlap)
 - Tasks do not depend on each other's output within the same wave
 - Runtime supports the Task tool with worktree isolation
 
-**Do not use** when all tasks are sequential, tasks heavily overlap in file scope, or the track has fewer than 3 tasks (overhead exceeds benefit).
+**Do not use** when all tasks are sequential, tasks heavily overlap in file scope, or the feature has fewer than 3 tasks (overhead exceeds benefit).
 
 ## Prerequisites
 
@@ -31,35 +31,35 @@ If agent-mail is not available, parallel mode falls back to heuristic file-scope
 
 ---
 
-## Step 6b: Analyze Plan for Parallelism
+## Step 6b: Analyze Tasks for Parallelism
 
 ### 6b.1: Build Task Dependency Graph
 
-Parse `plan.md` to identify all tasks in the current phase. For each task, determine:
+Call `maestro_task_next` repeatedly (or `maestro_task_list` for a full view) to understand the task graph. For each pending task, determine:
 
-1. **Explicit dependencies**: Tasks blocked by earlier tasks (sequential order in plan.md)
-2. **File scope**: Infer which files each task will modify based on task title and sub-task descriptions
+1. **Explicit dependencies**: Tasks blocked by earlier tasks (defined in `maestro_tasks_sync` output)
+2. **File scope**: Infer which files each task will modify based on the task spec
 3. **Independence**: Two tasks are independent if:
    - Neither depends on the other's output
    - Their likely file scopes do not overlap
-   - They are in the same phase (cross-phase tasks are always sequential)
+   - They have no dependency relationship in the task graph
 
 4. **File reservation check** (if agent-mail available): After heuristic analysis, call `file_reservation_paths` with `exclusive: true` for each task's inferred file scope. If `conflicts` are returned (another task already reserved overlapping paths), move the conflicting task to a later wave. This replaces guesswork with concrete overlap detection.
 
 ### 6b.2: Classify Tasks into Waves
 
-For each phase, partition tasks into waves:
+Partition pending tasks into waves:
 
-**Wave 1**: All tasks with no dependencies within the phase
-**Wave 2**: Tasks that depend only on Wave 1 tasks
-**Wave N**: Tasks that depend only on tasks in earlier waves
+**Wave 1**: All tasks with no unmet dependencies
+**Wave 2**: Tasks whose dependencies are all in Wave 1
+**Wave N**: Tasks whose dependencies are all in earlier waves
 
 Tasks within the same wave are independent and can run in parallel.
 
 Report the parallelism plan to the user before executing:
 
 ```
-[ok] Phase {N} parallelism analysis:
+[ok] Parallelism analysis:
   Wave 1 (parallel): Task {A}, Task {B}
   Wave 2 (sequential): Task {C} (depends on {A})
   --> {M} tasks parallel, {K} sequential
@@ -67,21 +67,23 @@ Report the parallelism plan to the user before executing:
 
 ### 6b.3: Fallback to Sequential
 
-If ALL tasks in a phase are dependent (no parallelism possible), print:
+If ALL tasks are dependent (no parallelism possible), print:
 
 ```
-[!] No independent tasks found in Phase {N}. Falling back to single-agent mode.
+[!] No independent tasks found. Falling back to single-agent mode.
 ```
 
-Execute the phase using the single-agent protocol from `reference/single-agent-execution.md`.
+Execute using the single-agent protocol from `reference/single-agent-execution.md`.
 
 ---
 
 ## Step 6c: Wave Execution Loop
 
-For each wave in the current phase:
+For each wave:
 
-### 6c.1: Reserve Files and Spawn Sub-agents
+### 6c.1: Claim Tasks, Reserve Files, and Spawn Sub-agents
+
+For each task in the wave, call `maestro_task_claim` to transition it from `pending` to `claimed`.
 
 **File reservations** (if agent-mail available): Before spawning, call `file_reservation_paths` for each task's inferred file scope with `exclusive: true` and a TTL of 7200 seconds. If any reservation returns `conflicts`, re-sequence the conflicting task into a later wave.
 
@@ -92,10 +94,10 @@ file_reservation_paths parameters:
   paths: ["src/api/*.py", "tests/test_api.py"]  (task's inferred file scope)
   ttl_seconds: 7200
   exclusive: true
-  reason: "Task {N.M}: {task_title}"
+  reason: "Task {slug}: {task_title}"
 ```
 
-For each task in the wave (after reservations clear), spawn a Task sub-agent with worktree isolation:
+For each claimed task in the wave (after reservations clear), spawn a Task sub-agent with worktree isolation:
 
 ```
 Task tool parameters:
@@ -103,7 +105,7 @@ Task tool parameters:
   isolation: "worktree"
   mode: "bypassPermissions"
   prompt: <sub-agent prompt template below>
-  description: "Task {N.M}: {task_title}"
+  description: "Task {slug}: {task_title}"
   run_in_background: true  (for all but the last task in the wave)
 ```
 
@@ -113,35 +115,34 @@ Spawn ALL sub-agents in a single message (parallel tool calls) for maximum concu
 
 ### 6c.2: Sub-agent Prompt Template
 
-Each sub-agent receives:
+Each sub-agent receives the compiled task spec from `maestro_task_next`:
 
 ```
 You are executing a single task from a maestro implementation plan.
 
 ## Your Task
-Phase {N}, Task {M}: {task_title}
+{task_slug}: {task_title}
 
-### Sub-tasks
-{list of sub-tasks from plan.md}
+### Spec
+{compiled task spec from maestro_task_next}
 
 ## Context
-- Track spec: Read `.maestro/tracks/{track_id}/spec.md`
-- Workflow methodology: Read `.maestro/context/workflow.md`
-- Tech stack: Read `.maestro/context/tech-stack.md`
-- Guidelines: Read `.maestro/context/guidelines.md` (if exists)
+- Feature plan: Read `.maestro/features/<feature-name>/plan.md`
+- Memory: Read relevant entries from `.maestro/memory/` and `.maestro/features/<feature-name>/memory/`
 
 ## Instructions
 Follow the {TDD/ship-fast} methodology:
-{methodology steps from workflow.md}
+{methodology steps}
 
 ## Constraints
 - You MUST NOT run git commit, git add, or any git write operations
-- You MUST NOT modify .maestro/ files (plan.md, metadata.json, notepad.md)
+- You MUST NOT modify .maestro/ files
 - You MUST NOT run br/bv commands
+- You MUST NOT call maestro MCP tools (task state is managed by the main session)
 - You MUST NOT call agent-mail MCP tools (file reservations are managed by the main session)
 - You CAN read any file, write new files, edit existing files, and run tests
 - You CAN install dependencies if needed (but prefer existing stack)
-- After completing all sub-tasks, report what you changed and test results
+- After completing all work, report what you changed and test results
 
 ## Deliverable
 When done, provide:
@@ -209,22 +210,17 @@ git add {all_changed_files}
 git commit -m "{type}({scope}): {description} [parallel: tasks {list}]"
 ```
 
-One commit per wave. Include `[parallel: tasks N.M, N.K]` suffix to indicate which tasks were parallelized.
+One commit per wave. Include `[parallel: tasks {slug1}, {slug2}]` suffix to indicate which tasks were parallelized.
 
-### 6d.4: Update Plan State
+### 6d.4: Update Task State
 
 For each successfully completed task in the wave:
 
-1. Edit `plan.md`: Change task marker from `[ ]` to `[x] {sha}` (first 7 characters of the wave commit hash)
-2. **BR mirror**: If `metadata.json` has `beads_epic_id`, close the corresponding BR issues:
+1. Call `maestro_task_done` with the task ID and a summary including the commit SHA
+2. **BR mirror**: If `feature.json` has `beads_epic_id`, close the corresponding BR issues:
    ```bash
    br close {issue_id} --reason "sha:{sha7} | parallel wave" --suggest-next --json
    ```
-
-```bash
-git add .maestro/tracks/{track_id}/plan.md
-git commit -m "maestro(plan): mark wave tasks complete [parallel]"
-```
 
 ### 6d.5: Clean Up Worktrees and Reservations
 
@@ -257,7 +253,7 @@ If a sub-agent fails (returns error or produces broken code):
 
 1. Log the failure:
    ```
-   [!] Sub-agent for Task {N.M} failed: {error summary}
+   [!] Sub-agent for Task {slug} failed: {error summary}
    --> Retrying sequentially in main session
    ```
 2. Queue the task for sequential execution using the single-agent protocol
@@ -299,39 +295,39 @@ git worktree prune
 
 ## Worked Example: Parallel Execution
 
-**Track**: "Add REST API endpoints for user management"
-**Phase 2** has 5 tasks:
-- Task 2.1: Create GET /users endpoint
-- Task 2.2: Create GET /users/:id endpoint
-- Task 2.3: Create POST /users endpoint
-- Task 2.4: Add input validation middleware
-- Task 2.5: Add pagination to GET /users
+**Feature**: "Add REST API endpoints for user management"
+**Tasks** (from `maestro_task_next` / `maestro_task_list`):
+- 01-get-users: Create GET /users endpoint
+- 02-get-user-by-id: Create GET /users/:id endpoint
+- 03-post-users: Create POST /users endpoint
+- 04-validation-middleware: Add input validation middleware
+- 05-pagination: Add pagination to GET /users
 
 **Dependency analysis:**
 
 ```
-Task 2.1: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
-Task 2.2: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
-Task 2.3: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
-Task 2.4: Modifies src/middleware/validation.ts                  | no deps
-Task 2.5: Modifies src/routes/users.ts (depends on 2.1 output)  | depends on 2.1
+01-get-users: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+02-get-user-by-id: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+03-post-users: Modifies src/routes/users.ts, tests/users.test.ts     | no deps
+04-validation-middleware: Modifies src/middleware/validation.ts                  | no deps
+05-pagination: Modifies src/routes/users.ts (depends on 01 output)  | depends on 01
 
-[!] Tasks 2.1, 2.2, 2.3 all modify src/routes/users.ts
+[!] Tasks 01, 02, 03 all modify src/routes/users.ts
 --> File scope overlap detected. Cannot parallelize all three.
 ```
 
 **Wave assignment:**
 
 ```
-[ok] Phase 2 parallelism analysis:
-  Wave 1 (parallel): Task 2.1, Task 2.4
-    - 2.1: src/routes/users.ts (GET /users only)
-    - 2.4: src/middleware/validation.ts (no overlap)
-  Wave 2 (parallel): Task 2.2, Task 2.3
+[ok] Parallelism analysis:
+  Wave 1 (parallel): 01-get-users, 04-validation-middleware
+    - 01: src/routes/users.ts (GET /users only)
+    - 04: src/middleware/validation.ts (no overlap)
+  Wave 2 (parallel): 02-get-user-by-id, 03-post-users
     - Both touch users.ts but in different handler functions
     - Acceptable risk -- hunks unlikely to overlap
-  Wave 3 (sequential): Task 2.5
-    - Depends on 2.1 (needs the GET /users handler to add pagination)
+  Wave 3 (sequential): 05-pagination
+    - Depends on 01 (needs the GET /users handler to add pagination)
   --> 4 tasks parallel across 2 waves, 1 sequential
 ```
 
@@ -339,54 +335,60 @@ Task 2.5: Modifies src/routes/users.ts (depends on 2.1 output)  | depends on 2.1
 
 ```
 --- Wave 1 ---
-Spawning sub-agent: Task 2.1 (GET /users) [worktree: .claude/worktrees/task-2.1]
-Spawning sub-agent: Task 2.4 (validation) [worktree: .claude/worktrees/task-2.4]
+maestro_task_claim("01-get-users")
+maestro_task_claim("04-validation-middleware")
+Spawning sub-agent: 01-get-users [worktree: .claude/worktrees/01-get-users]
+Spawning sub-agent: 04-validation-middleware [worktree: .claude/worktrees/04-validation-middleware]
 
-[ok] Task 2.4 complete: src/middleware/validation.ts created, 6 tests pass
-[ok] Task 2.1 complete: GET /users handler added, 4 tests pass
+[ok] 04-validation-middleware complete: src/middleware/validation.ts created, 6 tests pass
+[ok] 01-get-users complete: GET /users handler added, 4 tests pass
 
 Merging wave 1...
-  git merge --no-commit worktree/task-2.1  [ok]
-  git merge --no-commit worktree/task-2.4  [ok]
+  git merge --no-commit worktree/01-get-users  [ok]
+  git merge --no-commit worktree/04-validation-middleware  [ok]
   CI=true bun test  [ok] 10 new tests pass, 0 regressions
-  git commit -m "feat(api): add GET /users and validation middleware [parallel: 2.1, 2.4]"
-[x] Wave 1 complete (sha: m1n2o3p)
+  git commit -m "feat(api): add GET /users and validation middleware [parallel: 01-get-users, 04-validation-middleware]"
+maestro_task_done("01-get-users", summary: "GET /users handler (sha: m1n2o3p)")
+maestro_task_done("04-validation-middleware", summary: "Validation middleware (sha: m1n2o3p)")
 
 --- Wave 2 ---
-Spawning sub-agent: Task 2.2 (GET /users/:id)
-Spawning sub-agent: Task 2.3 (POST /users)
+maestro_task_claim("02-get-user-by-id")
+maestro_task_claim("03-post-users")
+Spawning sub-agent: 02-get-user-by-id
+Spawning sub-agent: 03-post-users
 
-[ok] Task 2.2 complete: 3 tests pass
-[!] Task 2.3 failed: "Cannot find module '../models/user'"
+[ok] 02-get-user-by-id complete: 3 tests pass
+[!] 03-post-users failed: "Cannot find module '../models/user'"
 --> Sub-agent needed a model that doesn't exist yet.
---> Queuing Task 2.3 for sequential retry.
+--> Queuing 03-post-users for sequential retry.
 
 Merging wave 2 (partial)...
-  git merge --no-commit worktree/task-2.2  [ok]
+  git merge --no-commit worktree/02-get-user-by-id  [ok]
   CI=true bun test  [ok]
-  git commit -m "feat(api): add GET /users/:id [parallel: 2.2]"
-[x] Task 2.2 complete (sha: q4r5s6t)
+  git commit -m "feat(api): add GET /users/:id [parallel: 02-get-user-by-id]"
+maestro_task_done("02-get-user-by-id", summary: "GET /users/:id handler (sha: q4r5s6t)")
 
---- Task 2.3 (sequential retry) ---
+--- Task 03-post-users (sequential retry) ---
 Executing in main session with full context...
 Created src/models/user.ts (was missing from task scope)
 Created POST /users handler
 [ok] 5 tests pass
-[x] Task 2.3 complete (sha: u7v8w9x)
+maestro_task_done("03-post-users", summary: "POST /users handler + user model (sha: u7v8w9x)")
 
 --- Wave 3 ---
-Task 2.5: Adding pagination to GET /users (sequential, depends on 2.1)
+maestro_task_claim("05-pagination")
+05-pagination: Adding pagination to GET /users (sequential, depends on 01)
 [ok] 3 tests pass
-[x] Task 2.5 complete (sha: y0z1a2b)
+maestro_task_done("05-pagination", summary: "Pagination for GET /users (sha: y0z1a2b)")
 
---- Phase 2 Complete ---
+--- All tasks done ---
 ```
 
 ---
 
 ## Phase Completion
 
-After all waves in a phase complete (all tasks verified and committed), run the standard Phase Completion Protocol from `reference/phase-completion.md`.
+After all tasks are done (all tasks verified and committed), run the standard Phase Completion Protocol from `reference/phase-completion.md`.
 
 The phase completion check runs against the main worktree, which now contains all merged results from parallel sub-agents.
 

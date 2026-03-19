@@ -23,13 +23,13 @@ Every interview step follows this protocol:
 3. **Ask questions.** If interactive, ask sequentially. Pre-fill defaults from inferences when available.
 4. **Generate the file.** Write using the template from `reference/templates.md`.
 5. **Verify with user.** Display the file. Ask for corrections. Loop until confirmed.
-6. **Write state.** Record completion in `setup_state.json`.
+6. **Save to memory.** Write via `maestro memory-write --global --key <key>` (CLI) or `maestro_memory_write` (MCP).
 
 ---
 
 ## Product Definition Interview (Step 6)
 
-Generates `.maestro/context/product.md`.
+Saves to global memory with key `product`.
 
 ### Choice
 
@@ -79,15 +79,15 @@ Options:
 
 ### Verification
 
-Display the generated `product.md`. Ask: "Does this accurately describe your project?"
-- Confirmed --> write state, continue.
+Display the generated `product` memory entry. Ask: "Does this accurately describe your project?"
+- Confirmed --> continue.
 - Needs changes --> ask what to change, edit, re-display.
 
 ---
 
 ## Tech Stack Interview (Step 7)
 
-Generates `.maestro/context/tech-stack.md`.
+Saves to global memory with key `tech-stack`.
 
 ### Choice
 
@@ -137,7 +137,7 @@ Sub-questions (ask only what's relevant):
 
 ### Verification
 
-Display the generated `tech-stack.md`. Confirm with user. Pay special attention to:
+Display the generated `tech-stack` memory entry. Confirm with user. Pay special attention to:
 - Are the **development commands** correct? (`test`, `lint`, `build`, `dev`)
 - Is the **package manager** right? (wrong package manager = broken `maestro:implement`)
 
@@ -145,7 +145,7 @@ Display the generated `tech-stack.md`. Confirm with user. Pay special attention 
 
 ## Coding Guidelines Interview (Step 8)
 
-Generates `.maestro/context/guidelines.md`.
+Saves to global memory with key `guidelines`.
 
 ### Choice
 
@@ -190,7 +190,7 @@ Options:
 
 ### Verification
 
-Display `guidelines.md`. Check:
+Display `guidelines` memory entry. Check:
 - Do the guidelines match what the user actually does? (Not aspirational rules they ignore.)
 - Are there contradictions between guidelines and existing code? (Flag them.)
 
@@ -198,7 +198,7 @@ Display `guidelines.md`. Check:
 
 ## Product Guidelines Interview (Step 9)
 
-Generates `.maestro/context/product-guidelines.md`.
+Saves to global memory with key `product-guidelines`.
 
 ### Skip Condition
 
@@ -215,10 +215,10 @@ When skip conditions are detected, default the selection to "Skip" but still all
 Ask the user: "How would you like to define product guidelines (voice, tone, UX principles, branding)?"
 Options:
 - **Interactive** -- Answer questions about brand voice and UX principles
-- **Autogenerate** -- I'll generate sensible defaults based on the product type _(only if product.md exists)_
+- **Autogenerate** -- I'll generate sensible defaults based on the product type _(only if product memory exists)_
 - **Skip** -- No product guidelines needed for this project
 
-If **Skip**: write a minimal placeholder file:
+If **Skip**: write a minimal placeholder:
 ```markdown
 # Product Guidelines
 
@@ -270,13 +270,13 @@ Options:
 
 ### Verification
 
-Display `product-guidelines.md`. If the product is a developer tool, verify the voice section does not describe consumer-app tone (common autogenerate error).
+Display `product-guidelines` memory entry. If the product is a developer tool, verify the voice section does not describe consumer-app tone (common autogenerate error).
 
 ---
 
 ## Workflow Configuration Interview (Step 10)
 
-Generates `.maestro/context/workflow.md`. Source of truth for how `/maestro:implement` executes tasks.
+Saves to global memory with key `workflow`. Source of truth for how `/maestro:implement` executes tasks.
 
 ### Choice
 
@@ -357,16 +357,16 @@ Ask: "I'll use these default commands. Any changes?"
 
 ### Verification
 
-Display `workflow.md`. Critical checks:
+Display `workflow` memory entry. Critical checks:
 - **Test command must work.** If the test command is wrong, `maestro:implement` will fail on every task.
 - **Lint command must exist.** If there's no linter configured, note "No linter configured" rather than guessing.
 - **Coverage command must match test framework.** `jest --coverage` vs `pytest --cov` vs `cargo tarpaulin`.
 
-Write `workflow.md` using the template from `reference/workflow-template.md`.
+Write `workflow` using the template from `reference/workflow-template.md`.
 
 ---
 
-## Code Style Guides (Step 12, Optional)
+## Code Style Guides (Step 11, Optional)
 
 Available guides in `reference/styleguides/`:
 - `python.md`, `typescript.md`, `javascript.md`, `go.md`, `general.md`, `cpp.md`, `csharp.md`, `dart.md`, `html-css.md`
@@ -397,12 +397,12 @@ Options:
 - **Skip** -- No code style guides needed
 
 If yes (any variant):
-1. `mkdir -p .maestro/context/code_styleguides`
-2. Copy selected guide files from `reference/styleguides/` to `.maestro/context/code_styleguides/`
+1. `mkdir -p .maestro/memory/code_styleguides`
+2. Copy selected guide files from `reference/styleguides/` to `.maestro/memory/code_styleguides/`
 
 ---
 
-## First Track (Step 14, Optional)
+## First Feature (Step 13, Optional)
 
 ### Decision Guidance
 
@@ -412,25 +412,25 @@ Recommend "Yes" if:
 
 Recommend "Skip" if:
 - User is just exploring maestro
-- User said they'll create tracks later
+- User said they'll create features later
 - Setup is being run as part of a larger onboarding process
 
 ### Question
 
-Ask the user: "Would you like to create the first track now? A track represents a feature, bug fix, or other unit of work."
+Ask the user: "Would you like to create the first feature now? A feature represents a unit of work -- a feature, bug fix, or other change."
 Options:
-- **Yes, create a track** -- I'll describe a feature or task to start
-- **Skip** -- I'll create tracks later with /maestro:new-track
+- **Yes, create a feature** -- I'll describe a feature or task to start
+- **Skip** -- I'll create features later with `maestro feature-create`
 
 ### If Yes
 
-Ask the user: "Describe the feature, bug fix, or task for the first track. Be as specific as you like."
+Ask the user: "Describe the feature, bug fix, or task. Be as specific as you like."
 
-Use the description to generate a track slug (kebab-case, max 5 words). Create `spec.md`, `plan.md`, `metadata.json`, `index.md` in `.maestro/tracks/{slug}/` and register in `.maestro/tracks.md`. See `reference/templates.md` for file formats.
+Use the description to create a feature via `maestro feature-create` (CLI) or `maestro_feature_create` (MCP). The feature name should be kebab-case, max 5 words.
 
 ### Verification
 
-If a track was created:
-1. Display the generated `spec.md` for confirmation.
-2. Confirm the slug is readable and descriptive.
-3. Confirm the track appears in `.maestro/tracks.md`.
+If a feature was created:
+1. Display the feature info for confirmation.
+2. Confirm the name is readable and descriptive.
+3. Confirm the feature appears in `maestro feature-list`.

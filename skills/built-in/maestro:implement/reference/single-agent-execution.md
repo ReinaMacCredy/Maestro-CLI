@@ -3,43 +3,41 @@
 ## When to Use
 
 Single-agent mode is the default. Use it when:
-- Track has 1-3 tasks
+- Feature has 1-3 tasks
 - All tasks are sequential (each depends on the previous)
 - Tasks touch heavily overlapping files
 - You want maximum control and review between each task
 
 ## Task Execution Loop
 
-For each task in the queue, follow the workflow methodology from `workflow.md`.
+For each task, use the maestro task lifecycle: claim, execute, done.
 
 **Loop structure:**
 ```
-for each phase in plan:
-  for each task in phase:
-    6a.1: Mark in progress
-    6a.2-6a.4: Red-Green-Refactor (TDD) or Implement-Test (ship-fast)
-    6a.5-6a.6: Verify coverage and compliance
-    6a.7-6a.9: Commit, attach summary, record SHA
-  end
-  Phase Completion Protocol
+for each task from maestro_task_next:
+  6a.1: Claim the task
+  6a.2-6a.4: Red-Green-Refactor (TDD) or Implement-Test (ship-fast)
+  6a.5-6a.6: Verify coverage and compliance
+  6a.7-6a.9: Commit, attach summary, mark done
 end
+Phase Completion Protocol (after last task in a phase)
 ```
 
 ---
 
 ## TDD Methodology
 
-### 6a.1: Mark Task In Progress
+### 6a.1: Claim the Task
 
-Edit `plan.md`: Change task checkbox from `[ ]` to `[~]`.
+Call `maestro_task_claim` (MCP) or `maestro task-claim` (CLI) with the task ID returned by `maestro_task_next`. This transitions the task from `pending` to `claimed`.
 
-**Deferred context**: If deferred context (workflow.md, tech-stack.md) has not been loaded yet, load it now before executing the first task.
+**Deferred context**: If deferred context (memory entries, tech-stack notes) has not been loaded yet, load it now before executing the first task.
 
 If `br_enabled`: see BR Mirror Protocol below.
 
 ### 6a.2: Red Phase -- Write Failing Tests
 
-1. Identify what to test based on task description and spec
+1. Identify what to test based on the task spec (compiled by `maestro_task_next`)
 2. Create test file if it doesn't exist
 3. Write tests defining expected behavior
 4. Run test suite:
@@ -69,7 +67,7 @@ If `br_enabled`: see BR Mirror Protocol below.
 
 ### 6a.5: Verify Coverage
 
-If `workflow.md` specifies a coverage threshold:
+If the project specifies a coverage threshold:
 ```bash
 CI=true {coverage_command}
 ```
@@ -78,11 +76,11 @@ Check that new code meets the threshold. If not, add more tests.
 
 ### 6a.6: Check Tech Stack Compliance
 
-If the task introduced a new library or technology not in `tech-stack.md`:
+If the task introduced a new library or technology not established in the project:
 1. STOP implementation
 2. Inform user: "This task uses {new_tech} which isn't in the tech stack."
 3. Ask: Add to tech stack or find an alternative?
-4. If approved: update `.maestro/context/tech-stack.md`
+4. If approved: record the decision via `maestro_memory_write`
 5. Resume
 
 ### 6a.7: Commit Code Changes
@@ -100,7 +98,7 @@ Commit message format:
 
 ### 6a.8: Attach Summary (if configured)
 
-If `workflow.md` specifies git notes:
+If git notes are configured:
 ```bash
 git notes add -m "Task: {task_name}
 Phase: {phase_number}
@@ -114,45 +112,49 @@ If commit messages: include summary in the commit message body.
 
 If the task produced a non-obvious decision, constraint, or learning during implementation:
 
-1. Append a bullet to `## Working Memory` in `.maestro/notepad.md`
-2. Format: `- [{date}] [{track_id}:{task_name}] {insight}`
+1. Write it to memory via `maestro_memory_write` (MCP) or `maestro memory-write` (CLI)
+2. Format: `[{date}] [{feature-name}:{task_name}] {insight}`
 3. Only capture durable insights -- not routine status. Skip if nothing notable.
 
-### 6a.9: Record Task SHA
+### 6a.9: Mark Task Done
 
-Edit `plan.md`: Change task marker from `[~]` to `[x] {sha}` (first 7 characters of commit hash). Do NOT commit plan.md here -- plan state changes are batched and committed at phase completion.
+Call `maestro_task_done` (MCP) or `maestro task-done` (CLI) with the task ID and a summary of changes. This transitions the task from `claimed` to `done`.
+
+Include the commit SHA in the summary for traceability.
 
 If `br_enabled`: see BR Mirror Protocol below.
+
+After marking done, call `maestro_task_next` to get the next runnable task.
 
 ---
 
 ## Ship-fast Methodology
 
 Same flow but reordered:
-1. Mark in progress
+1. Claim the task (`maestro_task_claim`)
 2. Implement the feature/fix
 3. Write tests covering the implementation
 4. Run tests, verify passing
-5. Commit, attach summary, record SHA
+5. Commit, attach summary, mark done (`maestro_task_done`)
 
 ---
 
 ## Worked Example: Single-Agent TDD
 
-**Track**: "Add user email validation"
-**Plan**: Phase 1 has 3 tasks:
-- Task 1.1: Create email validator module
-- Task 1.2: Integrate validator into registration form
-- Task 1.3: Add error messages for invalid emails
+**Feature**: "Add user email validation"
+**Tasks** (from `maestro_task_next`):
+- Task 01-create-email-validator: Create email validator module
+- Task 02-integrate-validator: Integrate validator into registration form
+- Task 03-add-error-messages: Add error messages for invalid emails
 
 **Execution flow:**
 
 ```
-[ok] Starting Track: add-user-email-validation (single-agent mode)
-[ok] Loaded plan.md (3 tasks, 1 phase)
+[ok] Starting Feature: add-user-email-validation (single-agent mode)
+[ok] Called maestro_task_next -- returned task 01-create-email-validator
 
---- Task 1.1: Create email validator module ---
-[~] Marked in progress
+--- Task 01: Create email validator module ---
+[ok] maestro_task_claim("01-create-email-validator") -- claimed
 RED:   Created tests/email-validator.test.ts
        - rejects empty string
        - rejects missing @
@@ -168,10 +170,12 @@ REFACTOR: Extracted regex to named constant. Tests still pass.
 
 COMMIT: git add src/utils/email-validator.ts tests/email-validator.test.ts
         git commit -m "feat(validation): add email validator module"
-[x] Task 1.1 complete (sha: a1b2c3d)
+[ok] maestro_task_done("01-create-email-validator", summary: "Added email validator (sha: a1b2c3d)")
 
---- Task 1.2: Integrate validator into registration form ---
-[~] Marked in progress
+--- maestro_task_next --> task 02-integrate-validator ---
+
+--- Task 02: Integrate validator into registration form ---
+[ok] maestro_task_claim("02-integrate-validator") -- claimed
 RED:   Added test in tests/registration.test.ts
        - form rejects invalid email on submit
        Run: CI=true bun test tests/registration.test.ts
@@ -182,10 +186,12 @@ GREEN: Imported validator in src/routes/register.ts
        [ok] All tests PASS
 
 COMMIT: git commit -m "feat(registration): integrate email validation"
-[x] Task 1.2 complete (sha: d4e5f6g)
+[ok] maestro_task_done("02-integrate-validator", summary: "Integrated validation (sha: d4e5f6g)")
 
---- Task 1.3: Add error messages for invalid emails ---
-[~] Marked in progress
+--- maestro_task_next --> task 03-add-error-messages ---
+
+--- Task 03: Add error messages for invalid emails ---
+[ok] maestro_task_claim("03-add-error-messages") -- claimed
 RED:   Added tests for error message rendering
        [ok] Tests FAIL (no error UI exists)
 
@@ -193,9 +199,11 @@ GREEN: Added error display component
        [ok] Tests PASS
 
 COMMIT: git commit -m "feat(registration): add validation error messages"
-[x] Task 1.3 complete (sha: h7i8j9k)
+[ok] maestro_task_done("03-add-error-messages", summary: "Added error messages (sha: h7i8j9k)")
 
---- Phase 1 Completion ---
+--- maestro_task_next --> no more tasks ---
+
+--- Phase Completion ---
 [ok] Full test suite: 47 tests, all passing
 [ok] Coverage: 94% (threshold: 80%)
 Presenting manual verification plan to user...
@@ -208,25 +216,25 @@ Presenting manual verification plan to user...
 ### Test Won't Pass After 3 Attempts
 
 ```
-[!] Task 1.2 test "form rejects invalid email" fails after 3 fix attempts.
+[!] Task 02-integrate-validator test "form rejects invalid email" fails after 3 fix attempts.
     Error: TypeError: validator.validate is not a function
 --> STOPPING. Asking user for help.
 ```
 
 Possible causes:
 - Spec is ambiguous about the expected API
-- Task 1.1 produced a different interface than Task 1.2 expects
+- Task 01 produced a different interface than Task 02 expects
 - Missing dependency or import issue
 
 Recovery: Ask user to clarify, then fix and continue. Do NOT skip the task.
 
 ### Build Breaks on Later Task
 
-If Task 1.3 breaks code from Task 1.1:
+If Task 03 breaks code from Task 01:
 
 1. Run the full test suite to identify all failures
-2. Determine if the break is in Task 1.3's changes or a latent issue
-3. If Task 1.3 caused it: fix within Task 1.3 before committing
+2. Determine if the break is in Task 03's changes or a latent issue
+3. If Task 03 caused it: fix within Task 03 before committing
 4. If latent issue: create a fix sub-task, execute it, then continue
 
 ### Unexpected Behavior Already Exists
@@ -234,13 +242,13 @@ If Task 1.3 breaks code from Task 1.1:
 If the Red phase shows tests already passing:
 
 ```
-[!] Task 1.1 tests pass immediately -- email validator already exists.
+[!] Task 01 tests pass immediately -- email validator already exists.
 --> Behavior already implemented. Checking if it matches spec...
 ```
 
 1. Read the existing implementation
 2. Compare against the spec
-3. If matches: mark task complete, note in task notes
+3. If matches: mark task done with a note, skip implementation
 4. If differs: write tests for the MISSING behavior, then implement
 
 ---
@@ -249,7 +257,7 @@ If the Red phase shows tests already passing:
 
 Only applies when `br_enabled` (set in Step 4.5 of SKILL.md).
 
-### On task start (6a.1)
+### On task claim (6a.1)
 
 Claim the corresponding BR issue:
 
@@ -257,9 +265,9 @@ Claim the corresponding BR issue:
 br update {issue_id} --claim --json
 ```
 
-Look up `{issue_id}` from `metadata.json` `beads_issue_map` using the task key (e.g., `P1T1`).
+Look up `{issue_id}` from `feature.json` `beads_issue_map` using the task key (e.g., `P1T1`).
 
-### On task complete (6a.9)
+### On task done (6a.9)
 
 Close the corresponding BR issue:
 
@@ -267,4 +275,4 @@ Close the corresponding BR issue:
 br close {issue_id} --reason "sha:{sha7} | tests pass | {evidence}" --suggest-next --json
 ```
 
-Look up `{issue_id}` from `metadata.json` `beads_issue_map`. The `--suggest-next` flag returns newly unblocked issues.
+Look up `{issue_id}` from `feature.json` `beads_issue_map`. The `--suggest-next` flag returns newly unblocked issues.

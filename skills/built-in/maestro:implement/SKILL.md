@@ -1,21 +1,21 @@
 ---
 name: maestro:implement
-description: "Execute track tasks following TDD workflow. Single-agent by default, --team for parallel Agent Teams, Sub Agent Parallels. Use when ready to implement a planned track."
-argument-hint: "[<track-name>] [--team] [--parallel]"
+description: "Execute feature tasks following TDD workflow. Single-agent by default, --team for parallel Agent Teams, Sub Agent Parallels. Use when ready to implement a planned feature."
+argument-hint: "[<feature-name>] [--team] [--parallel]"
 ---
 
 # Implement -- Task Execution Engine
 
-Execute tasks from a track's implementation plan, following the configured workflow methodology (TDD or ship-fast). Supports single-agent mode (default), team mode (`--team`), and parallel mode (`--parallel`).
+Execute tasks from a feature's implementation plan, following the configured workflow methodology (TDD or ship-fast). Supports single-agent mode (default), team mode (`--team`), and parallel mode (`--parallel`).
 
 ## Arguments
 
 `$ARGUMENTS`
 
-- `<track-name>`: Match track by name or ID substring. Optional -- auto-selects if only one track is pending.
+- `<feature-name>`: Match feature by name or substring. Optional -- auto-selects if only one feature is in the executing state.
 - `--team`: Enable team mode with parallel workers (kraken/spark).
 - `--parallel`: Enable parallel mode with Task sub-agents in isolated worktrees.
-- `--resume`: Skip already-completed tasks (marked `[x]`) and continue from next `[ ]` task.
+- `--resume`: Skip already-completed tasks (state `done`) and continue from the next `pending` task.
 
 ---
 
@@ -68,8 +68,8 @@ MODE SELECTION CHECKLIST
 ```
 
 ```
-[!] --team specified but only 2 tasks in this track.
---> Single-agent mode is more efficient for small tracks. Proceed with --team anyway? (y/n)
+[!] --team specified but only 2 tasks in this feature.
+--> Single-agent mode is more efficient for small features. Proceed with --team anyway? (y/n)
 ```
 
 ### 1c: Mode Comparison
@@ -80,16 +80,16 @@ MODE SELECTION CHECKLIST
 | Isolation | None (main worktree) | Git worktree per sub-agent | Shared worktree, task-level isolation |
 | Who commits | Main session | Main session (after merge) | Orchestrator (after verification) |
 | Failure recovery | Fix inline, retry | Retry failed task sequentially | Reassign or fix task |
-| Best for | Small tracks, tight dependencies | Medium tracks, independent tasks | Large tracks, complex tasks |
+| Best for | Small features, tight dependencies | Medium features, independent tasks | Large features, complex tasks |
 | Overhead | None | Worktree setup + merge | Team setup + monitoring |
 
 ---
 
-## Step 2: Track Selection
+## Step 2: Feature Selection
 
-1. Read `.maestro/tracks.md`. Parse status markers: `[ ]` = new, `[~]` = in-progress, `[x]` = complete. Support both `- [ ] **Track:` and legacy `## [ ] Track:` formats.
-2. **If track name given**: Match by exact ID or case-insensitive substring on description. If multiple matches, ask user.
-3. **If no track name**: Filter `[ ]`/`[~]` tracks. 0 = error, 1 = auto-select, multiple = ask user.
+1. Call `maestro_feature_list` (MCP) or `maestro feature-list` (CLI) to list all features. Filter for features with status `approved` or `executing`.
+2. **If feature name given**: Match by exact name or case-insensitive substring on description. If multiple matches, ask user.
+3. **If no feature name**: Filter features with status `approved` or `executing`. 0 = error, 1 = auto-select, multiple = ask user.
 4. **Confirm selection**: Ask user to start or cancel.
 
 ## Step 3: Load Context
@@ -97,49 +97,46 @@ MODE SELECTION CHECKLIST
 Load context in tiers to minimize upfront token cost:
 
 ### Essential (load immediately)
-1. Read track plan: `.maestro/tracks/{track_id}/plan.md`
-2. Read track spec: `.maestro/tracks/{track_id}/spec.md`
+1. Read feature plan: `.maestro/features/<feature-name>/plan.md`
+2. Call `maestro_status` to get current feature state
 
 ### Deferred (load at first task start)
-3. Read workflow config: `.maestro/context/workflow.md`
-4. Read tech stack: `.maestro/context/tech-stack.md`
+3. Read project memory: `maestro_memory_list` to discover relevant memory entries
+4. Read feature-specific memory: `.maestro/features/<feature-name>/memory/` (if exists)
 
 ### On-demand (load only if relevant to current task)
-5. Read guidelines: `.maestro/context/guidelines.md` (if exists)
-6. Read code style guides: `.maestro/context/code_styleguides/` (if exists)
-7. Note matched skills from `.maestro/tracks/{track_id}/metadata.json` `"skills"` array. Reference their guidance when relevant to current task (skill descriptions are already in runtime context). **Graceful degradation**: if missing/empty, proceed without.
-8. Read `.maestro/notepad.md` (if exists). Extract `## Priority Context` bullets. These are injected as constraints into task execution context. **Graceful degradation**: if missing or empty, skip.
+5. Read any relevant memory entries via `maestro_memory_read`
+6. Note matched skills from `feature.json` `"skills"` array. Reference their guidance when relevant to current task (skill descriptions are already in runtime context). **Graceful degradation**: if missing/empty, proceed without.
 
-## Step 4: Update Track Status
+## Step 4: Update Feature Status
 
-Edit `.maestro/tracks.md`: `[ ]` --> `[~]`. Update `metadata.json`: `"status": "in_progress"`.
+Call `maestro_status` to check current feature state. If the feature is in `approved` status, it will transition to `executing` when the first task is claimed.
 
 ## Step 4.5: BR Check
 
-**BR check**: If `metadata.json` has `beads_epic_id`, set `br_enabled=true`. All BR operations below only apply when `br_enabled`. See `reference/br-integration.md` for commands.
+**BR check**: If `feature.json` has `beads_epic_id`, set `br_enabled=true`. All BR operations below only apply when `br_enabled`. See `reference/br-integration.md` for commands.
 
 If `br_enabled` and `.beads/` does not exist: `br init --prefix maestro --json`.
 
 ## Step 5: Build Task Queue
 
-Parse `plan.md`: identify phases (`## Phase N`), tasks (`### Task N.M`), sub-tasks (`- [ ] ...`).
-If `--resume`: skip tasks already marked `[x]`.
+Call `maestro_task_next` (MCP) or `maestro task-next` (CLI) to get the next runnable task with its compiled spec. This replaces manual plan parsing -- maestro manages task state, dependency resolution, and ordering.
+
+If `--resume`: `maestro_task_next` automatically skips tasks in `done` state and returns the next `pending` task with all dependencies satisfied.
 
 ### Task Dependency Resolution
 
-Dependencies are resolved in this priority order:
+Dependencies are resolved by maestro in this priority order:
 
 1. **BR dependencies** (if `br_enabled`): Use `bv -robot-plan -label "track:{epic_id}" -format json` to get dependency-respecting execution order. This is the most reliable source because dependencies are explicit.
-2. **Plan structure**: Tasks within a phase execute in document order. Phases execute sequentially. Cross-phase tasks are always sequential.
-3. **Inferred dependencies**: If a task's description references output from another task (e.g., "using the API from Task 1.1"), treat it as a dependency even if not explicitly marked.
+2. **maestro task graph**: `maestro_task_next` respects task dependencies defined during `maestro_tasks_sync`. Tasks are returned in dependency-respecting order.
+3. **Stale claim detection**: Claims expire after the configured timeout (default 120 minutes). Expired claims are automatically reset to `pending` when `maestro_task_next` is called.
 
 **Dependency conflict detection:**
 ```
-[!] Task 2.3 references "the schema from Task 2.1" but plan.md lists them as independent.
---> Treating Task 2.3 as dependent on Task 2.1. Adjust wave assignment.
+[!] Task 2.3 references "the schema from Task 2.1" but they are listed as independent.
+--> Treating Task 2.3 as dependent on Task 2.1. Adjust execution order.
 ```
-
-If `br_enabled` and `--resume`: use `br list --status open --label "phase:{N}" --json` to identify remaining work. Fall back to plan.md parsing if `bv` is unavailable.
 
 ---
 
@@ -170,10 +167,10 @@ See `reference/team-mode.md` for full protocol: team creation, task delegation, 
 
 ---
 
-## Step 8: Track Completion
+## Step 8: Feature Completion
 
-When ALL phases are complete, run the Track Completion Protocol.
-See `reference/track-completion.md` for details (mark complete, skill effectiveness recording, cleanup, final commit, summary).
+When ALL tasks are done, run the Feature Completion Protocol.
+See `reference/feature-completion.md` for details (mark complete, skill effectiveness recording, cleanup, final commit, summary).
 
 ---
 
@@ -224,17 +221,17 @@ FAILURE TRIAGE
 
 ### Stale Task Recovery
 
-If `maestro status` shows a task stuck in `[~]` (in-progress) with no active worker:
+If `maestro_status` shows a task stuck in `claimed` state with no active worker:
 
 ```
-[!] Task 2.1 is marked in-progress but no worker is active.
+[!] Task 2.1 is marked claimed but no worker is active.
 --> This is a stale task from a crashed/interrupted session.
 ```
 
 Recovery:
 1. Check if partial work exists (uncommitted files, partial implementation)
 2. If partial work is salvageable: use `--resume` to continue from current state
-3. If partial work is broken: reset to last commit, mark task `[ ]`, re-execute
+3. If partial work is broken: reset to last commit. The stale claim will auto-expire on the next `maestro_task_next` call, resetting the task to `pending`.
 4. If using BR: `br update {issue_id} --status open --json` to unblock downstream
 
 ---
@@ -278,12 +275,14 @@ After each task checkpoint report, ask the operator if they want a Hygienic code
 
 Recommended workflow:
 
-- `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:new-track` -- Create a feature/bug track with spec and plan
-- `/maestro:implement` -- **You are here.** Execute the implementation
-- `/maestro:review` -- Verify implementation correctness
-- `/maestro:status` -- Check progress across all tracks
-- `/maestro:revert` -- Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
+- `maestro_init` / `maestro init` -- Initialize maestro for the project
+- `maestro_feature_create` / `maestro feature-create` -- Create a new feature
+- `maestro_plan_write` / `maestro plan-write` -- Write the implementation plan
+- `maestro_plan_approve` / `maestro plan-approve` -- Approve the plan
+- `maestro_tasks_sync` / `maestro task-sync` -- Generate tasks from the plan
+- **`maestro:implement`** -- **You are here.** Execute the implementation
+- `maestro:review` -- Verify implementation correctness
+- `maestro_status` / `maestro status` -- Check progress
+- `maestro:revert` -- Undo implementation if needed
 
-Implementation consumes the `plan.md` created by `/maestro:new-track`. Each task produces atomic commits, which `/maestro:review` can analyze to verify correctness against the spec. Run `/maestro:status` to check progress mid-implementation, or `/maestro:revert` to undo if something goes wrong.
+Implementation consumes the `plan.md` created during planning. Each task produces atomic commits. Run `maestro_status` to check progress mid-implementation, or `maestro:revert` to undo if something goes wrong.

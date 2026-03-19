@@ -12,8 +12,8 @@ If Beads (BR) is available and initialized, sync the approved plan into BR epics
 - Do NOT initialize BR here -- that is handled by `/maestro:setup` or AGENTS.md detection
 
 ## Context Boundaries
-- Approved plan at `.maestro/tracks/{track_id}/plan.md`
-- metadata.json exists (will be updated with `beads_epic_id` and `beads_issue_map`)
+- Approved plan at `.maestro/features/<feature-name>/plan.md`
+- feature.json exists (will be updated with `beads_epic_id` and `beads_issue_map`)
 - BR sync protocol at the `maestro:implement` skill's `reference/plan-to-br-sync.md`
 
 ## Sync Sequence
@@ -31,11 +31,11 @@ If Beads (BR) is available and initialized, sync the approved plan into BR epics
 3. **Execute Sync**
    Follow the protocol:
    a. Parse plan.md for phases and tasks
-   b. Create BR epic for the track
+   b. Create BR epic for the feature
    c. Create BR issues per task
    d. Set dependencies (sequential within phase, cross-phase)
    e. Validate no circular dependencies
-   f. Store `beads_epic_id` and `beads_issue_map` in metadata.json
+   f. Store `beads_epic_id` and `beads_issue_map` in feature.json
 
 4. **Stage Beads State**
    ```bash
@@ -56,7 +56,7 @@ If Beads (BR) is available and initialized, sync the approved plan into BR epics
 - [ok] Prerequisites checked before attempting sync
 - [ok] Graceful skip when BR not available
 - [ok] Epic and issues created per protocol
-- [ok] metadata.json updated with BR fields (or fields omitted on skip/failure)
+- [ok] feature.json updated with BR fields (or fields omitted on skip/failure)
 - [ok] `.beads/` state flushed for commit
 
 ## Anti-patterns

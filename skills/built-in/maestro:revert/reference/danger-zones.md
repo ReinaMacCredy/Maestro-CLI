@@ -102,7 +102,7 @@ git reset --hard origin/{branch}
 **What it does:** Deletes a branch even if it has not been merged. The commits on that branch become unreachable (unless they are on other branches too).
 
 **When appropriate:**
-- Cleaning up after a completed track-level revert
+- Cleaning up after a completed feature-level revert
 - The branch was a feature branch that is no longer needed
 - All commits on the branch are either merged or intentionally abandoned
 

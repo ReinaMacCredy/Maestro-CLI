@@ -10,23 +10,25 @@ Generate the implementation plan using enriched template with FR traceability. E
 - Every task MUST have an "Addresses: FR-N, FR-M" line
 - You MUST generate a Requirements Coverage Matrix at the end
 - Flag any orphaned FRs (in spec but not addressed by any task)
-- Read project context files for informed planning
+- Read project context memory for informed planning
 - Max 3 revision loops for plan approval
 - Do NOT proceed until user explicitly approves
 
 ## Context Boundaries
-- Approved spec at `.maestro/tracks/{track_id}/spec.md`
+- Approved spec at `.maestro/features/<feature-name>/spec.md`
 - Codebase patterns from step 11
-- Project context: `.maestro/context/workflow.md`, `.maestro/context/tech-stack.md`, `.maestro/context/guidelines.md`
+- Project context from global memory: `workflow`, `tech-stack`, `guidelines`
 - Plan template at `reference/plan-template.md`
 
 ## Plan Generation Sequence
 
 1. **Read Context**
-   Read these files if they exist (skip gracefully if missing):
-   - `.maestro/context/workflow.md` -- determines TDD vs ship-fast pattern
-   - `.maestro/context/tech-stack.md` -- informs technology choices in tasks
-   - `.maestro/context/guidelines.md` -- coding standards and conventions
+   Read these global memory entries if they exist (skip gracefully if missing):
+   - `workflow` -- determines TDD vs ship-fast pattern
+   - `tech-stack` -- informs technology choices in tasks
+   - `guidelines` -- coding standards and conventions
+
+   Access via `maestro memory-read --global --key <key>` (CLI) or `maestro_memory_read` (MCP).
 
    Combine with codebase patterns from step 11.
 
@@ -58,7 +60,7 @@ Generate the implementation plan using enriched template with FR traceability. E
    For each phase:
    - Group related FRs into tasks
    - Each task gets an "Addresses: FR-N, FR-M" line listing which FRs it covers
-   - Apply TDD or ship-fast pattern from workflow.md
+   - Apply TDD or ship-fast pattern from workflow memory
    - Include phase completion verification
    - Follow dependency rules (infrastructure first, no forward references)
    - Carry domain constraints and out-of-scope items into `Must NOT do` sections
@@ -96,8 +98,9 @@ Generate the implementation plan using enriched template with FR traceability. E
    - Max 3 revision loops. After 3, ask user to approve current version or provide final edits.
 
 8. **Write Plan**
-   Once approved, write to `.maestro/tracks/{track_id}/plan.md`.
-   Confirm: "Plan written to `.maestro/tracks/{track_id}/plan.md`."
+   Once approved, write the plan via `maestro_plan_write` (MCP) or `maestro plan-write --feature <feature-name>` (CLI).
+   This writes to `.maestro/features/<feature-name>/plan.md`.
+   Confirm: "Plan written to `.maestro/features/<feature-name>/plan.md`."
 
 ## Quality Checks
 - [ok] Every task has "Addresses: FR-N" line
@@ -105,7 +108,7 @@ Generate the implementation plan using enriched template with FR traceability. E
 - [ok] No orphaned FRs (or orphans explicitly acknowledged by user)
 - [ok] Phases follow dependency rules (infrastructure first, no forward references)
 - [ok] Sizing appropriate for FR count
-- [ok] TDD/ship-fast pattern applied per workflow.md
+- [ok] TDD/ship-fast pattern applied per workflow memory
 - [ok] User explicitly approved
 
 ## Anti-patterns

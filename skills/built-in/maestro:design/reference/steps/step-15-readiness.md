@@ -1,6 +1,6 @@
 # Step 15: Pre-Implementation Readiness Gate
 
-**Progress: Step 15 of 16** -- Next: Metadata & Commit
+**Progress: Step 15 of 16** -- Next: Feature Registration & Commit
 
 ## Goal
 Validate that the spec and plan are aligned and complete before committing. Quick automated pass/fail check -- not a separate workflow.
@@ -44,7 +44,7 @@ Validate that the spec and plan are aligned and complete before committing. Quic
    [ok] Dependency Sanity: no circular dependencies
    [ok] Scope Alignment: plan covers MVP only
 
-   --> READY: Proceed to metadata and commit.
+   --> READY: Proceed to feature registration and commit.
    ```
 
    Or if gaps found:
@@ -59,7 +59,7 @@ Validate that the spec and plan are aligned and complete before committing. Quic
    If gaps found, present options:
    - Add missing tasks to plan.md (re-run gate after)
    - Remove orphaned FRs from spec.md (re-run gate after)
-   - Accept gaps and proceed anyway (note in metadata)
+   - Accept gaps and proceed anyway (note in feature.json)
 
    If user chooses to fix: update the relevant file, re-run gate.
    If user accepts gaps: note them and proceed.

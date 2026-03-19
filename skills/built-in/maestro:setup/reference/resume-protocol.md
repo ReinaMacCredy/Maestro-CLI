@@ -1,87 +1,70 @@
 # Resume Protocol
 
-## Setup State File
+## How to Detect an Interrupted Setup
 
-Location: `.maestro/setup_state.json`
+In v2, there is no `setup_state.json`. Instead, detect setup completion by checking which global memory keys exist.
 
-Check for existing state:
+Check for existing memory entries:
 ```bash
-cat .maestro/setup_state.json 2>/dev/null || echo "{}"
+maestro memory-list --global
 ```
 
 ## Resume Decision Tree
 
 ```
-Does .maestro/setup_state.json exist?
+Does .maestro/ directory exist?
   |
-  +-- NO  --> Fresh run. No resume needed. Continue to Step 3.
+  +-- NO  --> Fresh run. No resume needed. Run maestro init first, then continue to Step 3.
   |
-  +-- YES --> Does it contain a valid "last_successful_step"?
+  +-- YES --> Check which memory keys exist (product, tech-stack, guidelines, etc.)
         |
-        +-- NO  --> Corrupted state. Delete the file. Warn user.
-        |           Treat as fresh run.
+        +-- No memory keys --> .maestro/ was initialized but setup never ran. Treat as fresh.
         |
-        +-- YES --> Display completed steps and remaining steps.
-                    Ask the user what to do.
+        +-- Some memory keys --> Partial setup. Offer resume or start over.
+        |
+        +-- All required keys present --> Setup was completed. Offer to update or skip.
 ```
 
-Ask the user: "A previous setup run was interrupted after step \"{last_successful_step}\".\n\nCompleted: {list of completed step names}\nRemaining: {list of remaining step names}\n\nWhat would you like to do?"
+Ask the user: "A previous setup run was interrupted.\n\nCompleted: {list of completed step names}\nRemaining: {list of remaining step names}\n\nWhat would you like to do?"
 Options:
 - **Resume from where I left off** -- Skip already-completed steps
-- **Start over** -- Ignore previous progress and run all steps
+- **Start over** -- Re-run all steps (existing memory entries used as defaults)
 
-If "Start over": delete `.maestro/setup_state.json` and treat `last_successful_step` as empty.
+If "Start over": treat all steps as incomplete but pre-fill from existing memory.
 
-If "Resume": retain `last_successful_step` and skip steps whose names appear in the completed set below.
+If "Resume": skip steps whose memory keys already exist.
 
 ## Step Name Registry
 
-Used for skip logic. A step is skipped if its name sorts at or before `last_successful_step` in this order:
+Used for skip logic. A step is skipped if its corresponding memory key already exists:
 
-| # | Step Name | What It Does | Files Created |
-|---|-----------|-------------|---------------|
+| # | Step Name | What It Does | Memory Key |
+|---|-----------|-------------|------------|
 | 1 | `check_existing_context` | Check for prior context files | _none_ |
 | 2 | `detect_maturity` | Brownfield/greenfield classification + scan | _none_ |
-| 3 | `create_context_directory` | `mkdir -p .maestro/context` | `.maestro/context/` |
-| 4 | `product_definition` | Product purpose, users, features | `.maestro/context/product.md` |
-| 5 | `tech_stack` | Languages, frameworks, tools | `.maestro/context/tech-stack.md` |
-| 6 | `coding_guidelines` | Principles, conventions, NFRs | `.maestro/context/guidelines.md` |
-| 7 | `product_guidelines` | Voice, tone, UX, branding | `.maestro/context/product-guidelines.md` |
-| 8 | `workflow_config` | Methodology, commits, coverage | `.maestro/context/workflow.md` |
-| 9 | `tracks_registry` | Initialize tracks.md | `.maestro/tracks.md` |
-| 10 | `style_guides` | Copy code style guides | `.maestro/context/code_styleguides/` |
-| 11 | `index_md` | Generate context index | `.maestro/context/index.md` |
-| 12 | `first_track` | Optional first track creation | `.maestro/tracks/{slug}/` |
-
-## State Write Helper
-
-After completing each major step, write:
-```bash
-echo '{"last_successful_step": "<step_name>"}' > .maestro/setup_state.json
-```
+| 3 | `initialize_maestro` | `maestro init` | _presence of `.maestro/`_ |
+| 4 | `product_definition` | Product purpose, users, features | `product` |
+| 5 | `tech_stack` | Languages, frameworks, tools | `tech-stack` |
+| 6 | `coding_guidelines` | Principles, conventions, NFRs | `guidelines` |
+| 7 | `product_guidelines` | Voice, tone, UX, branding | `product-guidelines` |
+| 8 | `workflow_config` | Methodology, commits, coverage | `workflow` |
+| 9 | `style_guides` | Copy code style guides | _presence of `.maestro/memory/code_styleguides/`_ |
+| 10 | `index_md` | Generate context index | `index` |
+| 11 | `first_feature` | Optional first feature creation | _presence of any feature dir in `.maestro/features/`_ |
 
 ## Resume Verification
 
-When resuming, verify that files from completed steps actually exist on disk:
+When resuming, verify that memory entries from completed steps actually exist:
 
 ```
 For each completed step:
-  Does the expected file/directory exist?
+  Does the expected memory key exist?
     |
     +-- YES --> Step is truly complete. Skip it.
     |
-    +-- NO  --> Step recorded as complete but file is missing.
-                Warn: "Step {name} was marked complete but {file} is missing."
+    +-- NO  --> Step recorded as complete but memory is missing.
+                Warn: "Step {name} was marked complete but {key} is missing."
                 Ask: re-run this step, or skip anyway?
 ```
 
 This handles cases where a user manually deleted files between sessions.
-
-## Cleanup on Completion
-
-Remove the state file after setup completes successfully:
-```bash
-rm -f .maestro/setup_state.json
-```
-
-If setup completes but the final commit fails (e.g., no git), still remove the state file. The context files are written regardless of commit status.

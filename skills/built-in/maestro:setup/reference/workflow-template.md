@@ -23,7 +23,7 @@
 
 ## Quality Gates Checklist
 
-Before marking any phase as complete, verify ALL of the following:
+Before marking any task as complete, verify ALL of the following:
 
 - [ ] All new code has corresponding tests
 - [ ] Test coverage meets or exceeds threshold ({coverage_target})
@@ -76,7 +76,6 @@ Before marking any phase as complete, verify ALL of the following:
 ### Git Notes Format (if git notes selected)
 ```
 Task: {task_name}
-Phase: {phase_number}
 Changes: {files_changed}
 Summary: {what_and_why}
 ```
@@ -114,32 +113,32 @@ Before committing, verify:
 - [ ] No unbounded loops or recursion
 - [ ] Large data sets paginated
 
-## Phase Completion Protocol
+## Task Completion Protocol
 1. **Coverage check**: Run coverage for files changed since last checkpoint
 2. **Test execution**: Run full test suite (`CI=true`)
    - Max 2 fix attempts on failure
    - If still failing: halt and ask user
 3. **Manual verification**: Present step-by-step verification plan to user
-4. **User confirmation**: Wait for explicit approval before next phase
+4. **User confirmation**: Wait for explicit approval before next task
 
 ## Definition of Done
 
-A task/phase/track is "done" when ALL of the following are true:
+A task is "done" when ALL of the following are true:
 
-1. Implementation matches the acceptance criteria in spec.md
+1. Implementation matches the acceptance criteria in spec
 2. All tests pass (unit + integration)
 3. Coverage meets threshold ({coverage_target})
 4. No lint errors or type errors
 5. Code reviewed (self-review checklist completed)
 6. Commit(s) created with proper conventional commit messages
-7. Plan.md updated with completion SHA
+7. `maestro_task_done` called with summary
 8. Manual verification steps confirmed by user
 9. No unresolved TODOs in changed code
 
 ## Tech Stack Deviation Protocol
-If implementation requires a technology not listed in `tech-stack.md`:
+If implementation requires a technology not listed in `tech-stack` memory:
 1. STOP implementation
-2. Update `tech-stack.md` with: new technology, rationale, date
+2. Update `tech-stack` memory with: new technology, rationale, date
 3. Get user confirmation
 4. Resume implementation
 
@@ -167,7 +166,7 @@ Populate these during `/maestro:setup` based on the detected tech stack:
 ### Critical Bug in Production
 1. Assess severity and user impact
 2. If data loss possible: notify stakeholders immediately
-3. Create a hotfix track: `/maestro:new-track "Hotfix: {description}"`
+3. Create a hotfix feature: `maestro feature-create "Hotfix: {description}"`
 4. Implement the minimum fix (skip full TDD if time-critical, but add tests after)
 5. Deploy via expedited path
 6. Post-mortem: add regression test, update guidelines if needed
@@ -175,26 +174,26 @@ Populate these during `/maestro:setup` based on the detected tech stack:
 ### Security Breach
 1. Rotate any compromised credentials immediately
 2. Assess exposure scope
-3. Create a security track with highest priority
+3. Create a security feature with highest priority
 4. Implement fix + audit related code
-5. Document in guidelines.md
+5. Document in guidelines memory
 
 ### Data Loss
 1. Stop the affected process
 2. Assess recovery options (backups, transaction logs)
-3. Create a recovery track
+3. Create a recovery feature
 4. Implement fix with additional safeguards
 5. Add monitoring/alerting
 
 ## Continuous Improvement
 
-After completing each track, consider:
+After completing each feature, consider:
 - What went well? What was painful?
 - Were the estimates accurate? (adjust sizing guidelines)
 - Any new patterns worth extracting to style guides?
 - Any new tools or dependencies worth documenting?
 
-Record insights in `.maestro/wisdom/` via `/maestro:implement`'s wisdom extraction.
+Record insights via `maestro memory-write` or `maestro_memory_write`.
 
 ## Deployment Workflow (if applicable)
 

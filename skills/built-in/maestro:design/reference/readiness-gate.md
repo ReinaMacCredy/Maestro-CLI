@@ -1,6 +1,6 @@
 # Pre-Implementation Readiness Gate
 
-Lightweight validation checklist run after plan generation (step 13). Quick automated pass/fail -- not a separate workflow.
+Lightweight validation checklist run after plan generation (step 12). Quick automated pass/fail -- not a separate workflow.
 
 ## Checks
 
@@ -42,7 +42,7 @@ When all checks pass:
 [ok] Dependency Sanity: PASS
 [ok] Scope Alignment: PASS
 
---> READY: Proceed to metadata and commit.
+--> READY: Proceed to feature registration and commit.
 ```
 
 When gaps are found:
@@ -66,7 +66,7 @@ Present gaps to user with these options:
 
 1. **Add missing tasks to plan** -- Create new tasks in plan.md to cover orphaned FRs or ACs
 2. **Remove orphaned items from spec** -- Delete FRs or ACs that are intentionally deferred
-3. **Accept gaps and proceed** -- Note gaps in metadata and continue anyway
+3. **Accept gaps and proceed** -- Note gaps in feature.json and continue anyway
 
 If user chooses to fix: update plan.md or spec.md accordingly, then re-run the gate.
-If user accepts gaps: record them in metadata.json and proceed to step 14.
+If user accepts gaps: record them in feature.json and proceed to step 16.

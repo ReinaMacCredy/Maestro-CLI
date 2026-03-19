@@ -1,14 +1,14 @@
 ---
 name: maestro:revert
-description: "Git-aware revert of track, phase, or individual task. Safely undoes implementation with plan state rollback."
-argument-hint: "<track> [--phase <N>] [--task <name>]"
+description: "Git-aware revert of feature, phase, or individual task. Safely undoes implementation with task state rollback."
+argument-hint: "<feature> [--phase <N>] [--task <name>]"
 ---
 
 # Revert -- Git-Aware Undo
 
 ## Overview
 
-Revert undoes implementation work at track, phase, or task granularity. It creates NEW revert commits -- original history is never destroyed. After reverting, maestro plan state is rolled back so tasks can be re-implemented.
+Revert undoes implementation work at feature, phase, or task granularity. It creates NEW revert commits -- original history is never destroyed. After reverting, maestro task state is rolled back so tasks can be re-implemented.
 
 **Core principle:** `git revert` is additive. It records the undo as new history. The original commits remain reachable via reflog and `git log`. This is the safe default.
 
@@ -20,7 +20,7 @@ Revert undoes implementation work at track, phase, or task granularity. It creat
 |-----------|-------|---------|
 | Task produced wrong result | `--task <name>` | Revert that task's commits |
 | Phase approach was wrong | `--phase <N>` | Revert all commits in phase N |
-| Track needs complete restart | No scope flag | Revert entire track |
+| Feature needs complete restart | No scope flag | Revert entire feature |
 | Single bad commit (known SHA) | Manual | `git revert --no-edit <sha>` |
 
 **Exceptions (ask your human partner):**
@@ -129,10 +129,10 @@ See `reference/safety-checks.md` for extended pre-flight validation (submodules,
 
 `$ARGUMENTS`
 
-- `<track>`: Track name or ID (optional -- if omitted, enter Guided Selection)
+- `<feature>`: Feature name (optional -- if omitted, enter Guided Selection)
 - `--phase <N>`: Revert only phase N (optional)
 - `--task <name>`: Revert only a specific task (optional)
-- No scope flag: revert the entire track
+- No scope flag: revert the entire feature
 
 ---
 
@@ -141,44 +141,43 @@ See `reference/safety-checks.md` for extended pre-flight validation (submodules,
 ### Step 1: Parse Target Scope
 
 Determine what to revert:
-- **Track-level**: No `--phase` or `--task` flag. Revert all commits in the track.
+- **Feature-level**: No `--phase` or `--task` flag. Revert all commits in the feature.
 - **Phase-level**: `--phase N` specified. Revert commits from phase N only.
 - **Task-level**: `--task <name>` specified. Revert a single task's commit(s).
 
-If no `<track>` argument, proceed to Guided Selection:
-1. Read `.maestro/tracks.md` and recent git history: `git log --oneline --since="7 days ago" --grep="maestro"`
-2. Present a menu grouped by track: ID, description, status, completed task count
-3. If user provides a custom track ID, use that
+If no `<feature>` argument, proceed to Guided Selection:
+1. Call `maestro_feature_list` (MCP) or `maestro feature-list` (CLI) and review recent git history: `git log --oneline --since="7 days ago" --grep="maestro"`
+2. Present a menu grouped by feature: name, description, status, completed task count
+3. If user provides a custom feature name, use that
 
-### Step 2: Locate Track
+### Step 2: Locate Feature
 
-Match track argument against IDs and descriptions in `.maestro/tracks.md`. If not found: report and stop.
+Match feature argument against `maestro_feature_list` output. If not found: report and stop.
 
-Read the track's `plan.md` and `metadata.json` to understand structure.
+Read the feature's `plan.md` and `feature.json` to understand structure.
 
 ### Step 3: Resolve Commit SHAs
 
 **Goal:** Build the complete list of commits to revert for the target scope.
 
-**BR-enhanced path** (if `metadata.json` has `beads_epic_id`):
+**Task state source**: Call `maestro_task_list` or `maestro_status` to get all tasks and their summaries. Task summaries from `maestro_task_done` include commit SHAs for traceability.
+
+**BR-enhanced path** (if `feature.json` has `beads_epic_id`):
 ```bash
 br list --status closed --parent {epic_id} --all --json
 ```
 Parse `close_reason` for SHAs (format: `sha:{7char}`). Scope by labels for `--phase`/`--task`.
 
-**Legacy path**: Read `plan.md`, extract `[x] {sha}` markers from the appropriate scope:
-- **Track**: All `[x] {sha}` markers
-- **Phase N**: Only markers under `## Phase N`
-- **Task**: Only the marker for the matching task
+**Task summary path**: Parse commit SHAs from `maestro_task_done` summaries stored in task state. Scope by phase or task name as needed.
 
 **Plan-update commits** (always check):
 ```bash
-git log --oneline --all --grep="maestro(plan): mark task" -- .maestro/tracks/{track_id}/plan.md
+git log --oneline --all --grep="maestro(plan): mark task" -- .maestro/features/{feature-name}/plan.md
 ```
 
-**Track creation commit** (track-level revert only):
+**Feature creation commit** (feature-level revert only):
 ```bash
-git log --oneline --all --grep="chore(maestro:new-track): add track {track_id}"
+git log --oneline --all --grep="chore(maestro): " -- .maestro/features/{feature-name}/
 ```
 
 If no SHAs found in scope: report "No completed tasks found in the specified scope. Nothing to revert." and stop.
@@ -214,19 +213,19 @@ See `reference/git-operations.md` for full reconciliation protocol and edge case
 ```
 ## Revert Plan
 
-**Scope**: {track | phase N | task name}
-**Track**: {track_description} ({track_id})
+**Scope**: {feature | phase N | task name}
+**Feature**: {feature_description} ({feature-name})
 
 **Commits to revert** (reverse chronological order):
 1. `{sha7}` -- {commit message}
 2. `{sha7}` -- {commit message} [plan-update]
-3. `{sha7}` -- {commit message} [track creation]
+3. `{sha7}` -- {commit message} [feature creation]
 
 **Affected files**:
 {list of files changed by these commits}
 
-**Plan updates**:
-- {task_name}: `[x] {sha}` --> `[ ]`
+**Task state updates**:
+- {task_name}: done --> pending
 
 **Safety**: Backup tag created at `pre-revert-{timestamp}`
 ```
@@ -234,7 +233,7 @@ See `reference/git-operations.md` for full reconciliation protocol and edge case
 ### Step 6: Confirm
 
 **Confirmation 1** -- Target:
-"Revert {scope} of track '{description}'? This will undo {N} commits."
+"Revert {scope} of feature '{description}'? This will undo {N} commits."
 - **Yes, continue**
 - **Cancel**
 
@@ -272,13 +271,13 @@ git revert --no-edit -m 1 {merge_sha}
 
 After resolving: `git revert --continue`
 
-### Steps 8-10: Update Plan State, Registry, Verify
+### Steps 8-10: Update Task State, Feature State, Verify
 
-**Plan state** -- Edit `plan.md`: change `[x] {sha}` back to `[ ]` for each reverted task.
+**Task state** -- For each reverted task, the task needs to be reset to `pending`. Since maestro v2 does not have a direct "reset to pending" for done tasks via MCP, the orchestrator should note which tasks were reverted. If `maestro_task_block` / `maestro_task_unblock` can be used to cycle the state, use that. Otherwise, manually update the task state files in `.maestro/features/{feature-name}/tasks/`.
 
 ```bash
-git add .maestro/tracks/{track_id}/plan.md
-git commit -m "maestro(revert): update plan state for reverted {scope}"
+git add .maestro/features/{feature-name}/
+git commit -m "maestro(revert): update task state for reverted {scope}"
 ```
 
 **BR mirror** (if `beads_epic_id` exists):
@@ -286,7 +285,7 @@ git commit -m "maestro(revert): update plan state for reverted {scope}"
 br update {issue_id} --status open --json
 ```
 
-**Registry** (track-level revert only): Update `.maestro/tracks.md` status from `[x]`/`[~]` to `[ ]`. Update `metadata.json` status to `"new"`.
+**Feature state** (feature-level revert only): Update `feature.json` status back to `approved` or `executing` as appropriate.
 
 **Verify:**
 ```bash
@@ -300,16 +299,16 @@ Report pass/fail. If tests fail: warn user and offer to debug.
 ## Revert Complete
 
 **Scope**: {scope}
-**Track**: {track_description}
-**Commits reverted**: {count} ({impl} implementation, {plan} plan-update, {track} track creation)
+**Feature**: {feature_description}
+**Commits reverted**: {count} ({impl} implementation, {plan} plan-update, {feature} feature creation)
 **Tests**: {pass | fail}
 **Backup tag**: pre-revert-{timestamp}
 
-**Plan state updated**: {N} tasks reset to `[ ]`
+**Task state updated**: {N} tasks reset to pending
 
 **Next**:
-- `/maestro:implement {track_id}` -- Re-implement reverted tasks
-- `/maestro:status` -- Check overall progress
+- `maestro:implement {feature-name}` -- Re-implement reverted tasks
+- `maestro_status` / `maestro status` -- Check overall progress
 - To undo this revert: see Rollback-of-Rollback below
 ```
 
@@ -327,16 +326,16 @@ git status --porcelain              # Must be empty
 git branch --show-current           # Confirm correct branch
 git tag pre-revert-20250315-1430    # Backup
 
-# Resolve: plan.md shows [x] a1b2c3d for "add validation"
+# Resolve: maestro_task_list shows task "03-add-validation" is done, summary includes "sha: a1b2c3d"
 # Reconcile
 git cat-file -t a1b2c3d            # Verify exists
 
 # Execute
 git revert --no-edit a1b2c3d
 
-# Update plan state: [x] a1b2c3d --> [ ] in plan.md
-git add .maestro/tracks/auth/plan.md
-git commit -m "maestro(revert): update plan state for reverted task 'add validation'"
+# Update task state: reset task to pending in .maestro/features/{feature-name}/tasks/
+git add .maestro/features/auth/
+git commit -m "maestro(revert): update task state for reverted task 'add validation'"
 
 # Verify
 bun test
@@ -344,37 +343,36 @@ bun test
 
 ### Example 2: Phase-Level Revert (multiple commits)
 
-Phase 2 of the "payments" track had 3 completed tasks. All must be undone.
+Phase 2 of the "payments" feature had 3 completed tasks. All must be undone.
 
 ```bash
 # Safety pre-checks (same as above)
 git tag pre-revert-20250315-1445
 
-# Resolve: phase 2 has 3 completed tasks
-# SHAs: d4e5f6g (newest), b2c3d4e, f7g8h9i (oldest)
+# Resolve: maestro_task_list shows 3 done tasks in phase 2
+# SHAs from task summaries: d4e5f6g (newest), b2c3d4e, f7g8h9i (oldest)
 
 # Execute in reverse chronological order
 git revert --no-edit d4e5f6g
 git revert --no-edit b2c3d4e
 git revert --no-edit f7g8h9i
 
-# Update plan state for all 3 tasks
-# Edit plan.md: [x] --> [ ] for each
-git add .maestro/tracks/payments/plan.md
-git commit -m "maestro(revert): update plan state for reverted phase 2"
+# Update task state for all 3 tasks: reset to pending
+git add .maestro/features/payments/
+git commit -m "maestro(revert): update task state for reverted phase 2"
 
 bun test
 ```
 
-### Example 3: Track-Level Revert (full teardown)
+### Example 3: Feature-Level Revert (full teardown)
 
-The entire "notifications" track needs to be undone, including track creation.
+The entire "notifications" feature needs to be undone, including feature creation.
 
 ```bash
 # Safety pre-checks
 git tag pre-revert-20250315-1500
 
-# Resolve: 5 implementation commits + 2 plan-update commits + 1 track creation
+# Resolve: 5 implementation commits + 2 plan-update commits + 1 feature creation
 # Order by date, newest first
 
 # Execute all reverts
@@ -385,12 +383,12 @@ git revert --no-edit {sha4}
 git revert --no-edit {sha5}  # oldest implementation
 git revert --no-edit {sha6}  # plan-update
 git revert --no-edit {sha7}  # plan-update
-git revert --no-edit {sha8}  # track creation
+git revert --no-edit {sha8}  # feature creation
 
-# Plan state: all tasks reset to [ ]
-# Registry: track status [ ] in tracks.md, metadata status "new"
-git add .maestro/tracks/ .maestro/tracks.md
-git commit -m "maestro(revert): reset track 'notifications' fully"
+# Task state: all tasks reset to pending
+# Feature state: status reset to "approved"
+git add .maestro/features/
+git commit -m "maestro(revert): reset feature 'notifications' fully"
 
 bun test
 ```
@@ -477,9 +475,9 @@ git tag -d pre-revert-{timestamp}  # Clean up tag after
 
 ### After rollback-of-rollback
 
-Update maestro plan state to reflect re-applied work:
-- Change `[ ]` back to `[x] {sha}` in `plan.md` (use the new SHA if cherry-picked)
-- Update track status in `tracks.md` if needed
+Update maestro task state to reflect re-applied work:
+- Reset tasks back to `done` state with updated summaries (use the new SHA if cherry-picked)
+- Update feature status if needed
 - Re-close BR issues if applicable: `br update {issue_id} --status closed --json`
 
 ---
@@ -488,12 +486,12 @@ Update maestro plan state to reflect re-applied work:
 
 Recommended workflow:
 
-- `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:new-track` -- Create a feature/bug track with spec and plan
-- `/maestro:implement` -- Execute the implementation
-- `/maestro:review` -- Verify implementation correctness
-- `/maestro:status` -- Check progress across all tracks
-- `/maestro:revert` -- **You are here.** Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
+- `maestro_init` / `maestro init` -- Initialize maestro for the project
+- `maestro_feature_create` / `maestro feature-create` -- Create a new feature
+- `maestro_plan_write` / `maestro plan-write` -- Write the implementation plan
+- `maestro:implement` -- Execute the implementation
+- `maestro:review` -- Verify implementation correctness
+- `maestro_status` / `maestro status` -- Check progress
+- **`maestro:revert`** -- **You are here.** Undo implementation if needed
 
-Revert is the safety valve for `/maestro:implement`. It undoes commits and resets plan state so you can re-implement with `/maestro:implement`. Use `/maestro:status` after reverting to confirm the track state is correct. Revert depends on atomic commits from implementation -- the cleaner the commit history, the more precise the revert.
+Revert is the safety valve for `maestro:implement`. It undoes commits and resets task state so you can re-implement with `maestro:implement`. Use `maestro_status` after reverting to confirm the feature state is correct. Revert depends on atomic commits from implementation -- the cleaner the commit history, the more precise the revert.
