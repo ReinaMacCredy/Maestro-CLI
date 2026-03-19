@@ -8,6 +8,7 @@ import * as path from 'path';
 import { fileExists, readText, writeText } from '../utils/fs-io.ts';
 import type { MemoryFile } from '../types.ts';
 import type { FsMemoryAdapter } from './fs/memory.ts';
+import { execFileSync } from 'node:child_process';
 
 export interface InitResult {
   content: string;
@@ -217,9 +218,104 @@ export class AgentsMdAdapter {
     sections.push('## Architecture Principles\n');
     sections.push('Document key architectural decisions here.\n');
 
+    // Tool blurbs (conditional on availability)
+    const toolBlurbs = this.generateToolBlurbs();
+    if (toolBlurbs) {
+      sections.push(toolBlurbs);
+    }
+
     return sections.join('\n');
   }
+
+  /** Generate AGENTS.md blurbs for available external tools (flywheel style). */
+  generateToolBlurbs(): string | null {
+    const sections: string[] = [];
+
+    if (this.isToolAvailable('br')) {
+      sections.push(BLURB_BEADS);
+    }
+
+    if (this.isToolAvailable('bv')) {
+      sections.push(BLURB_BV);
+    }
+
+    if (this.isToolAvailable('cass')) {
+      sections.push(BLURB_CASS);
+    }
+
+    // Agent Mail: check if server is reachable (best effort)
+    try {
+      // Check for am alias or MCP config
+      if (this.isToolAvailable('am') || process.env.AGENT_MAIL_URL) {
+        sections.push(BLURB_AGENT_MAIL);
+      }
+    } catch { /* skip */ }
+
+    return sections.length > 0 ? sections.join('\n') : null;
+  }
+
+  private isToolAvailable(binary: string): boolean {
+    try {
+      execFileSync('command', ['-v', binary], { stdio: 'pipe', shell: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
+
+// -- Tool blurbs (flywheel style: always in context, re-read after compaction) --
+
+const BLURB_BEADS = `## br (beads) -- Agent-first issue tracker
+
+- **Status mapping**: open=pending, in_progress=claimed, deferred=blocked, closed=done
+- **Ready work**: \`br ready --json\` (unblocked, not deferred)
+- **Claim**: \`br update <id> --claim\` (atomic: sets assignee + in_progress)
+- **Close**: \`br close <id> -r "summary" --suggest-next\`
+- **Dependencies**: \`br dep add <id> <dep-id>\`, \`br dep tree <id>\`
+- **Rich fields**: \`--description\`, \`--design\`, \`--acceptance\`, \`--notes\`
+- Use bead ID as commit message tag and Agent Mail thread_id for traceability.
+`;
+
+const BLURB_BV = `## bv (beads viewer) -- Graph-aware task routing
+
+Always use --robot-* flags (never bare bv which launches TUI).
+
+| Command | Purpose |
+|---------|---------|
+| \`bv -robot-triage\` | Unified AI triage recommendations |
+| \`bv -robot-next\` | Single top pick with scoring |
+| \`bv -robot-plan -agents N\` | Parallel execution tracks |
+| \`bv -robot-insights\` | PageRank, betweenness, critical path |
+
+Add \`-format json\` for structured output.
+`;
+
+const BLURB_CASS = `## cass -- Search all agent session history
+
+[!] NEVER run bare cass (launches interactive TUI). Always use --robot or --json.
+
+\`\`\`bash
+cass health                                    # Check index health
+cass search "query" --robot --limit 5          # Search across all agents
+cass view /path/to/session.jsonl -n 42 --json  # View specific result
+cass expand /path/to/session.jsonl -n 42 -C 3 --json  # Expand context
+\`\`\`
+
+Key flags: \`--fields minimal\`, \`--limit N\`, \`--agent NAME\`, \`--days N\`.
+stdout = data only, stderr = diagnostics.
+`;
+
+const BLURB_AGENT_MAIL = `## Agent Mail -- Multi-agent coordination
+
+1. Register: \`ensure_project\` then \`register_agent\` with repo path as project_key
+2. Reserve files: \`file_reservation_paths(project_key, agent_name, ["src/**"], ttl_seconds=3600, exclusive=true)\`
+3. Communicate: \`send_message(..., thread_id="<bead-id>")\`; check \`fetch_inbox\`; \`acknowledge_message\`
+4. Conventions: bead ID as thread_id, \`[<bead-id>]\` subject prefix, bead ID in reservation reason
+5. Release reservations when done: \`release_file_reservations\`
+
+Macros for speed: \`macro_start_session\`, \`macro_file_reservation_cycle\`.
+`;
 
 interface PackageJson {
   name?: string;
