@@ -1,40 +1,35 @@
 ---
-name: maestro:new-track
+name: maestro:new-feature
 description: "Create a new feature/bug track with spec and implementation plan. Interactive interview generates requirements spec, then phased TDD plan. Use when starting work on a new feature, bug fix, or chore."
-argument-hint: "<track description>"
+argument-hint: "<feature description>"
 ---
 
-# New Track -- Specification & Planning
+# New Feature -- Specification & Planning
 
-Create a new development track with a requirements specification and phased implementation plan. Every feature, bug fix, or chore gets its own track.
+Create a new development feature with a requirements specification and phased implementation plan. Every feature, bug fix, or chore gets its own feature entry.
 
 ## Arguments
 
 `$ARGUMENTS`
 
-The track description. Examples: `"Add dark mode support"`, `"Fix login timeout"`, `"Refactor connection pooling"`
+The feature description. Examples: `"Add dark mode support"`, `"Fix login timeout"`, `"Refactor connection pooling"`
 
 ---
 
 ## Step 1: Validate Prerequisites
 
-**Inputs:** Filesystem state.
+**Inputs:** Filesystem state, `maestro_status` output.
 
 **Actions:**
-1. Check `.maestro/context/product.md` exists. If not: "Run `/maestro:setup` first." Stop.
-2. Check `.maestro/tracks.md` exists. If missing, create it with this header:
+1. Call `maestro_status` (MCP) or `maestro status` (CLI) to check initialization state.
+2. If maestro is not initialized: "Run `maestro init` first." Stop.
+3. Check global memory has product info (`maestro memory-read --key product`). If missing: "Run `maestro skill maestro:setup` to configure project context." Stop.
 
-```markdown
-# Tracks Registry
+**Outputs:** Confirmed `.maestro/` directory is initialized with global memory.
 
-Active and completed development tracks.
-```
+**Transition:** Proceed to Step 2 when initialization is confirmed.
 
-**Outputs:** Confirmed `.maestro/` directory is initialized.
-
-**Transition:** Proceed to Step 2 when both files exist.
-
-**Failure:** If `.maestro/` does not exist at all, stop and instruct the user to run `/maestro:setup`. Do not create `.maestro/` manually -- setup does more than just create the directory.
+**Failure:** If `.maestro/` does not exist at all, stop and instruct the user to run `maestro init`. Do not create `.maestro/` manually -- init does more than just create the directory.
 
 ---
 
@@ -43,11 +38,11 @@ Active and completed development tracks.
 **Inputs:** `$ARGUMENTS` string.
 
 **Actions:**
-1. Extract track description from `$ARGUMENTS`.
+1. Extract feature description from `$ARGUMENTS`.
 2. If empty, ask user for type (feature/bug/chore) and description.
 3. If the description is too vague, ask for clarification before proceeding.
 
-**Outputs:** A track description string (1-3 sentences).
+**Outputs:** A feature description string (1-3 sentences).
 
 **Transition:** Proceed to Step 3 when you have a description with enough detail to classify.
 
@@ -65,24 +60,24 @@ Active and completed development tracks.
 
 ---
 
-## Step 3: Generate Track ID
+## Step 3: Generate Feature Name
 
-**Inputs:** Track description.
+**Inputs:** Feature description.
 
-**Actions:** Generate ID in format `{shortname}_{YYYYMMDD}` (2-4 words, snake_case + date).
+**Actions:** Generate a kebab-case feature name (2-4 words, descriptive).
 
-**Outputs:** Track ID string.
+**Outputs:** Feature name string.
 
 **Examples:**
-- "Add dark mode support" --> `dark_mode_20260225`
-- "Fix login timeout on slow connections" --> `login_timeout_fix_20260225`
-- "Refactor connection pooling" --> `refactor_conn_pool_20260225`
+- "Add dark mode support" --> `dark-mode`
+- "Fix login timeout on slow connections" --> `fix-login-timeout`
+- "Refactor connection pooling" --> `refactor-conn-pool`
 
 **Rules:**
 - Use the most distinctive words from the description (skip articles, prepositions)
-- Bug fixes: include "fix" in the ID
-- Max 4 words before the date
-- Use today's date
+- Bug fixes: include "fix" in the name
+- Max 4 words, kebab-case
+- No dates in the name
 
 **Transition:** Proceed to Step 4.
 
@@ -90,15 +85,15 @@ Active and completed development tracks.
 
 ## Step 4: Duplicate Check
 
-**Inputs:** Generated track ID, existing `.maestro/tracks/` directories.
+**Inputs:** Generated feature name, `maestro_feature_list` output.
 
-**Actions:** Scan `.maestro/tracks/*` directories. Warn if any starts with the same short name prefix (the part before the date).
+**Actions:** Call `maestro_feature_list` (MCP) or `maestro feature-list` (CLI). Warn if any existing feature starts with the same prefix.
 
 **Outputs:** Warning message if duplicate found, otherwise silent.
 
-**If duplicate found:** Ask the user: "A track with a similar name already exists: `{existing_id}`. Continue creating a new track, or work on the existing one?"
-- **Continue** -- Create the new track (user confirms it's distinct work)
-- **Use existing** -- Stop and point user to the existing track
+**If duplicate found:** Ask the user: "A feature with a similar name already exists: `{existing_name}`. Continue creating a new feature, or work on the existing one?"
+- **Continue** -- Create the new feature (user confirms it's distinct work)
+- **Use existing** -- Stop and point user to the existing feature
 
 **Transition:** Proceed to Step 4.5 when duplicate check passes or user confirms continuation.
 
@@ -116,24 +111,25 @@ Active and completed development tracks.
 
 ---
 
-## Step 5: Create Track Directory
+## Step 5: Create Feature
 
-**Inputs:** Track ID from Step 3.
+**Inputs:** Feature name from Step 3.
 
 **Actions:**
-```bash
-mkdir -p .maestro/tracks/{track_id}
 ```
+maestro_feature_create({ name: "<feature-name>", description: "<description>" })
+```
+Or CLI: `maestro feature-create <feature-name> --description "<description>"`
 
-**Outputs:** Empty track directory created.
+**Outputs:** Feature directory created at `.maestro/features/<feature-name>/` with `feature.json`.
 
 **Transition:** Proceed to Step 6.
 
 ---
 
-## Step 6: Auto-Infer Track Type
+## Step 6: Auto-Infer Feature Type
 
-**Inputs:** Track description from Step 2.
+**Inputs:** Feature description from Step 2.
 
 **Actions:** Analyze description keywords to classify as `feature`, `bug`, or `chore`.
 
@@ -173,7 +169,7 @@ Description contains bug keywords?
 
 ## Step 7: Specification Interview
 
-**Inputs:** Track type from Step 6, track description from Step 2.
+**Inputs:** Feature type from Step 6, feature description from Step 2.
 
 **Actions:** Run the type-specific interview to gather requirements. See `reference/interview-questions.md` for all questions per type (feature/bug/chore).
 
@@ -187,7 +183,7 @@ Description contains bug keywords?
 
 **Transition:** Proceed to Step 8 when all questions are answered.
 
-**Failure:** If user abandons the interview mid-way, save whatever answers you have and ask: "Want to continue later? I can save progress." Do NOT delete the track directory.
+**Failure:** If user abandons the interview mid-way, save whatever answers you have and ask: "Want to continue later? I can save progress." Do NOT delete the feature directory.
 
 ---
 
@@ -231,7 +227,7 @@ Present the full spec to the user. Max 3 revision rounds.
 
 After pushing back once, accept the user's decision.
 
-**Outputs:** Approved spec written to `.maestro/tracks/{track_id}/spec.md`.
+**Outputs:** Approved spec written to `.maestro/features/<feature-name>/spec.md`.
 
 **Transition:** Proceed to Step 9 when spec is approved and written.
 
@@ -239,14 +235,14 @@ After pushing back once, accept the user's decision.
 
 ## Step 9: Generate Implementation Plan
 
-**Inputs:** Approved spec from Step 8, project context files.
+**Inputs:** Approved spec from Step 8, global memory context.
 
 **Actions:**
-1. Read context: `.maestro/context/workflow.md`, `tech-stack.md`, `guidelines.md`.
+1. Read context from global memory: `maestro memory-read --key workflow`, `maestro memory-read --key tech-stack`, `maestro memory-read --key guidelines`.
 2. Scan the codebase for auto-inferable values (see `reference/plan-template.md` "Auto-Inference from Codebase" section): test framework, test file convention, source structure, module pattern, existing analogous features.
 3. Present inferred defaults to the user: "I detected {framework} as your test framework and {dir} as your test directory. The plan will use these. Change? [yes/no]"
 4. Generate the plan using `reference/plan-template.md` for structure and rules.
-5. Apply TDD or ship-fast pattern based on `workflow.md` (default: TDD if not specified).
+5. Apply TDD or ship-fast pattern based on workflow memory (default: TDD if not specified).
 6. Present full plan for approval.
 
 **Outputs:** Complete implementation plan with phases, tasks, and verification steps.
@@ -266,7 +262,7 @@ Before presenting the plan, verify:
 
 Same protocol as spec approval (Step 8): max 3 rounds, push back on scope creep, accept user decision after one objection.
 
-**Outputs:** Approved plan written to `.maestro/tracks/{track_id}/plan.md`.
+**Outputs:** Approved plan written via `maestro_plan_write` (MCP) or `maestro plan-write --feature <feature-name>` (CLI).
 
 **Transition:** Proceed to Step 9.5 when plan is approved and written.
 
@@ -274,13 +270,13 @@ Same protocol as spec approval (Step 8): max 3 rounds, push back on scope creep,
 
 ## Step 9.5: Detect Relevant Skills
 
-**Inputs:** Track description, spec content, runtime's installed skill list.
+**Inputs:** Feature description, spec content, runtime's installed skill list.
 
-**Actions:** Scan the runtime's installed skill list. Record skills whose description matches this track's domain/tech. Store names + relevance in metadata.json `skills` array.
+**Actions:** Scan the runtime's installed skill list. Record skills whose description matches this feature's domain/tech. Store names + relevance in `feature.json` `skills` array.
 
 **Outputs:** List of matched skill names (may be empty).
 
-**When to populate:** Only include skills whose description has a clear keyword match with the track's tech stack or domain. "maestro:tdd" matches if the plan uses TDD pattern. "maestro:review" always matches. Don't include skills based on vague associations.
+**When to populate:** Only include skills whose description has a clear keyword match with the feature's tech stack or domain. "maestro:tdd" matches if the plan uses TDD pattern. "maestro:review" always matches. Don't include skills based on vague associations.
 
 **When to leave empty:** If no skills match, set `"skills": []`. Do not force matches.
 
@@ -296,68 +292,52 @@ Same protocol as spec approval (Step 8): max 3 rounds, push back on scope creep,
 
 **Outputs:** BR epic and issues created (or nothing).
 
-**Transition:** Always proceed to Step 10-12 (this step never blocks).
+**Transition:** Always proceed to Step 10 (this step never blocks).
 
 ---
 
-## Step 10-12: Write Metadata, Index, and Registry
+## Step 10: Commit
 
-**Inputs:** All data from prior steps.
-
-**Actions:** Write `metadata.json`, `index.md`, update `tracks.md`. See `reference/metadata-and-registry.md` for all schemas, templates, commit message, and summary format.
-
-**Outputs:** Three files written/updated:
-- `.maestro/tracks/{track_id}/metadata.json`
-- `.maestro/tracks/{track_id}/index.md`
-- `.maestro/tracks.md` (appended)
-
-**Transition:** Proceed to Step 13.
-
----
-
-## Step 13: Commit
-
-**Inputs:** All files created in Steps 5-12.
+**Inputs:** All files created in Steps 5-9.7.
 
 **Actions:**
 ```bash
-git add .maestro/tracks/{track_id} .maestro/tracks.md
+git add .maestro/features/<feature-name>
 # Include beads state if BR sync was performed
 [ -d ".beads" ] && git add .beads/
-git commit -m "chore(maestro:new-track): add track {track_id}"
+git commit -m "chore(maestro:new-feature): add feature <feature-name>"
 ```
 
-**Outputs:** Git commit with all track files.
+**Outputs:** Git commit with all feature files.
 
-**Transition:** Proceed to Step 14.
+**Transition:** Proceed to Step 11.
 
 **Failure:** If git commit fails (dirty working tree, hook failure), report the error and ask the user how to proceed. Do NOT force-commit or skip hooks.
 
 ---
 
-## Step 14: Summary
+## Step 11: Summary
 
-**Inputs:** All metadata from prior steps.
+**Inputs:** All data from prior steps.
 
-**Actions:** Display track creation summary.
+**Actions:** Display feature creation summary.
 
 **Output format:**
 ```
-## Track Created
+## Feature Created
 
-**{track description}**
-- ID: `{track_id}`
+**{feature description}**
+- Name: `<feature-name>`
 - Type: {type}
 - Phases: {count}
 - Tasks: {count}
 
 **Files**:
-- `.maestro/tracks/{track_id}/spec.md`
-- `.maestro/tracks/{track_id}/plan.md`
-- `.maestro/tracks/{track_id}/metadata.json`
-- `.maestro/tracks/{track_id}/index.md`
+- `.maestro/features/<feature-name>/spec.md`
+- `.maestro/features/<feature-name>/plan.md`
+- `.maestro/features/<feature-name>/feature.json`
 
-**Next**: `/maestro:implement {track_id}`
+**Next**: `maestro plan-approve --feature <feature-name>` then `maestro tasks-sync --feature <feature-name>`
 ```
 
 ---
@@ -372,11 +352,11 @@ These indicate the spec or plan has problems. Fix before proceeding.
 | Acceptance criteria say "works correctly" | Not testable | Rewrite as specific, verifiable checks |
 | Plan has a "setup" phase with nothing testable | Over-scaffolding, no increment | Merge setup tasks into first real phase |
 | Single task covers 5+ files | Task too big | Split by file group or concern |
-| Plan has 20+ tasks | Scope too large for one track | Split into multiple tracks |
+| Plan has 20+ tasks | Scope too large for one feature | Split into multiple features |
 | Spec mentions specific technology in requirements | Implementation detail leaked | Rewrite as a behavior requirement |
 | All tasks are "implement X" with no test tasks | TDD not applied | Inject TDD sub-tasks per plan template |
 | Phase has no completion verification | No checkpoint | Add verification meta-task |
-| Description matches existing track | Duplicate work | Check with user: extend existing or start new |
+| Description matches existing feature | Duplicate work | Check with user: extend existing or start new |
 
 ---
 
@@ -384,12 +364,14 @@ These indicate the spec or plan has problems. Fix before proceeding.
 
 Recommended workflow:
 
-- `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:new-track` -- **You are here.** Create a feature/bug track with spec and plan
-- `/maestro:implement` -- Execute the implementation
-- `/maestro:review` -- Verify implementation correctness
-- `/maestro:status` -- Check progress across all tracks
-- `/maestro:revert` -- Undo implementation if needed
-- `/maestro:note` -- Capture decisions and context to persistent notepad
+- `maestro init` -- Initialize maestro for the project
+- `maestro skill maestro:setup` -- Scaffold project context (run first)
+- `maestro skill maestro:new-feature` -- **You are here.** Create a feature with spec and plan
+- `maestro_plan_approve` -- Approve the plan for execution
+- `maestro_tasks_sync` -- Generate tasks from approved plan
+- `maestro skill maestro:implement` -- Execute the implementation
+- `maestro skill maestro:review` -- Verify implementation correctness
+- `maestro_status` -- Check progress across all features
+- `maestro skill maestro:revert` -- Undo implementation if needed
 
-A track created here produces `spec.md` and `plan.md` that `/maestro:implement` consumes. The spec also serves as the baseline for `/maestro:review` to validate against. Good specs lead to good implementations -- be thorough in the interview.
+A feature created here produces `spec.md` and `plan.md` that `maestro:implement` consumes. The spec also serves as the baseline for `maestro:review` to validate against. Good specs lead to good implementations -- be thorough in the interview.

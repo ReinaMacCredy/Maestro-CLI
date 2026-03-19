@@ -5,7 +5,7 @@
 ```markdown
 # Implementation Plan: {title}
 
-> Track: {track_id}
+> Feature: <feature-name>
 > Type: {feature | bug | chore}
 > Created: {YYYY-MM-DD}
 
@@ -136,7 +136,7 @@ Before generating the plan, scan the project to infer these automatically. Only 
 |----------|------------------------|
 | Phase ordering preferences | User may want to demo early, or build foundation first |
 | Acceptable test coverage threshold | Project policy, not detectable from code |
-| Whether to use TDD or ship-fast pattern | Workflow preference (check `workflow.md` first, ask if absent) |
+| Whether to use TDD or ship-fast pattern | Workflow preference (check global memory first, ask if absent) |
 | Priority of tasks within a phase | Business priority, not technical dependency |
 | Manual verification steps | User knows what to check visually/manually |
 
@@ -152,7 +152,7 @@ Do NOT silently use inferred values without telling the user. Do NOT ask about v
 
 ## TDD Pattern Injection
 
-For TDD methodology (from `workflow.md`), every implementation task gets three sub-tasks:
+For TDD methodology (from workflow memory), every implementation task gets three sub-tasks:
 
 1. **Write failing tests** (Red)
    - Create test file if it doesn't exist
@@ -209,7 +209,7 @@ Every phase ends with a verification meta-task:
 | Medium (3-8 files) | 2-3 | 2-4 | 4-12 |
 | Large (8+ files) | 3-4 | 3-5 | 9-20 |
 
-**Over-planning signal:** More than 20 tasks means the scope is too large for a single track. Split into multiple tracks.
+**Over-planning signal:** More than 20 tasks means the scope is too large for a single feature. Split into multiple features.
 
 **Under-planning signal:** A "large" feature with only 2 tasks means each task is too big. Apply the "Task Too Big" splitting rules above.
 

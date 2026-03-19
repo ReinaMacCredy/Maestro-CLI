@@ -20,4 +20,6 @@ export const SKILL_ALIASES: Record<string, BuiltinSkillName> = {
   'systematic-debugging': 'maestro:debugging',
   'test-driven-development': 'maestro:tdd',
   'verification-before-completion': 'maestro:verification',
+  'new-track': 'maestro:new-feature',
+  'maestro:new-track': 'maestro:new-feature',
 };

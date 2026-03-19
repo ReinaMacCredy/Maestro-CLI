@@ -155,19 +155,19 @@ Push back (politely, once) when the user's revision:
 
 After pushing back once, accept the user's decision. Do not argue.
 
-Write approved spec to `.maestro/tracks/{track_id}/spec.md`.
+Write approved spec to `.maestro/features/<feature-name>/spec.md`.
 
 ---
 
 ## Plan Generation
 
-Read project context for informed planning:
-- `.maestro/context/workflow.md`
-- `.maestro/context/tech-stack.md`
-- `.maestro/context/guidelines.md`
+Read project context from global memory for informed planning:
+- `maestro memory-read --key workflow`
+- `maestro memory-read --key tech-stack`
+- `maestro memory-read --key guidelines`
 
 Use `reference/plan-template.md` for structure and rules (TDD injection, phase verification, sizing, dependencies).
 
 Present the full plan for approval by embedding the entire plan content directly in the question field (same pattern as spec approval). Max 3 revision loops (same protocol as spec approval).
 
-Write approved plan to `.maestro/tracks/{track_id}/plan.md`.
+Write approved plan via `maestro_plan_write` (MCP) or `maestro plan-write --feature <feature-name>` (CLI).

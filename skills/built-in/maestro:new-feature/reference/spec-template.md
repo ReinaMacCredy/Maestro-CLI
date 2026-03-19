@@ -12,7 +12,7 @@ A spec answers "what" and "why" -- never "how." If you catch yourself describing
 # Specification: {title}
 
 ## Overview
-{One paragraph: what this track delivers, why it matters, and what success looks like.
+{One paragraph: what this feature delivers, why it matters, and what success looks like.
 Good: "Add email verification to the signup flow so unverified accounts cannot access paid features. Success: no unverified user reaches the dashboard."
 Bad: "Add email verification." (no why, no success criteria)}
 
@@ -47,7 +47,7 @@ Bad: "Add email verification." (no why, no success criteria)}
 {Minimum 3 items. If you wrote "none" -- you didn't think hard enough. Every feature has edge cases: empty input, concurrent access, network failure, permission denied, rate limits.}
 
 ## Out of Scope
-- {Thing 1 this track explicitly does NOT cover}
+- {Thing 1 this feature explicitly does NOT cover}
 - {Thing 2}
 
 {Critical section. Prevents scope creep during implementation. If a reviewer asks "what about X?" and X is out of scope, this section is the answer.}
