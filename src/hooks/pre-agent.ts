@@ -78,13 +78,44 @@ async function main(): Promise<void> {
       ? '\n## Feature Memories\n\n' + memories.map(m => `### ${m.name}\n\n${m.content}`).join('\n\n---\n\n')
       : '';
 
+    // Rich bead context (when br backend provides design/AC)
+    let richContext = '';
+    if (services.taskPort.getRichFields) {
+      try {
+        const rich = await services.taskPort.getRichFields(featureName, taskFolder);
+        if (rich) {
+          const parts: string[] = [];
+          if (rich.design) parts.push(`## Design Notes\n\n${rich.design}`);
+          if (rich.acceptanceCriteria) parts.push(`## Acceptance Criteria\n\n${rich.acceptanceCriteria}`);
+          if (parts.length > 0) richContext = '\n' + parts.join('\n\n') + '\n';
+        }
+      } catch { /* rich fields unavailable */ }
+    }
+
+    // Graph context (when bv available)
+    let graphContext = '';
+    if (services.graphPort) {
+      try {
+        const insights = await services.graphPort.getInsights();
+        const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
+        const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
+        if (onCriticalPath || isBottleneck) {
+          const flags: string[] = [];
+          if (onCriticalPath) flags.push('on critical path');
+          if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
+          graphContext = `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
+        }
+      } catch { /* bv unavailable */ }
+    }
+
     // Build injection
     const injection = [
       `## Task Spec: ${taskFolder}`,
       '',
       spec,
-      '',
+      richContext,
       WORKER_RULES,
+      graphContext,
       memorySection,
     ].join('\n');
 

@@ -7,6 +7,9 @@ import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import type { GraphPort } from '../ports/graph.ts';
+import type { SearchPort } from '../ports/search.ts';
+import type { HandoffPort } from '../ports/handoff.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
@@ -18,6 +21,9 @@ export interface StatusServices {
   memoryAdapter: MemoryPort;
   configAdapter: FsConfigAdapter;
   directory: string;
+  graphPort?: GraphPort;
+  handoffPort?: HandoffPort;
+  searchPort?: SearchPort;
 }
 
 export interface StatusResult {
@@ -44,6 +50,11 @@ export interface StatusResult {
   context: {
     count: number;
     totalBytes: number;
+  };
+  integrations: {
+    bv: boolean;
+    agentMail: boolean;
+    cass: boolean;
   };
   nextAction: string;
 }
@@ -112,6 +123,11 @@ export async function checkStatus(
     context: {
       count: memoryStats.count,
       totalBytes: memoryStats.totalBytes,
+    },
+    integrations: {
+      bv: !!services.graphPort,
+      agentMail: !!services.handoffPort,
+      cass: !!services.searchPort,
     },
     nextAction,
   };
