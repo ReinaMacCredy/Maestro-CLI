@@ -9,7 +9,7 @@ If Beads (BR) is available and initialized, sync the approved plan into BR epics
 - This step is CONDITIONAL -- skip if `.beads/` does not exist or `br` is not installed
 - If skipping, announce: "BR sync skipped (no .beads/ directory or br not installed)." and proceed
 - If running, follow the protocol in `maestro:implement/reference/plan-to-br-sync.md`
-- Do NOT initialize BR here -- that is handled by `/maestro:setup` or AGENTS.md detection
+- Do NOT initialize BR here -- that is handled by `maestro:setup` or AGENTS.md detection
 
 ## Context Boundaries
 - Approved plan at `.maestro/features/<feature-name>/plan.md`

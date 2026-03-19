@@ -190,7 +190,7 @@ Display summary of all generated files. See `reference/templates.md` for output 
 
 ## Step 15: Auto-Generate AGENTS.md
 
-After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, automatically invoke `/maestro:AGENTS.md` (no arguments, no user prompt). If `AGENTS.md` already exists, skip silently.
+After the commit succeeds, check if `AGENTS.md` exists. If it does NOT exist, automatically invoke `maestro:agents-md` (no arguments, no user prompt). If `AGENTS.md` already exists, skip silently.
 
 ---
 

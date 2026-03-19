@@ -276,7 +276,7 @@ Display `product-guidelines` memory entry. If the product is a developer tool, v
 
 ## Workflow Configuration Interview (Step 10)
 
-Saves to global memory with key `workflow`. Source of truth for how `/maestro:implement` executes tasks.
+Saves to global memory with key `workflow`. Source of truth for how `maestro:implement` executes tasks.
 
 ### Choice
 
