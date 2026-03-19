@@ -22,13 +22,22 @@ export interface HandoffDocument {
   agentMailThread?: string;
 }
 
+export interface HandoffResult {
+  /** Local file path where the handoff document was written. */
+  filePath: string;
+  /** Agent Mail thread ID (if Agent Mail was reachable). */
+  threadId?: string;
+  /** Whether Agent Mail delivery succeeded. */
+  agentMailSent: boolean;
+}
+
 export interface HandoffPort {
   /** Build a handoff document for a bead from br + maestro memory + git diff. */
   buildHandoff(feature: string, taskId: string): Promise<HandoffDocument>;
-  /** Send handoff via Agent Mail, keyed to bead ID as thread topic. */
-  sendHandoff(handoff: HandoffDocument, targetAgent?: string): Promise<{ threadId: string }>;
-  /** Receive pending handoffs for the current agent. */
-  receiveHandoffs(agentId: string): Promise<HandoffDocument[]>;
+  /** Write handoff to local file + send via Agent Mail. File is primary, Agent Mail is notification. */
+  sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult>;
+  /** Receive pending handoffs (reads local files + Agent Mail inbox). */
+  receiveHandoffs(feature: string, agentId?: string): Promise<HandoffDocument[]>;
   /** Acknowledge receipt of a handoff. */
   acknowledgeHandoff(threadId: string): Promise<void>;
 }

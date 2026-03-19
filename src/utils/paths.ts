@@ -20,6 +20,7 @@ const SUBTASKS_DIR = 'subtasks';
 const SPEC_FILE = 'spec.md';
 const SESSION_FILE = 'session.json';
 const WORKER_PROMPT_FILE = 'worker-prompt.md';
+const HANDOFFS_DIR = 'handoffs';
 
 export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
@@ -108,6 +109,15 @@ export function getSubtaskSpecPath(projectRoot: string, featureName: string, tas
 
 export function getSubtaskReportPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
   return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), REPORT_FILE);
+}
+
+export function getHandoffsPath(projectRoot: string, featureName: string): string {
+  return path.join(getFeaturePath(projectRoot, featureName), HANDOFFS_DIR);
+}
+
+export function getHandoffPath(projectRoot: string, featureName: string, beadId: string): string {
+  const safeName = beadId.replace(/[^a-z0-9-]/gi, '-');
+  return path.join(getHandoffsPath(projectRoot, featureName), `${safeName}.md`);
 }
 
 export function getWorkerPromptPath(projectRoot: string, featureName: string, taskFolder: string): string {

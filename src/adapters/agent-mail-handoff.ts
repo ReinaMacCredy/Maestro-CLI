@@ -1,14 +1,19 @@
 /**
- * AgentMailHandoffAdapter -- HandoffPort implementation using Agent Mail HTTP MCP.
+ * AgentMailHandoffAdapter -- HandoffPort implementation.
  *
- * Builds handoff documents from br bead state + maestro memory + git diff,
- * then sends/receives via Agent Mail's HTTP API.
+ * Writes handoff documents to local files (.maestro/features/<name>/handoffs/)
+ * as the primary artifact, then sends via Agent Mail HTTP API as notification.
+ * File is always written; Agent Mail is best-effort.
  */
 
-import type { HandoffPort, HandoffDocument } from '../ports/handoff.ts';
+import type { HandoffPort, HandoffDocument, HandoffResult } from '../ports/handoff.ts';
 import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import { getHandoffPath, getHandoffsPath } from '../utils/paths.ts';
+import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const DEFAULT_AGENT_MAIL_URL = 'http://localhost:8765';
 
@@ -31,20 +36,17 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   async buildHandoff(feature: string, taskId: string): Promise<HandoffDocument> {
-    // Get bead state
     const task = await this.taskPort.get(feature, taskId);
     const richFields: RichTaskFields | null = this.taskPort.getRichFields
       ? await this.taskPort.getRichFields(feature, taskId)
       : null;
 
-    // Get memories
     const memories = this.memoryAdapter.list(feature);
     const decisions = memories.map(mf => ({
       key: mf.name,
       value: mf.content.slice(0, 500),
     }));
 
-    // Get modified files from git
     const modifiedFiles = this.getModifiedFiles();
 
     return {
@@ -66,60 +68,38 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     };
   }
 
-  async sendHandoff(handoff: HandoffDocument, targetAgent?: string): Promise<{ threadId: string }> {
-    const threadId = `bead:${handoff.beadId}`;
+  async sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult> {
     const body = this.formatHandoffMessage(handoff);
 
-    const payload = {
-      jsonrpc: '2.0',
-      id: `handoff-${Date.now()}`,
-      method: 'tools/call',
-      params: {
-        name: 'send_message',
-        arguments: {
-          project_key: this.projectRoot,
-          from_agent: 'maestro',
-          to_agents: targetAgent ? [targetAgent] : [],
-          subject: `[${handoff.beadId}] Handoff: ${handoff.beadState.title}`,
-          body,
-          thread_id: threadId,
-          importance: 'high',
-        },
-      },
-    };
+    // 1. Write to local file (primary artifact)
+    const filePath = getHandoffPath(this.projectRoot, feature, handoff.beadId);
+    ensureDir(path.dirname(filePath));
+    writeText(filePath, body);
 
-    const response = await fetch(`${this.baseUrl}/mcp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Agent Mail request failed: ${response.status} ${response.statusText}`);
-    }
-
-    return { threadId };
-  }
-
-  async receiveHandoffs(agentId: string): Promise<HandoffDocument[]> {
-    const payload = {
-      jsonrpc: '2.0',
-      id: `inbox-${Date.now()}`,
-      method: 'tools/call',
-      params: {
-        name: 'fetch_inbox',
-        arguments: {
-          project_key: this.projectRoot,
-          agent_name: agentId,
-          limit: 20,
-        },
-      },
-    };
+    // 2. Try Agent Mail (best-effort notification)
+    let agentMailSent = false;
+    let threadId: string | undefined;
 
     try {
+      threadId = `bead:${handoff.beadId}`;
+      const payload = {
+        jsonrpc: '2.0',
+        id: `handoff-${Date.now()}`,
+        method: 'tools/call',
+        params: {
+          name: 'send_message',
+          arguments: {
+            project_key: this.projectRoot,
+            from_agent: 'maestro',
+            to_agents: targetAgent ? [targetAgent] : [],
+            subject: `[${handoff.beadId}] Handoff: ${handoff.beadState.title}`,
+            body,
+            thread_id: threadId,
+            importance: 'high',
+          },
+        },
+      };
+
       const response = await fetch(`${this.baseUrl}/mcp`, {
         method: 'POST',
         headers: {
@@ -127,44 +107,77 @@ export class AgentMailHandoffAdapter implements HandoffPort {
           ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
         },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(5000),
       });
 
-      if (!response.ok) return [];
-
-      const result = await response.json() as Record<string, unknown>;
-      const messages = (result.result as Record<string, unknown>)?.content as Array<Record<string, unknown>> ?? [];
-
-      return messages
-        .filter(m => String(m.thread_id ?? '').startsWith('bead:'))
-        .map(m => this.parseHandoffMessage(m));
+      agentMailSent = response.ok;
     } catch {
-      return [];
+      // Agent Mail unreachable -- file was still written
     }
+
+    return { filePath, threadId, agentMailSent };
+  }
+
+  async receiveHandoffs(feature: string, _agentId?: string): Promise<HandoffDocument[]> {
+    const handoffs: HandoffDocument[] = [];
+
+    // Read local handoff files
+    const handoffsDir = getHandoffsPath(this.projectRoot, feature);
+    try {
+      const files = fs.readdirSync(handoffsDir).filter(f => f.endsWith('.md'));
+      for (const file of files) {
+        const content = readText(path.join(handoffsDir, file));
+        if (!content) continue;
+        const beadId = file.replace(/\.md$/, '');
+        handoffs.push({
+          beadId,
+          beadState: {
+            title: this.extractTitle(content),
+            status: 'unknown',
+          },
+          decisions: [],
+          modifiedFiles: [],
+          blockers: [],
+          openQuestions: [],
+          nextSteps: [],
+          criticalContext: content,
+        });
+      }
+    } catch {
+      // No handoffs directory yet
+    }
+
+    return handoffs;
   }
 
   async acknowledgeHandoff(threadId: string): Promise<void> {
-    const payload = {
-      jsonrpc: '2.0',
-      id: `ack-${Date.now()}`,
-      method: 'tools/call',
-      params: {
-        name: 'acknowledge_message',
-        arguments: {
-          project_key: this.projectRoot,
-          message_id: threadId,
-          agent_name: 'maestro',
+    try {
+      const payload = {
+        jsonrpc: '2.0',
+        id: `ack-${Date.now()}`,
+        method: 'tools/call',
+        params: {
+          name: 'acknowledge_message',
+          arguments: {
+            project_key: this.projectRoot,
+            message_id: threadId,
+            agent_name: 'maestro',
+          },
         },
-      },
-    };
+      };
 
-    await fetch(`${this.baseUrl}/mcp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+      await fetch(`${this.baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      // Best-effort
+    }
   }
 
   // -- Private helpers --
@@ -183,15 +196,32 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   private formatHandoffMessage(handoff: HandoffDocument): string {
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const sections: string[] = [];
 
-    sections.push(`## Handoff: ${handoff.beadState.title}`);
-    sections.push(`**Status:** ${handoff.beadState.status}`);
+    sections.push(`## Handoff: ${timestamp}`);
+    sections.push('');
+
+    sections.push('### Current Task State');
+    sections.push(`Bead: \`${handoff.beadId}\` | Status: ${handoff.beadState.status}`);
+    sections.push(`Title: ${handoff.beadState.title}`);
     sections.push('');
 
     if (handoff.beadState.description) {
-      sections.push('### Current State');
+      sections.push('### Description');
       sections.push(handoff.beadState.description.slice(0, 2000));
+      sections.push('');
+    }
+
+    if (handoff.beadState.design) {
+      sections.push('### Design Notes');
+      sections.push(handoff.beadState.design);
+      sections.push('');
+    }
+
+    if (handoff.beadState.acceptanceCriteria) {
+      sections.push('### Acceptance Criteria');
+      sections.push(handoff.beadState.acceptanceCriteria);
       sections.push('');
     }
 
@@ -212,39 +242,46 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     }
 
     if (handoff.blockers.length > 0) {
-      sections.push('### Blockers');
+      sections.push('### Blockers / Open Questions');
       for (const b of handoff.blockers) {
         sections.push(`- ${b}`);
       }
       sections.push('');
     }
 
+    if (handoff.criticalContext) {
+      sections.push('### Critical Context');
+      sections.push(handoff.criticalContext);
+      sections.push('');
+    }
+
+    if (handoff.nextSteps.length > 0) {
+      sections.push('### Next Steps');
+      for (let i = 0; i < handoff.nextSteps.length; i++) {
+        sections.push(`${i + 1}. ${handoff.nextSteps[i]}`);
+      }
+      sections.push('');
+    }
+
+    // CASS pointer for session continuity
     if (handoff.cassPointer) {
       sections.push('### Prior Context');
       sections.push(handoff.cassPointer);
       sections.push('');
     }
 
+    // Handoff instructions for receiving agent
+    sections.push('### Handoff Context (for next session)');
+    sections.push(`1. Read this handoff file for full context on bead \`${handoff.beadId}\`.`);
+    sections.push(`2. Run: \`br show ${handoff.beadId} --json\` for current bead state.`);
+    sections.push(`3. ${handoff.cassPointer ?? 'Search CASS for prior work on this task.'}`);
+    sections.push('');
+
     return sections.join('\n');
   }
 
-  private parseHandoffMessage(msg: Record<string, unknown>): HandoffDocument {
-    const threadId = String(msg.thread_id ?? '');
-    const beadId = threadId.replace('bead:', '');
-
-    return {
-      beadId,
-      beadState: {
-        title: String(msg.subject ?? '').replace(/^\[.*?\]\s*Handoff:\s*/, ''),
-        status: 'unknown',
-      },
-      decisions: [],
-      modifiedFiles: [],
-      blockers: [],
-      openQuestions: [],
-      nextSteps: [],
-      criticalContext: String(msg.body ?? ''),
-      agentMailThread: threadId,
-    };
+  private extractTitle(content: string): string {
+    const match = content.match(/^##\s+Handoff:\s+(.+)$/m);
+    return match ? match[1].trim() : 'Unknown';
   }
 }
