@@ -3,9 +3,9 @@
 ## Report Format
 
 ```
-## Review Report: {track_description}
+## Review Report: {feature_description}
 
-**Track**: {track_id}
+**Feature**: {feature-name}
 **Commits**: {sha_list}
 **Files changed**: {count}
 
@@ -79,7 +79,7 @@ Options:
 - **Yes, apply fixes** -- Make the suggested changes automatically
 - **No, manual only** -- I'll handle fixes myself
 - **Show me each fix** -- Review and approve each fix individually
-- **Complete Track (ignore warnings)** -- Mark track complete without fixing warnings
+- **Complete Feature (ignore warnings)** -- Mark feature complete without fixing warnings
 
 ### Auto-Fixable vs. Human-Judgment Boundary
 
@@ -142,7 +142,7 @@ CI=true {test_command}
 
 # Commit
 git add {changed_files}
-git commit -m "fix(review): apply review fixes for track {track_id}"
+git commit -m "fix(review): apply review fixes for feature {feature-name}"
 ```
 
 **If tests fail after auto-fix**: Revert the auto-fix, report the failure, and reclassify the finding as human-only.
@@ -157,7 +157,7 @@ After committing, capture the new commit SHA and update `plan.md` with a new sec
 | {fix_description} | {severity} | auto/semi/manual | {commit_sha} |
 ```
 
-Write this section to `.maestro/tracks/{track_id}/plan.md` appended after existing content.
+Write this section to `.maestro/features/<feature-name>/plan.md` appended after existing content.
 
 ---
 
@@ -165,13 +165,13 @@ Write this section to `.maestro/tracks/{track_id}/plan.md` appended after existi
 
 After the review is complete (verdict delivered and any fixes applied):
 
-Ask the user: "Review complete. What would you like to do with this track?"
+Ask the user: "Review complete. What would you like to do with this feature?"
 Options:
-- **Archive** -- Move track to .maestro/archive/
-- **Delete** -- Remove track files entirely
-- **Keep** -- Leave track as-is for further work
+- **Archive** -- Move feature to .maestro/archive/
+- **Delete** -- Remove feature files entirely
+- **Keep** -- Leave feature as-is for further work
 - **Skip** -- Do nothing
 
-- **Archive**: Move `.maestro/tracks/{track_id}/` to `.maestro/archive/{track_id}/`
-- **Delete**: Remove `.maestro/tracks/{track_id}/` entirely
+- **Archive**: Move `.maestro/features/<feature-name>/` to `.maestro/archive/<feature-name>/`
+- **Delete**: Remove `.maestro/features/<feature-name>/` entirely
 - **Keep** / **Skip**: No file changes

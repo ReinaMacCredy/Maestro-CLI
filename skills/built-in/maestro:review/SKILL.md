@@ -1,54 +1,53 @@
 ---
 name: maestro:review
-description: "Code review for a track against its spec and plan. Verifies implementation matches requirements, checks code quality and security."
-argument-hint: "[<track-name>] [--current]"
+description: "Code review for a feature against its spec and plan. Verifies implementation matches requirements, checks code quality and security."
+argument-hint: "[<feature-name>] [--current]"
 ---
 
-# Review -- Track Code Review
+# Review -- Feature Code Review
 
-Review the implementation of a track against its specification and plan. Verifies intent match, code quality, test coverage, and security.
+Review the implementation of a feature against its specification and plan. Verifies intent match, code quality, test coverage, and security.
 
 ## Arguments
 
 `$ARGUMENTS`
 
-- `<track-name>`: Match track by name or ID substring
-- `--current`: Auto-select the in-progress (`[~]`) track
-- No args: ask user which track to review, or fall back to uncommitted/staged changes if no tracks exist
+- `<feature-name>`: Match feature by name or ID substring
+- `--current`: Auto-select the active (`claimed`) feature
+- No args: ask user which feature to review, or fall back to uncommitted/staged changes if no features exist
 
 ---
 
-## Step 1: Select Track
+## Step 1: Select Feature
 
-1. **If `--current`**: Find the `[~]` track in `.maestro/tracks.md`
-2. **If track name given**: Match by ID or description substring
-3. **If no args and tracks exist**: List completed and in-progress tracks, ask user
-4. **If no args and no tracks**: Fall back to reviewing uncommitted changes via `git diff HEAD`
+1. **If `--current`**: Find the active feature via `maestro_feature_list`
+2. **If feature name given**: Match by name or description substring
+3. **If no args and features exist**: List completed and claimed features, ask user
+4. **If no args and no features**: Fall back to reviewing uncommitted changes via `git diff HEAD`
 
-## Step 2: Load Track Context
+## Step 2: Load Feature Context
 
-Read all track files:
-- `.maestro/tracks/{track_id}/spec.md` -- requirements to verify against
-- `.maestro/tracks/{track_id}/plan.md` -- task SHAs and completion status
-- `.maestro/tracks/{track_id}/metadata.json` -- track metadata
-- `.maestro/context/code_styleguides/` -- code style references (if exist)
-- `.maestro/context/product-guidelines.md` -- product/brand/UX guidelines (if exists)
+Read all feature files:
+- `.maestro/features/<feature-name>/plan.md` -- requirements and task plan to verify against
+- `.maestro/features/<feature-name>/feature.json` -- feature metadata
+- `.maestro/memory/code_styleguides/` -- code style references (if exist)
+- `.maestro/memory/product-guidelines.md` -- product/brand/UX guidelines (if exists)
 
 ## Step 3: Collect Commits
 
-If `metadata.json` has `beads_epic_id`: use `br list --status closed --parent {epic_id} --all --json` and parse `close_reason` for SHAs (`sha:{7char}`). Otherwise: parse `plan.md` for all `[x] {sha}` markers.
+If `feature.json` has `beads_epic_id`: use `br list --status closed --parent {epic_id} --all --json` and parse `close_reason` for SHAs (`sha:{7char}`). Otherwise: parse `plan.md` for all `[x] {sha}` markers.
 
-If no SHAs found (and a track was selected): "Nothing to review." Stop.
+If no SHAs found (and a feature was selected): "Nothing to review." Stop.
 
-If operating in arbitrary scope (no track), skip -- diff collected in Step 4.
+If operating in arbitrary scope (no feature), skip -- diff collected in Step 4.
 
 ## Step 4: Aggregate Diffs
 
 ```bash
-# Track mode
+# Feature mode
 git diff {first_sha}^..{last_sha}
 
-# Arbitrary scope (no track)
+# Arbitrary scope (no feature)
 git diff HEAD
 ```
 
@@ -143,7 +142,7 @@ See `reference/report-template.md` for the auto-fix protocol and the boundary be
 
 ## Step 9: Post-Review Cleanup
 
-Offer archive, delete, keep, or skip for the track.
+Offer archive, delete, keep, or skip for the feature.
 See `reference/report-template.md` for cleanup options.
 
 ---
@@ -177,7 +176,7 @@ When multiple tasks are complete:
 
 ## Review Discipline
 
-These principles govern every review, whether track-scoped or ad-hoc.
+These principles govern every review, whether feature-scoped or ad-hoc.
 
 ### Iron Laws
 
@@ -288,13 +287,13 @@ Use NEEDS_DISCUSSION (instead of REQUEST_CHANGES) when:
 Recommended workflow:
 
 - `/maestro:setup` -- Scaffold project context (run first)
-- `/maestro:new-track` -- Create a feature/bug track with spec and plan
+- `/maestro:design` -- Create a feature with spec and plan
 - `/maestro:implement` -- Execute the implementation
 - `/maestro:review` -- **You are here.** Verify implementation correctness
-- `/maestro:status` -- Check progress across all tracks
+- `/maestro:status` -- Check progress across all features
 - `/maestro:revert` -- Undo implementation if needed
 - `/maestro:note` -- Capture decisions and context to persistent notepad
 
-Review works best after commits are made, as it analyzes git history to understand what was implemented. It compares the implementation against the spec from `/maestro:new-track` and the plan from `/maestro:implement`. If issues are found, use `/maestro:revert` to undo and re-implement, or apply fixes directly.
+Review works best after commits are made, as it analyzes git history to understand what was implemented. It compares the implementation against the plan and task specs. If issues are found, use `/maestro:revert` to undo and re-implement, or apply fixes directly.
 
 Remember: Good validation catches issues before they reach production. Be constructive but thorough in identifying gaps or improvements.

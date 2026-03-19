@@ -35,7 +35,7 @@ If an entry doesn't:
 | Quote style, semicolons, indent | Linter config | Auto-fixable, auto-enforceable |
 | File naming, architecture boundaries | AGENTS.md | Not statically checkable |
 | Build/test commands, gotchas | AGENTS.md | Agent needs these immediately |
-| Detailed conventions, test patterns | `.maestro/context/*.md` | Progressive disclosure |
+| Detailed conventions, test patterns | `.maestro/memory/*.md` | Progressive disclosure |
 | Function-specific constraints | Code comments | In-place, not session-wide |
 
 **Rule:** If a linter/formatter already enforces it, remove it from AGENTS.md. Duplicate enforcement is noise.
@@ -47,7 +47,7 @@ See `reference/style-enforcement.md` for: detecting project code style, writing 
 | Trigger | Action |
 |---------|--------|
 | New project bootstrap | Write initial AGENTS.md with build/test/style basics |
-| Feature completion | Sync new learnings via `hive_agents_md` tool |
+| Feature completion | Sync new learnings via `maestro agents-md` command |
 | Periodic review | Audit for stale/redundant entries (quarterly) |
 | Quality issues | Agent repeating mistakes? Check if AGENTS.md has the fix |
 
@@ -104,12 +104,12 @@ Agents read AGENTS.md top-to-bottom once at session start. Put high-value info f
 ## Gotchas & Anti-Patterns      <-- Things that break or mislead
 ```
 
-**Keep total under 100 lines.** The 100-line budget forces ruthless prioritization. Move detailed conventions, test patterns, and architecture deep-dives to `.maestro/context/` files (progressive disclosure -- loaded only when relevant).
+**Keep total under 100 lines.** The 100-line budget forces ruthless prioritization. Move detailed conventions, test patterns, and architecture deep-dives to `.maestro/memory/` files (progressive disclosure -- loaded only when relevant).
 
 **Progressive disclosure strategy:**
 - AGENTS.md: What every agent needs every session (build cmds, hard rules, gotchas)
-- `.maestro/context/code_conventions.md`: Detailed naming, file org, API patterns
-- `.maestro/context/test_patterns.md`: Test structure, fixtures, mocking approach
+- `.maestro/memory/code_conventions.md`: Detailed naming, file org, API patterns
+- `.maestro/memory/test_patterns.md`: Test structure, fixtures, mocking approach
 - Code comments: Function-specific constraints
 
 ## The Sync Workflow
@@ -118,7 +118,7 @@ After completing a feature, sync learnings to AGENTS.md:
 
 1. **Trigger sync:**
    ```typescript
-   hive_agents_md({ action: 'sync', feature: 'feature-name' })
+   maestro agents-md --action sync --feature feature-name
    ```
 
 2. **Review each proposal:**
@@ -132,7 +132,7 @@ After completing a feature, sync learnings to AGENTS.md:
 
 4. **Apply approved changes:**
    ```typescript
-   hive_agents_md({ action: 'apply' })
+   maestro agents-md --action apply
    ```
 
 **Warning:** Don't auto-approve all proposals. One bad entry pollutes all future sessions.
@@ -164,7 +164,7 @@ Remove entries when they become:
 
 | Warning Sign | Why It's Bad | Fix |
 |-------------|-------------|-----|
-| AGENTS.md > 100 lines | Agents lose focus, miss critical info | Move details to `.maestro/context/` |
+| AGENTS.md > 100 lines | Agents lose focus, miss critical info | Move details to `.maestro/memory/` |
 | Describes what code does | Agent can read code | Remove descriptions |
 | Missing build/test commands | First thing agents need | Add at top |
 | No gotchas section | Agents repeat past mistakes | Document failure modes |
@@ -227,14 +227,14 @@ Before finalizing AGENTS.md updates:
 - [ ] No entries describing what code does
 - [ ] No rules duplicated by linter/formatter config
 - [ ] Fresh agent session would benefit from each entry
-- [ ] Detailed patterns moved to `.maestro/context/` files
+- [ ] Detailed patterns moved to `.maestro/memory/` files
 
 ## Summary
 
 AGENTS.md is **behavioral memory**, not documentation:
 - Write for agents, optimize for behavior change
 - Signal = prevents mistakes, Noise = describes observables
-- Keep under 100 lines -- move details to `.maestro/context/` (progressive disclosure)
+- Keep under 100 lines -- move details to `.maestro/memory/` (progressive disclosure)
 - Don't duplicate what linters enforce -- see `reference/style-enforcement.md`
 - Sync after features, audit quarterly for drift
 - Test: Would agent make a mistake without this entry?
@@ -249,7 +249,7 @@ When generating AGENTS.md and CLAUDE.md from scratch, follow this workflow.
 
 If regenerating from scratch:
 
-1. Check which `.maestro/context/` files were created by this skill (not by `maestro:setup`). Skill-created files use snake_case names like `building_the_project.md`, `running_tests.md`, `code_conventions.md`, `service_architecture.md`, `database_schema.md`, etc. The `maestro:setup` files use kebab-case: `product.md`, `tech-stack.md`, `guidelines.md`, `product-guidelines.md`, `workflow.md`, `index.md`.
+1. Check which `.maestro/memory/` files were created by this skill (not by `maestro:setup`). Skill-created files use snake_case names like `building_the_project.md`, `running_tests.md`, `code_conventions.md`, `service_architecture.md`, `database_schema.md`, etc. The `maestro:setup` files use kebab-case: `product.md`, `tech-stack.md`, `guidelines.md`, `product-guidelines.md`, `workflow.md`, `index.md`.
 2. Delete the skill-created context files (preserve `maestro:setup` files).
 3. Delete `AGENTS.md` and `CLAUDE.md` if they exist.
 4. Report what was deleted.
@@ -261,11 +261,11 @@ Read-only exploration. Do NOT ask the user for permission to explore -- just do 
 
 **2a: Check for Maestro Context (pre-fill)**
 
-Search for `.maestro/context/product.md`. If it exists, `maestro:setup` has been run. Read these files for pre-fill data:
-- `.maestro/context/product.md` -- purpose, users, features
-- `.maestro/context/tech-stack.md` -- languages, frameworks, tools
-- `.maestro/context/guidelines.md` -- coding conventions
-- `.maestro/context/workflow.md` -- build/test methodology
+Search for `.maestro/memory/product.md`. If it exists, `maestro:setup` has been run. Read these files for pre-fill data:
+- `.maestro/memory/product.md` -- purpose, users, features
+- `.maestro/memory/tech-stack.md` -- languages, frameworks, tools
+- `.maestro/memory/guidelines.md` -- coding conventions
+- `.maestro/memory/workflow.md` -- build/test methodology
 
 Store findings as pre-fill. Do NOT ask questions the context already answers.
 
@@ -295,24 +295,24 @@ Organize discoveries into these categories (internal notes, not output):
 
 ### Step 3: Draft AGENTS.md
 
-Use the Section Structure guidance above. The output file MUST be under 100 lines. Apply the Iron Law, Signal/Noise filtering, and the "What Belongs Where" table to every entry. Move detailed patterns to `.maestro/context/` files.
+Use the Section Structure guidance above. The output file MUST be under 100 lines. Apply the Iron Law, Signal/Noise filtering, and the "What Belongs Where" table to every entry. Move detailed patterns to `.maestro/memory/` files.
 
 ### Step 4: Draft Progressive Disclosure Files
 
-Create well-named files in `.maestro/context/` for task-specific details that don't belong in the main AGENTS.md file.
+Create well-named files in `.maestro/memory/` for task-specific details that don't belong in the main AGENTS.md file.
 
 ### Step 5: Write Files
 
-1. Create `.maestro/context/` if it does not exist:
+1. Create `.maestro/memory/` if it does not exist:
    ```bash
-   mkdir -p .maestro/context
+   mkdir -p .maestro/memory
    ```
 
 2. Write `AGENTS.md` (overwrite if exists).
 
 3. Write `CLAUDE.md` with the same content as `AGENTS.md` (overwrite if exists).
 
-4. Write each progressive disclosure file to `.maestro/context/`.
+4. Write each progressive disclosure file to `.maestro/memory/`.
 
 5. Display summary:
    ```
@@ -320,8 +320,8 @@ Create well-named files in `.maestro/context/` for task-specific details that do
 
    - AGENTS.md ({line_count} lines)
    - CLAUDE.md ({line_count} lines)
-   - .maestro/context/building_the_project.md
-   - .maestro/context/running_tests.md
+   - .maestro/memory/building_the_project.md
+   - .maestro/memory/running_tests.md
    {additional files as created}
 
    Next steps:

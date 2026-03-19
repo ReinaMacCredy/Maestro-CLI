@@ -287,7 +287,7 @@ Hive detects runtime from project files:
 - `Dockerfile` → Builds from project Dockerfile
 - Fallback → `ubuntu:24.04`
 
-**Override:** Set `dockerImage` in config (`~/.config/opencode/agent_hive.json`).
+**Override:** Set `dockerImage` in `maestro.json` config.
 
 ## Red Flags - STOP
 

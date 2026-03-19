@@ -162,7 +162,7 @@ Security review scoped to the diff. Not a full audit -- focus on regressions and
 
 ## 6.5: Product Guidelines Compliance
 
-Only run this dimension if `.maestro/context/product-guidelines.md` was loaded.
+Only run this dimension if `.maestro/memory/product-guidelines.md` was loaded.
 
 ### Check Areas
 

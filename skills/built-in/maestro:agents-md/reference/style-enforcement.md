@@ -196,7 +196,7 @@ Not all style guidance belongs in AGENTS.md. Use progressive disclosure:
 - Architecture boundaries
 - Non-obvious gotchas
 
-**`.maestro/context/code_conventions.md` (loaded on demand):**
+**`.maestro/memory/code_conventions.md` (loaded on demand):**
 - Detailed naming patterns with examples
 - File organization rules
 - Test structure conventions
