@@ -72,11 +72,18 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Read feature memories
+    // Read feature memories (capped at 4KB to limit token injection)
+    const MAX_MEMORY_BYTES = 4096;
     const memories = services.memoryAdapter.list(featureName);
-    const memorySection = memories.length > 0
+    let memorySection = memories.length > 0
       ? '\n## Feature Memories\n\n' + memories.map(m => `### ${m.name}\n\n${m.content}`).join('\n\n---\n\n')
       : '';
+    if (memorySection.length > MAX_MEMORY_BYTES) {
+      const truncated = memorySection.slice(0, MAX_MEMORY_BYTES);
+      const lastNewline = truncated.lastIndexOf('\n');
+      memorySection = (lastNewline > 0 ? truncated.slice(0, lastNewline) : truncated)
+        + '\n\n[truncated -- use maestro_memory_read for full content]';
+    }
 
     // Rich bead context (when br backend provides design/AC)
     let richContext = '';

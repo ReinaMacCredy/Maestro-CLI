@@ -142,9 +142,6 @@ async function main(): Promise<void> {
     lines.push(`Recommended skills: ${skills.join(', ')}`);
   }
 
-  lines.push('');
-  lines.push('Use maestro MCP tools (maestro_status, maestro_task_claim, maestro_task_done, etc.) for workflow orchestration.');
-
   writeOutput({
     hookSpecificOutput: {
       hookEventName: HOOK_EVENTS.SessionStart,
