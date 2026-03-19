@@ -11,11 +11,11 @@ import { CliRunner } from '../utils/cli-runner.ts';
 interface CassSearchHit {
   source_path?: string;
   agent?: string;
-  line?: string;
-  match_line?: string;
+  snippet?: string;
+  content?: string;
   line_number?: number;
   score?: number;
-  relevance_score?: number;
+  title?: string;
 }
 
 export class CassSearchAdapter implements SearchPort {
@@ -34,14 +34,14 @@ export class CassSearchAdapter implements SearchPort {
     limit?: number;
     days?: number;
   }): Promise<SessionSearchResult[]> {
-    const args = ['search', query, '--robot', '--json'];
+    const args = ['search', query, '--robot'];
     if (opts?.limit) args.push('--limit', String(opts.limit));
     if (opts?.agent) args.push('--agent', opts.agent);
     if (opts?.days) args.push('--days', String(opts.days));
     args.push('--fields', 'minimal');
 
-    const raw = await this.cli.exec<CassSearchHit[] | { results: CassSearchHit[] }>(args);
-    const hits = Array.isArray(raw) ? raw : (raw.results ?? []);
+    const raw = await this.cli.exec<CassSearchHit[] | { hits?: CassSearchHit[]; results?: CassSearchHit[] }>(args);
+    const hits = Array.isArray(raw) ? raw : (raw.hits ?? raw.results ?? []);
     return hits.map(normalizeHit);
   }
 
@@ -54,8 +54,8 @@ function normalizeHit(hit: CassSearchHit): SessionSearchResult {
   return {
     sessionPath: hit.source_path ?? '',
     agent: hit.agent ?? 'unknown',
-    matchLine: hit.match_line ?? hit.line ?? '',
+    matchLine: hit.snippet ?? hit.title ?? '',
     lineNumber: hit.line_number ?? 0,
-    score: hit.relevance_score ?? hit.score ?? 0,
+    score: hit.score ?? 0,
   };
 }
