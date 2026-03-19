@@ -43,14 +43,17 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         skills.recommended.push('maestro:implement', 'maestro:dispatching');
       }
 
+      // Strip heavy fields for MCP -- agents use task_list / plan_read for details
+      const { items: _items, ...tasksSummary } = result.tasks;
+      const { comments: _comments, ...planSummary } = result.plan;
+
       return respond({
         ...result,
+        plan: planSummary,
+        tasks: tasksSummary,
         pipelineStage,
         researchTools,
         skills,
-        hint: skills.recommended.length > 0
-          ? `Load recommended skills: ${skills.recommended.map(s => `maestro_skill('${s}')`).join(', ')}`
-          : 'All skills loaded or no recommendations at this stage.',
       });
     }),
   );
