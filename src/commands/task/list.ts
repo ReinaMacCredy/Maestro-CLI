@@ -8,7 +8,7 @@ import { output, renderTaskTable } from '../../lib/output.ts';
 import { handleCommandError, MaestroError } from '../../lib/errors.ts';
 import type { TaskStatusType } from '../../types.ts';
 
-const VALID_STATUSES: TaskStatusType[] = ['pending', 'claimed', 'done', 'blocked'];
+const VALID_STATUSES: TaskStatusType[] = ['pending', 'claimed', 'done', 'blocked', 'review', 'revision'];
 
 export default defineCommand({
   meta: { name: 'task-list', description: 'List tasks for a feature' },

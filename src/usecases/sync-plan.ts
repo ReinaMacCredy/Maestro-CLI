@@ -33,6 +33,13 @@ export async function syncPlan(
   const parsedTasks = parseTasksFromPlan(plan.content);
   validateDependencyGraph(parsedTasks, featureName);
 
+  const warnings: string[] = [];
+  if (parsedTasks.length === 0) {
+    warnings.push(
+      'Plan produced 0 tasks. Expected "### N. Task Name" headings (e.g. "### 1. Setup database").'
+    );
+  }
+
   const existingTasks = await taskPort.list(featureName, { includeAll: true });
   const existingByFolder = new Map(existingTasks.map(t => [t.folder, t]));
   const parsedFolderSet = new Set(parsedTasks.map(p => p.folder));
@@ -51,7 +58,7 @@ export async function syncPlan(
       continue;
     }
 
-    if (existing.status === 'done' || existing.status === 'claimed') {
+    if (existing.status === 'done' || existing.status === 'claimed' || existing.status === 'review' || existing.status === 'revision') {
       result.kept.push(existing.folder);
       continue;
     }
@@ -91,6 +98,8 @@ export async function syncPlan(
 
     result.created.push(created.folder);
   }
+
+  if (warnings.length > 0) result.warnings = warnings;
 
   return result;
 }

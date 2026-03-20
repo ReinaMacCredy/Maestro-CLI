@@ -16,6 +16,7 @@ export interface PruneContextParams {
   completedTasks?: Array<{ name: string; summary: string }>;
   richContext: string;
   graphContext: string;
+  revisionContext?: string;
   workerRules: string;
   dcpConfig?: HiveConfig['dcp'];
   featureCreatedAt?: string;
@@ -44,7 +45,8 @@ const PRIOR_WORK_RE = /\n?## Prior Work\n[\s\S]*?(?=\n##\s|\n*$)/;
 export function pruneContext(params: PruneContextParams): PruneContextResult {
   const {
     taskFolder, task, spec, memories, completedTasks = [],
-    richContext, graphContext, workerRules, dcpConfig, featureCreatedAt,
+    richContext, graphContext, revisionContext = '', workerRules,
+    dcpConfig, featureCreatedAt,
   } = params;
 
   const cfg = resolveDcpConfig(dcpConfig);
@@ -128,6 +130,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     cleanSpec,
     richContext,
     workerRules,
+    revisionContext,
     graphContext,
     completedSection,
     memorySection,

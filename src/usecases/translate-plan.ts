@@ -38,6 +38,13 @@ export async function translatePlan(
   const parsedTasks = parseTasksFromPlan(plan.content);
   validateDependencyGraph(parsedTasks, featureName);
 
+  const warnings: string[] = [];
+  if (parsedTasks.length === 0) {
+    warnings.push(
+      'Plan produced 0 tasks. Expected "### N. Task Name" headings (e.g. "### 1. Setup database").'
+    );
+  }
+
   // Memory files deliberately omitted from bead descriptions.
   // The pre-agent hook handles memory injection via DCP at agent-spawn time,
   // so baking memories into beads would cause double injection.
@@ -64,7 +71,7 @@ export async function translatePlan(
       continue;
     }
 
-    if (existing.status === 'done' || existing.status === 'claimed') {
+    if (existing.status === 'done' || existing.status === 'claimed' || existing.status === 'review' || existing.status === 'revision') {
       result.kept.push(existing.folder);
       continue;
     }
@@ -99,6 +106,8 @@ export async function translatePlan(
 
     result.created.push(created.folder);
   }
+
+  if (warnings.length > 0) result.warnings = warnings;
 
   return result;
 }

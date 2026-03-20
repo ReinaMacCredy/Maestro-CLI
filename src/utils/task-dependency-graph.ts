@@ -28,7 +28,8 @@ export function computeRunnableAndBlocked(tasks: TaskWithDeps[]): RunnableBlocke
   const effectiveDepsByFolder = buildEffectiveDependencies(tasks);
 
   for (const task of tasks) {
-    if (task.status !== 'pending') {
+    // Both pending and revision tasks are candidates for runnable
+    if (task.status !== 'pending' && task.status !== 'revision') {
       continue;
     }
 
@@ -36,7 +37,8 @@ export function computeRunnableAndBlocked(tasks: TaskWithDeps[]): RunnableBlocke
 
     const unmetDeps = deps.filter(dep => {
       const depStatus = statusByFolder.get(dep);
-      return depStatus !== 'done';
+      // Both done and review satisfy dependencies
+      return depStatus !== 'done' && depStatus !== 'review';
     });
 
     if (unmetDeps.length === 0) {

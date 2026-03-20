@@ -19,7 +19,10 @@ import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { MaestroError } from './lib/errors.ts';
 import { checkCli } from './lib/cli-detect.ts';
+import { FsVerificationAdapter } from './adapters/verification.ts';
+import { resolveVerificationConfig } from './utils/verification-config.ts';
 import type { TaskPort } from './ports/tasks.ts';
+import type { VerificationPort } from './ports/verification.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
 import type { MemoryPort } from './ports/memory.ts';
@@ -29,6 +32,7 @@ import type { SearchPort } from './ports/search.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
+  verificationPort: VerificationPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
@@ -69,8 +73,12 @@ export function initServices(directory: string): MaestroServices {
     directory, taskPort, memoryAdapter, configAdapter,
   );
 
+  const verificationConfig = resolveVerificationConfig(config.verification);
+  const verificationPort: VerificationPort = new FsVerificationAdapter(verificationConfig);
+
   _services = {
     taskPort,
+    verificationPort,
     featureAdapter: new FsFeatureAdapter(directory),
     planAdapter: new FsPlanAdapter(directory),
     memoryAdapter,

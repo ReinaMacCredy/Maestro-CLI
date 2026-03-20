@@ -1,6 +1,6 @@
 /**
  * Workflow utilities for maestroCLI.
- * Updated for 4-state model (pending/claimed/done/blocked).
+ * Updated for 6-state model (pending/claimed/done/blocked/review/revision).
  */
 
 import type { TaskStatusType } from '../types.ts';
@@ -28,12 +28,16 @@ export function countTaskStatuses(tasks: Array<{ status: TaskStatusType }>): {
   pending: number;
   inProgress: number;
   done: number;
+  review: number;
+  revision: number;
 } {
-  const counts = { pending: 0, inProgress: 0, done: 0 };
+  const counts = { pending: 0, inProgress: 0, done: 0, review: 0, revision: 0 };
   for (const t of tasks) {
     if (t.status === 'pending') counts.pending++;
     else if (t.status === 'claimed') counts.inProgress++;
     else if (t.status === 'done') counts.done++;
+    else if (t.status === 'review') counts.review++;
+    else if (t.status === 'revision') counts.revision++;
     // blocked tasks counted separately via filter
   }
   return counts;
@@ -56,14 +60,23 @@ export function getNextAction(
 
   let claimedFolder: string | undefined;
   let blockedFolder: string | undefined;
+  let reviewFolder: string | undefined;
+  let revisionFolder: string | undefined;
   let hasPending = false;
   for (const t of tasks) {
     if (!claimedFolder && t.status === 'claimed') claimedFolder = t.folder;
     if (!blockedFolder && t.status === 'blocked') blockedFolder = t.folder;
+    if (!reviewFolder && t.status === 'review') reviewFolder = t.folder;
+    if (!revisionFolder && t.status === 'revision') revisionFolder = t.folder;
     if (!hasPending && t.status === 'pending') hasPending = true;
-    if (claimedFolder && blockedFolder && hasPending) break;
   }
 
+  if (reviewFolder) {
+    return `Task awaiting review: ${reviewFolder}. Use task_accept or task_reject.`;
+  }
+  if (revisionFolder) {
+    return `Task needs revision -- claim to retry: ${revisionFolder}`;
+  }
   if (claimedFolder) {
     return `Task in progress: ${claimedFolder}`;
   }

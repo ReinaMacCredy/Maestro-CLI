@@ -7,7 +7,7 @@ type TaskEntry = { status: TaskStatusType; folder: string };
 describe("countTaskStatuses", () => {
   test("returns all zeros for empty list", () => {
     const counts = countTaskStatuses([]);
-    expect(counts).toEqual({ pending: 0, inProgress: 0, done: 0 });
+    expect(counts).toEqual({ pending: 0, inProgress: 0, done: 0, review: 0, revision: 0 });
   });
 
   test("counts mixed statuses correctly", () => {
@@ -48,7 +48,7 @@ describe("countTaskStatuses", () => {
 
     const counts = countTaskStatuses(tasks);
 
-    expect(counts).toEqual({ pending: 0, inProgress: 2, done: 0 });
+    expect(counts).toEqual({ pending: 0, inProgress: 2, done: 0, review: 0, revision: 0 });
   });
 });
 

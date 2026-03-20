@@ -38,9 +38,16 @@ export async function completeFeature(
 
   if (incomplete.length > 0) {
     const incompleteList = incomplete.map(t => `${t.folder} (${t.status})`).join(', ');
+    const hints = ['Complete all tasks before completing the feature'];
+    if (incomplete.some(t => t.status === 'review')) {
+      hints.push('Tasks in review need task_accept or task_reject before completion');
+    }
+    if (incomplete.some(t => t.status === 'revision')) {
+      hints.push('Tasks in revision need to be re-claimed and completed');
+    }
     throw new MaestroError(
       `Cannot complete feature: ${incomplete.length} task(s) not done: ${incompleteList}`,
-      ['Complete all tasks before completing the feature']
+      hints,
     );
   }
 

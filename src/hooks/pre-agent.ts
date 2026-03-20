@@ -116,6 +116,7 @@ async function main(): Promise<void> {
     const featureName = activeFeature.name;
     const task = await services.taskPort.get(featureName, taskFolder);
 
+    // Accept claimed tasks (fresh or re-claimed from revision)
     if (!task || task.status !== 'claimed') {
       writeOutput({});
       return;
@@ -126,6 +127,36 @@ async function main(): Promise<void> {
     if (!spec) {
       writeOutput({});
       return;
+    }
+
+    // Build revision context if this is a re-claimed task from revision
+    let revisionContext = '';
+    if (task.revisionCount && task.revisionCount > 0) {
+      const verificationReport = await services.taskPort.readVerification(featureName, taskFolder);
+      const parts: string[] = [
+        `\n## Revision Context (attempt ${task.revisionCount + 1})`,
+        '',
+      ];
+      if (task.revisionFeedback) {
+        parts.push(`**Feedback**: ${task.revisionFeedback}`);
+      }
+      if (verificationReport) {
+        const failed = verificationReport.criteria.filter(c => !c.passed);
+        if (failed.length > 0) {
+          parts.push('', '**Failed checks**:');
+          for (const c of failed) {
+            parts.push(`- ${c.name}: ${c.detail}`);
+          }
+        }
+        if (verificationReport.suggestions.length > 0) {
+          parts.push('', '**Suggestions**:');
+          for (const s of verificationReport.suggestions) {
+            parts.push(`- ${s}`);
+          }
+        }
+      }
+      parts.push('');
+      revisionContext = parts.join('\n');
     }
 
     // Parallelize independent async reads (rich fields + graph insights)
@@ -161,7 +192,7 @@ async function main(): Promise<void> {
     const { injection, metrics } = pruneContext({
       featureName, taskFolder, task, spec,
       memories, completedTasks,
-      richContext, graphContext,
+      richContext, graphContext, revisionContext,
       workerRules: WORKER_RULES,
       dcpConfig, featureCreatedAt,
     });

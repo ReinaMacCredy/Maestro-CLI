@@ -7,6 +7,8 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam, taskParam } from './_utils/params.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
 import { translatePlan } from '../usecases/translate-plan.ts';
+import { verifyTask } from '../usecases/verify-task.ts';
+import { resolveVerificationConfig } from '../utils/verification-config.ts';
 import type { ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 
@@ -49,7 +51,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const runnable = await services.taskPort.getRunnable(feature);
 
       // Metadata for all runnable tasks; compiled spec only for the recommended (first) task
-      const tasks = runnable.map(({ folder, name, dependsOn }) => ({ folder, name, dependsOn }));
+      const tasks = runnable.map(({ folder, name, status, dependsOn }) => ({ folder, name, status, dependsOn }));
       const recommendedSpec = runnable.length > 0
         ? await services.taskPort.readSpec(feature, runnable[0].folder)
         : undefined;
@@ -80,7 +82,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
   server.registerTool(
     'maestro_task_done',
     {
-      description: 'Mark a claimed task as complete. Provide a summary of work done.',
+      description: 'Mark a claimed task as complete. Runs verification checks against spec and acceptance criteria. If checks fail, task enters review state.',
       inputSchema: {
         feature: featureParam(),
         task: taskParam(),
@@ -91,8 +93,99 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const task = await services.taskPort.done(feature, input.task, input.summary);
-      return respond({ feature, task });
+      const config = services.configAdapter.get();
+      const vConfig = resolveVerificationConfig(config.verification);
+
+      const result = await verifyTask(
+        services.taskPort, services.verificationPort,
+        services.memoryAdapter, vConfig,
+        services.directory, feature, input.task, input.summary,
+      );
+
+      if (result.newStatus === 'done') {
+        return respond({ feature, task: result.task, verification: result.report });
+      }
+
+      // Verification failed -- task is in 'review' state
+      const currentTask = await services.taskPort.get(feature, input.task);
+      const revisionCount = currentTask?.revisionCount ?? 0;
+
+      if (vConfig.autoReject && revisionCount >= vConfig.maxRevisions) {
+        // Max revisions reached -- force-accept
+        const acceptedTask = await services.taskPort.done(feature, input.task, input.summary);
+        services.memoryAdapter.write(feature, `verification-auto-accept-${input.task}`,
+          `---\ntags: [verification, auto-accept]\ncategory: debug\npriority: 1\n---\n\nTask ${input.task} auto-accepted after ${vConfig.maxRevisions} revision(s). Score: ${result.report.score.toFixed(2)}`);
+        return respond({
+          feature, task: acceptedTask, verification: result.report,
+          warning: `Auto-accepted after ${vConfig.maxRevisions} revision(s) with score ${result.report.score.toFixed(2)}`,
+        });
+      }
+
+      if (vConfig.autoReject) {
+        // Auto-transition review -> revision
+        const feedback = result.report.suggestions.join('; ') || 'Verification failed';
+        const revisionTask = await services.taskPort.revision(
+          feature, input.task, feedback, revisionCount + 1,
+        );
+        return respond({
+          feature, task: revisionTask, verification: result.report,
+          status: 'revision', message: `Verification failed (score: ${result.report.score.toFixed(2)}). Task sent to revision.`,
+        });
+      }
+
+      // Manual review -- orchestrator decides
+      return respond({
+        feature, task: result.task, verification: result.report,
+        status: 'review', message: `Verification failed (score: ${result.report.score.toFixed(2)}). Use task_accept or task_reject.`,
+      });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_accept',
+    {
+      description: 'Accept a task in review state, overriding failed verification. Transitions review -> done.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+        summary: z.string().optional().describe('Override summary (uses existing if omitted)'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const existing = await services.taskPort.get(feature, input.task);
+      if (!existing || existing.status !== 'review') {
+        throw new Error(`Task '${input.task}' is not in review state (current: ${existing?.status ?? 'not found'})`);
+      }
+      const summary = input.summary ?? existing.summary ?? '';
+      const task = await services.taskPort.done(feature, input.task, summary);
+      return respond({ feature, task, message: 'Task accepted (verification override)' });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_reject',
+    {
+      description: 'Reject a task in review state and send for revision. Transitions review -> revision with feedback.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+        feedback: z.string().describe('Feedback for the revision -- what needs to change'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const existing = await services.taskPort.get(feature, input.task);
+      if (!existing || existing.status !== 'review') {
+        throw new Error(`Task '${input.task}' is not in review state (current: ${existing?.status ?? 'not found'})`);
+      }
+      const revisionCount = (existing.revisionCount ?? 0) + 1;
+      const task = await services.taskPort.revision(feature, input.task, input.feedback, revisionCount);
+      return respond({ feature, task, message: `Task sent for revision (attempt ${revisionCount})` });
     }),
   );
 
@@ -142,7 +235,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       description: 'List tasks for a feature with their status. Shows dependency ordering and which tasks are runnable.',
       inputSchema: {
         feature: featureParam(),
-        status: z.enum(['pending', 'claimed', 'done', 'blocked']).optional().describe('Filter by status'),
+        status: z.enum(['pending', 'claimed', 'done', 'blocked', 'review', 'revision']).optional().describe('Filter by status'),
         includeAll: z.boolean().optional().describe('Include all tasks regardless of status'),
         brief: z.boolean().optional().default(false).describe('Return compact task info (folder, name, status, origin, dependsOn only)'),
       },

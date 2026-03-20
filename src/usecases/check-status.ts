@@ -45,6 +45,8 @@ export interface StatusResult {
     pending: number;
     inProgress: number;
     done: number;
+    review: number;
+    revision: number;
     items: TaskInfo[];
   };
   runnable: string[];

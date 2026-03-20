@@ -35,7 +35,7 @@ export async function checkDependencies(
 
   for (const depFolder of deps) {
     const depStatus = statusByFolder.get(depFolder) ?? 'unknown';
-    if (depStatus !== 'done') {
+    if (depStatus !== 'done' && depStatus !== 'review') {
       unmetDeps.push({ folder: depFolder, status: depStatus });
     }
   }
