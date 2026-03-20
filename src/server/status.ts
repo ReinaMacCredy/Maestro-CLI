@@ -17,6 +17,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         'Call this at session start to understand where you are.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        verbose: z.boolean().optional().default(false).describe('Include researchTools in response'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
@@ -32,7 +33,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         taskDone: result.tasks.done,
         contextCount: result.context.count,
       });
-      const researchTools = detectResearchTools(services.directory);
+      const researchTools = input.verbose ? detectResearchTools(services.directory) : undefined;
 
       const skills: { recommended: string[] } = { recommended: [] };
       if (pipelineStage === 'discovery' || pipelineStage === 'research') {
@@ -52,7 +53,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         plan: planSummary,
         tasks: tasksSummary,
         pipelineStage,
-        researchTools,
+        ...(input.verbose && { researchTools }),
         skills,
       });
     }),
