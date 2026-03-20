@@ -17,11 +17,17 @@ import * as path from 'node:path';
 
 const DEFAULT_AGENT_MAIL_URL = 'http://localhost:8765';
 
+interface AgentMailIdentity {
+  agentName: string;
+  projectSlug: string;
+}
+
 export class AgentMailHandoffAdapter implements HandoffPort {
   private baseUrl: string;
   private projectRoot: string;
   private taskPort: TaskPort;
   private memoryAdapter: MemoryPort;
+  private identity: AgentMailIdentity | undefined;
 
   constructor(
     projectRoot: string,
@@ -68,6 +74,73 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     };
   }
 
+  private identityPath(): string {
+    return path.join(this.projectRoot, '.maestro', '.agent-mail.json');
+  }
+
+  private async rpc(tool: string, args: Record<string, unknown>): Promise<{ isError: boolean; text?: string }> {
+    const response = await fetch(`${this.baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: `maestro-${Date.now()}`,
+        method: 'tools/call',
+        params: { name: tool, arguments: args },
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return { isError: true };
+    const json = await response.json() as { result?: { isError?: boolean; content?: Array<{ text?: string }> } };
+    return {
+      isError: json.result?.isError ?? false,
+      text: json.result?.content?.[0]?.text,
+    };
+  }
+
+  private async ensureIdentity(): Promise<AgentMailIdentity | undefined> {
+    if (this.identity) return this.identity;
+
+    // Try cached identity from disk
+    try {
+      const raw = readText(this.identityPath());
+      if (raw) {
+        const cached = JSON.parse(raw) as AgentMailIdentity;
+        if (cached.agentName && cached.projectSlug) {
+          this.identity = cached;
+          return this.identity;
+        }
+      }
+    } catch { /* no cache or corrupt -- register fresh */ }
+
+    // Register project
+    const proj = await this.rpc('ensure_project', { human_key: this.projectRoot });
+    if (proj.isError || !proj.text) return undefined;
+    const projectSlug = JSON.parse(proj.text).slug as string;
+
+    // Register agent (Agent Mail assigns the name)
+    const agent = await this.rpc('register_agent', {
+      project_key: this.projectRoot,
+      program: 'maestro',
+      model: 'orchestrator',
+    });
+    if (agent.isError || !agent.text) return undefined;
+    const agentName = JSON.parse(agent.text).name as string;
+
+    this.identity = { agentName, projectSlug };
+
+    // Persist for future process invocations
+    try {
+      ensureDir(path.dirname(this.identityPath()));
+      writeText(this.identityPath(), JSON.stringify(this.identity, null, 2));
+    } catch { /* best-effort persistence */ }
+
+    return this.identity;
+  }
+
   async sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult> {
     const body = this.formatHandoffMessage(handoff);
 
@@ -81,36 +154,31 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     let threadId: string | undefined;
 
     try {
-      threadId = `bead:${handoff.beadId}`;
-      const payload = {
-        jsonrpc: '2.0',
-        id: `handoff-${Date.now()}`,
-        method: 'tools/call',
-        params: {
-          name: 'send_message',
-          arguments: {
-            project_key: this.projectRoot,
-            from_agent: 'maestro',
-            to_agents: targetAgent ? [targetAgent] : [],
-            subject: `[${handoff.beadId}] Handoff: ${handoff.beadState.title}`,
-            body,
-            thread_id: threadId,
-            importance: 'high',
-          },
-        },
-      };
-
-      const response = await fetch(`${this.baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(5000),
-      });
-
-      agentMailSent = response.ok;
+      threadId = `bead-${handoff.beadId}`;
+      const id = await this.ensureIdentity();
+      if (id) {
+        const subject = targetAgent
+          ? `[${handoff.beadId}] Handoff for ${targetAgent}: ${handoff.beadState.title}`
+          : `[${handoff.beadId}] Handoff: ${handoff.beadState.title}`;
+        const result = await this.rpc('send_message', {
+          project_key: this.projectRoot,
+          sender_name: id.agentName,
+          to: [],
+          subject,
+          body_md: body,
+          thread_id: threadId,
+          importance: 'high',
+          broadcast: true,
+        });
+        agentMailSent = !result.isError;
+        if (agentMailSent && result.text) {
+          try {
+            const parsed = JSON.parse(result.text);
+            const msgId = parsed.deliveries?.[0]?.payload?.id ?? parsed.id;
+            threadId = String(msgId ?? threadId);
+          } catch { /* keep string threadId as fallback */ }
+        }
+      }
     } catch {
       // Agent Mail unreachable -- file was still written
     }
@@ -151,29 +219,16 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   async acknowledgeHandoff(threadId: string): Promise<void> {
-    try {
-      const payload = {
-        jsonrpc: '2.0',
-        id: `ack-${Date.now()}`,
-        method: 'tools/call',
-        params: {
-          name: 'acknowledge_message',
-          arguments: {
-            project_key: this.projectRoot,
-            message_id: threadId,
-            agent_name: 'maestro',
-          },
-        },
-      };
+    const msgId = parseInt(threadId, 10);
+    if (isNaN(msgId)) return; // Not a valid Agent Mail message ID -- skip silently
 
-      await fetch(`${this.baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(5000),
+    try {
+      const id = await this.ensureIdentity();
+      if (!id) return;
+      await this.rpc('acknowledge_message', {
+        project_key: this.projectRoot,
+        message_id: msgId,
+        agent_name: id.agentName,
       });
     } catch {
       // Best-effort

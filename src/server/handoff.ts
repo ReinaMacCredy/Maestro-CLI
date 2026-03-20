@@ -45,6 +45,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       description:
         'Check for pending handoffs addressed to this agent via Agent Mail.',
       inputSchema: {
+        feature: featureParam(),
         agent_id: z.string().describe('Your agent name/ID'),
       },
       annotations: ANNOTATIONS_READONLY,
@@ -54,7 +55,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       if (!services.handoffPort) {
         throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
       }
-      const feature = requireFeature(services, undefined);
+      const feature = requireFeature(services, input.feature);
       const handoffs = await services.handoffPort.receiveHandoffs(feature, input.agent_id);
       return respond({ handoffs });
     }),
