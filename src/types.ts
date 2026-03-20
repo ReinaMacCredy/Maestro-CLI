@@ -105,6 +105,7 @@ export interface MemoryFile {
   name: string;
   content: string;
   updatedAt: string;
+  sizeBytes: number;
 }
 
 // ============================================================================

@@ -66,21 +66,26 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       description: 'List memory files. Lists feature memory by default, or global memory if feature is omitted.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature; omit for global memory)'),
+        brief: z.boolean().optional().default(false).describe('Return metadata only (omit content)'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
+      const strip = (files: import('../types.ts').MemoryFile[]) =>
+        input.brief
+          ? files.map(({ name, updatedAt, sizeBytes }) => ({ name, updatedAt, sizeBytes }))
+          : files;
       // Try feature-scoped first (resolves active feature when param omitted)
       try {
         const feature = requireFeature(services, input.feature);
         const files = services.memoryAdapter.list(feature);
-        return respond({ feature, files });
+        return respond({ feature, files: strip(files) });
       } catch {
         // No active feature -- fall through to global
       }
       const files = services.memoryAdapter.listGlobal();
-      return respond({ scope: 'global', files });
+      return respond({ scope: 'global', files: strip(files) });
     }),
   );
 

@@ -136,6 +136,7 @@ export class FsMemoryAdapter implements MemoryPort {
         name: name.replace(/\.md$/, ''),
         content,
         updatedAt: stat.mtime.toISOString(),
+        sizeBytes: stat.size,
       };
     });
   }
