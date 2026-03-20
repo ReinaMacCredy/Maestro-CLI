@@ -83,8 +83,10 @@ export async function checkStatus(
   const memoryStats = memoryAdapter.stats(featureName);
   const comments = plan?.comments || [];
 
+  const config = configAdapter.get();
+
   // Detect expired claims
-  const claimExpiresMinutes = configAdapter.get().claimExpiresMinutes ?? 120;
+  const claimExpiresMinutes = config.claimExpiresMinutes ?? 120;
   const expiryMs = claimExpiresMinutes * 60 * 1000;
   const now = Date.now();
   const expiredClaims = tasks
@@ -108,7 +110,7 @@ export async function checkStatus(
     runnableFolders,
   );
 
-  const dcpCfg = resolveDcpConfig(configAdapter.get().dcp);
+  const dcpCfg = resolveDcpConfig(config.dcp);
 
   return {
     feature: {

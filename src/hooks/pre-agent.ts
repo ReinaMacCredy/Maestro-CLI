@@ -17,17 +17,18 @@ import { initServices } from '../services.ts';
 import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 import type { TaskInfo } from '../types.ts';
+import type { RichTaskFields } from '../ports/tasks.ts';
 
 export { WORKER_RULES };
 
 const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
 
-type RichFields = { design?: string; acceptanceCriteria?: string };
-type GraphInsights = { criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> };
+/** Subset of GraphInsights from ports/graph.ts -- only the fields formatGraphContext needs. */
+type GraphInsightsSubset = { criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> };
 
 /** Format rich bead context (design/AC) from getRichFields result. */
 export function formatRichContext(
-  richResult: PromiseSettledResult<RichFields | null>,
+  richResult: PromiseSettledResult<RichTaskFields | null>,
 ): string {
   const rich = richResult.status === 'fulfilled' ? richResult.value : null;
   if (!rich) return '';
@@ -39,7 +40,7 @@ export function formatRichContext(
 
 /** Format graph context (critical path/bottleneck flags) from getInsights result. */
 export function formatGraphContext(
-  insightsResult: PromiseSettledResult<GraphInsights | null>,
+  insightsResult: PromiseSettledResult<GraphInsightsSubset | null>,
   taskFolder: string,
   task: TaskInfo,
 ): string {
@@ -134,9 +135,9 @@ async function main(): Promise<void> {
     ]);
 
     // Format context sections
-    const richContext = formatRichContext(richResult as PromiseSettledResult<RichFields | null>);
+    const richContext = formatRichContext(richResult as PromiseSettledResult<RichTaskFields | null>);
     const graphContext = formatGraphContext(
-      insightsResult as PromiseSettledResult<GraphInsights | null>,
+      insightsResult as PromiseSettledResult<GraphInsightsSubset | null>,
       taskFolder, task,
     );
 

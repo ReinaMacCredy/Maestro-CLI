@@ -39,8 +39,7 @@ export default defineCommand({
 
       const spec = await services.taskPort.readSpec(feature, args.task) ?? '(no spec)';
       const memories = services.memoryAdapter.listWithMeta(feature);
-      const dcpConfig = services.configAdapter.get().dcp;
-      const resolvedDcp = resolveDcpConfig(dcpConfig);
+      const resolvedDcp = resolveDcpConfig(services.configAdapter.get().dcp);
 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;
@@ -54,7 +53,7 @@ export default defineCommand({
         richContext: '',
         graphContext: '',
         workerRules: WORKER_RULES,
-        dcpConfig,
+        dcpConfig: resolvedDcp,
         featureCreatedAt,
       });
 
