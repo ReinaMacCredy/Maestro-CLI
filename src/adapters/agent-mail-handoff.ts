@@ -9,6 +9,8 @@
 import type { HandoffPort, HandoffDocument, HandoffResult } from '../ports/handoff.ts';
 import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import type { FsConfigAdapter } from './fs/config.ts';
+import { selectMemories } from '../utils/context-selector.ts';
 import { getHandoffPath, getHandoffsPath } from '../utils/paths.ts';
 import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
@@ -27,17 +29,20 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   private projectRoot: string;
   private taskPort: TaskPort;
   private memoryAdapter: MemoryPort;
+  private configAdapter: FsConfigAdapter;
   private identity: AgentMailIdentity | undefined;
 
   constructor(
     projectRoot: string,
     taskPort: TaskPort,
     memoryAdapter: MemoryPort,
+    configAdapter: FsConfigAdapter,
     agentMailUrl?: string,
   ) {
     this.projectRoot = projectRoot;
     this.taskPort = taskPort;
     this.memoryAdapter = memoryAdapter;
+    this.configAdapter = configAdapter;
     this.baseUrl = agentMailUrl ?? process.env.AGENT_MAIL_URL ?? DEFAULT_AGENT_MAIL_URL;
   }
 
@@ -47,11 +52,30 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       ? await this.taskPort.getRichFields(feature, taskId)
       : null;
 
-    const memories = this.memoryAdapter.list(feature);
-    const decisions = memories.map(mf => ({
-      key: mf.name,
-      value: mf.content.slice(0, 500),
-    }));
+    const dcpConfig = this.configAdapter.get().dcp;
+    const dcpEnabled = dcpConfig?.enabled ?? true;
+
+    let decisions: Array<{ key: string; value: string }>;
+
+    if (dcpEnabled && task) {
+      const allMemories = this.memoryAdapter.listWithMeta(feature);
+      const budget = dcpConfig?.handoffDecisionBudgetBytes ?? 2048;
+      const selected = selectMemories(
+        allMemories, task, null, budget,
+        dcpConfig?.relevanceThreshold ?? 0.1,
+      );
+      decisions = selected.memories.map(m => ({
+        key: m.name,
+        value: m.bodyContent.slice(0, 500),
+      }));
+    } else {
+      // Legacy: all memories, 500ch truncation (DCP disabled or task not found)
+      const memories = this.memoryAdapter.list(feature);
+      decisions = memories.map(mf => ({
+        key: mf.name,
+        value: mf.content.slice(0, 500),
+      }));
+    }
 
     const modifiedFiles = this.getModifiedFiles();
 

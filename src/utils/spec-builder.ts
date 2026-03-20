@@ -1,6 +1,6 @@
 /**
  * Task spec builder for maestroCLI.
- * Builds task spec content from plan sections, memory, and dependency info.
+ * Builds task spec content from plan sections and dependency info.
  */
 
 export interface BuildSpecParams {
@@ -9,7 +9,6 @@ export interface BuildSpecParams {
   dependsOn: string[];
   allTasks: Array<{ folder: string; name: string; order: number }>;
   planContent?: string | null;
-  memoryFiles?: Array<{ name: string; content: string }>;
   completedTasks?: Array<{ name: string; summary: string }>;
 }
 
@@ -17,7 +16,7 @@ export interface BuildSpecParams {
  * Build spec content for a task.
  */
 export function buildSpecContent(params: BuildSpecParams): string {
-  const { featureName, task, dependsOn, allTasks, planContent, memoryFiles = [], completedTasks = [] } = params;
+  const { featureName, task, dependsOn, allTasks, planContent, completedTasks = [] } = params;
 
   const specLines: string[] = [
     `# Task: ${task.folder}`,
@@ -55,13 +54,6 @@ export function buildSpecContent(params: BuildSpecParams): string {
   const taskType = getTaskType(planSection, task.name);
   if (taskType) {
     specLines.push('## Task Type', '', taskType, '');
-  }
-
-  if (memoryFiles.length > 0) {
-    const memoryCompiled = memoryFiles
-      .map(f => `## ${f.name}\n\n${f.content}`)
-      .join('\n\n---\n\n');
-    specLines.push('## Memory', '', memoryCompiled, '');
   }
 
   if (completedTasks.length > 0) {

@@ -170,6 +170,7 @@ export interface HiveConfig {
     completedTaskBudgetBytes?: number;  // default 2048
     observationMasking?: boolean;       // default true
     relevanceThreshold?: number;        // minimum score to include, default 0.1
+    handoffDecisionBudgetBytes?: number; // default 2048
   };
 }
 
@@ -199,6 +200,7 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
     completedTaskBudgetBytes: 2048,
     observationMasking: true,
     relevanceThreshold: 0.1,
+    handoffDecisionBudgetBytes: 2048,
   },
   agents: {
     'hive-master': {

@@ -66,7 +66,7 @@ export function initServices(directory: string): MaestroServices {
 
   // Handoff port: Agent Mail (lazy -- actual connectivity check on first call)
   const handoffPort: HandoffPort | undefined = new AgentMailHandoffAdapter(
-    directory, taskPort, memoryAdapter,
+    directory, taskPort, memoryAdapter, configAdapter,
   );
 
   _services = {

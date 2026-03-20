@@ -10,7 +10,6 @@
 
 import type { TaskPort } from '../ports/tasks.ts';
 import type { PlanPort } from '../ports/plans.ts';
-import type { MemoryPort } from '../ports/memory.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
 import { buildBeadOpts } from '../utils/bead-builder.ts';
 import { MaestroError } from '../lib/errors.ts';
@@ -19,14 +18,13 @@ import type { TasksSyncResult } from '../types.ts';
 export interface TranslatePlanServices {
   taskPort: TaskPort;
   planAdapter: PlanPort;
-  memoryAdapter: MemoryPort;
 }
 
 export async function translatePlan(
   services: TranslatePlanServices,
   featureName: string,
 ): Promise<TasksSyncResult> {
-  const { taskPort, planAdapter, memoryAdapter } = services;
+  const { taskPort, planAdapter } = services;
 
   const plan = planAdapter.read(featureName);
   if (!plan) throw new MaestroError(`No plan found for feature '${featureName}'`);
@@ -40,11 +38,9 @@ export async function translatePlan(
   const parsedTasks = parseTasksFromPlan(plan.content);
   validateDependencyGraph(parsedTasks, featureName);
 
-  // Gather context for rich beads
-  const memoryFiles = memoryAdapter.list(featureName).map(mf => ({
-    name: mf.name,
-    content: mf.content,
-  })).filter(m => m.content);
+  // Memory files deliberately omitted from bead descriptions.
+  // The pre-agent hook handles memory injection via DCP at agent-spawn time,
+  // so baking memories into beads would cause double injection.
 
   const existingTasks = await taskPort.list(featureName, { includeAll: true });
   const existingByFolder = new Map(existingTasks.map(t => [t.folder, t]));
@@ -95,7 +91,6 @@ export async function translatePlan(
       planContent: plan.content,
       allTasks: parsedTasks,
       dependsOn,
-      memoryFiles,
       completedTasks,
     });
 

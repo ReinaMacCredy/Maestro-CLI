@@ -69,10 +69,11 @@ export function selectMemories(
     }
   }
 
+  const includedNames = new Set(included.map(i => i.memory.name));
   const scores = scored.map(s => ({
     name: s.memory.name,
     score: s.score,
-    included: included.some(i => i.memory.name === s.memory.name),
+    included: includedNames.has(s.memory.name),
   }));
 
   return {
