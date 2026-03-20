@@ -148,6 +148,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
         status: z.enum(['pending', 'claimed', 'done', 'blocked']).optional().describe('Filter by status'),
         includeAll: z.boolean().optional().describe('Include all tasks regardless of status'),
+        brief: z.boolean().optional().default(false).describe('Return compact task info (folder, name, status, origin, dependsOn only)'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
@@ -165,6 +166,12 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       if (input.status !== undefined) opts.status = input.status as TaskStatusType;
       if (input.includeAll !== undefined) opts.includeAll = input.includeAll;
       const tasks = await services.taskPort.list(feature, opts);
+      if (input.brief) {
+        const compact = tasks.map(({ folder, name, status, origin, dependsOn }) => ({
+          folder, name, status, origin, dependsOn,
+        }));
+        return respond({ feature, tasks: compact });
+      }
       return respond({ feature, tasks });
     }),
   );
