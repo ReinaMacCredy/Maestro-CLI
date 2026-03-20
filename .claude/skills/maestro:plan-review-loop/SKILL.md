@@ -7,11 +7,12 @@ description: "Deep-review any plan (maestro, Codex, Claude Code plan mode, or pl
 
 ## Overview
 
-Iteratively review and improve a plan through two complementary passes:
-1. **Structural review** -- 8 standard dimensions (completeness, feasibility, dependencies, risk, testing, scope, ordering, clarity)
-2. **Adversarial edge-case discovery** -- BMAD-inspired techniques (pre-mortem, inversion, red-team) that systematically surface blind spots the structural pass misses
+Iteratively review and improve a plan through three complementary agents:
+1. **Structural reviewer** -- 10 standard dimensions (completeness, feasibility, dependencies, risk, testing, scope, ordering, clarity, FR traceability, edge cases)
+2. **Adversarial reviewer** -- BMAD-inspired techniques (pre-mortem, inversion, red-team, first-principles) that systematically surface blind spots the structural pass misses
+3. **Final reviewer (gate)** -- holistic coherence check after the specialists pass, catching fix collisions, coherence drift, and severity decay blind spots
 
-Each pass is delegated to a fresh subagent with no sunk-cost bias. Issues are auto-fixed with structured fix strategies, then re-reviewed until the plan is clean.
+The specialist reviewers (1, 2) loop until both pass. The final reviewer (3) runs once as a gate before approval. Each agent is a fresh subagent with no sunk-cost bias.
 
 ## When to Use
 
@@ -55,15 +56,19 @@ Each pass is delegated to a fresh subagent with no sunk-cost bias. Issues are au
   |  |     Deduplicate    |   |
   |  +---+----------+----+   |
   |      |          |         |
-  |     ANY         NONE      |
-  |     ISSUES      ISSUES    |
-  |      |          |         |
-  | +----v----+  +--v--------+|
-  | | 4. Fix  |  | 5. OKAY   ||
-  | | + Decay |  +-----------+|
-  | +----+----+               |
-  |      |                    |
-  +------+--------------------+
+  |     ANY      BOTH PASS    |
+  |     ISSUES      |         |
+  |      |          v         |
+  | +----v----+ +----------+  |
+  | | 4. Fix  | | 5. Final |  |
+  | | + Decay | | Reviewer |  |
+  | +----+----+ +---+------+  |
+  |      |       |      |     |
+  |      |    issues?  PASS   |
+  |      |       |      |     |
+  |      +<------+  +---v---+ |
+  |      |          |6. OKAY| |
+  +------+----------+-------+-+
 ```
 
 ### Step 0: Classify Plan Depth
@@ -251,7 +256,7 @@ Both reviewers return independently. Merge their findings:
 3. **Severity reconciliation** -- if one reviewer says [major] and another says [blocker] for the same issue, use the higher severity
 4. **Categorize for fix strategy** (see Step 4)
 
-If BOTH reviewers return VERDICT: PASS --> proceed to Step 5.
+If BOTH reviewers return VERDICT: PASS --> proceed to Step 5 (Final Reviewer).
 
 Track the review history:
 - Log which iteration you're on
@@ -304,15 +309,87 @@ After fixing all actionable issues:
 2. Check if auto-adaptation triggers apply for this round number (3, 5, 7, 9+)
 3. Go back to Step 2a with the updated plan. The loop continues until PASS.
 
-### Step 5: Plan is OKAY
+### Step 5: Spawn Final Reviewer (gate)
 
-When both reviewers return VERDICT: PASS:
+When both specialist reviewers return VERDICT: PASS, spawn a **third** agent that reads the final plan holistically. This agent has no knowledge of the fix history -- it sees only the finished product. It runs exactly **once**.
 
-1. Report to the user: "Plan passed review after N rounds. Here's what was fixed:"
+The final reviewer's job is different from the specialists: it checks whether the plan is coherent as a whole after N rounds of incremental edits.
+
+```
+Agent({
+  prompt: `You are the final reviewer for a plan that has already passed structural and adversarial review. Two specialist reviewers found it acceptable. Your job is to read the plan with completely fresh eyes and check for problems that incremental review misses.
+
+PLAN:
+<plan>
+{final plan content here}
+</plan>
+
+SPEC (if available):
+<spec>
+{spec content here, or "No spec available"}
+</spec>
+
+FIX HISTORY:
+<history>
+{Summary of all issues found and fixed across N rounds, including:
+- Round N: X structural issues, Y adversarial edge cases
+- Issues fixed: [brief list]
+- Issues demoted via severity decay: [brief list]
+- Auto-adaptations applied: [e.g., "nit purge at round 3", "depth downgrade at round 5"]}
+</history>
+
+You are checking for THREE things only:
+
+1. COHERENCE -- Do the plan's parts still fit together after multiple rounds of fixes? Look for:
+   - Tasks that reference other tasks which were removed or restructured
+   - Dependencies that became circular after reordering
+   - Acceptance criteria that contradict each other across tasks
+   - Phases that no longer flow logically
+
+2. FIX COLLISIONS -- Did fixes from different rounds or different reviewers conflict? Look for:
+   - Two tasks that now cover the same work (duplicated by separate fixes)
+   - Error handling added by one fix that contradicts a retry strategy added by another
+   - Scope that crept back in after a scope-reduction fix
+
+3. DECAY BLIND SPOTS -- Were real issues incorrectly demoted away? Look at the fix history:
+   - Issues demoted via severity decay that still represent genuine gaps
+   - Patterns where the same underlying problem was flagged differently each round (symptom of an unfixed root cause)
+
+Do NOT re-review the plan against structural or adversarial dimensions -- that work is done. Only check the three things above.
+
+For each issue found, report:
+- SEVERITY: [blocker] [major] [minor]
+- CATEGORY: COHERENCE / FIX_COLLISION / DECAY_BLIND_SPOT
+- LOCATION: which section/task/phase
+- ISSUE: what's wrong
+- FIX: specific, actionable fix
+
+If you find ZERO issues, respond with:
+VERDICT: PASS
+
+Otherwise:
+VERDICT: FAIL
+Then list all issues.
+
+Be precise. You are the last gate before approval. Only flag issues that would cause real problems during execution -- not stylistic preferences.`,
+  mode: "bypassPermissions"
+})
+```
+
+**If the final reviewer returns PASS** --> proceed to Step 6.
+
+**If the final reviewer returns FAIL** --> apply fixes (same as Step 4), then go back to Step 2a. The specialists re-validate the fixed plan. The final reviewer does NOT run again -- once the specialists next return PASS, the plan goes directly to Step 6. The final reviewer gets exactly one shot; this prevents ping-pong between the gate and the loop.
+
+### Step 6: Plan is OKAY
+
+When the plan has passed all reviewers:
+
+1. Report to the user: "Plan passed review after N rounds (including final gate review). Here's what was fixed:"
    - Summarize the issues found and fixed across all rounds
-   - Separate structural fixes from edge-case discoveries so the user sees both categories
+   - Separate structural fixes from edge-case discoveries from final-gate findings so the user sees all three categories
    - Note any nits that were intentionally skipped
    - Highlight the most interesting edge cases the adversarial reviewer caught (these are the ones that would have been bugs)
+   - If the final reviewer caught anything, highlight it -- these are coherence issues that would have slipped through without the gate
 2. If this is a maestro plan, suggest: `maestro plan-approve --feature <name>`
 3. If this is a file-based plan, confirm the file has been updated
 
@@ -357,13 +434,15 @@ Keep the user informed during the loop:
 - After classification: "Plan classified as [depth]. Will apply [techniques]."
 - After each review round: "Round N: structural reviewer found X issues, adversarial reviewer found Y edge cases (Z blocker, W major). Fixing..."
 - After each fix round: "Fixed N issues (M structural, K edge cases). Sending back for review..."
-- On completion: "Plan passed after N rounds. Summary of changes: ..."
+- After final reviewer: "Final gate review: [PASS / found X issues]. {details if issues found}"
+- On completion: "Plan passed after N rounds (including final gate). Summary of changes: ..."
 - Highlight adversarial findings: "Edge cases caught: [list the interesting ones briefly]"
 
 ## Key Principles
 
 - **Fresh eyes every round** -- Each reviewer subagent starts clean. No accumulated context bias.
-- **Two lenses, one loop** -- Structural review catches what's wrong with the plan as written. Adversarial review catches what the plan doesn't address. Both are necessary.
+- **Three lenses, one loop** -- Structural review catches what's wrong with the plan as written. Adversarial review catches what the plan doesn't address. Final review catches what the fix process broke. All three are necessary.
+- **Final reviewer runs once** -- The gate agent gets exactly one shot after both specialists pass. If it finds issues, fixes go back through the specialist loop. This prevents ping-pong between the gate and the specialists.
 - **Fix before re-review** -- Never send the same plan back without changes. That's a waste.
 - **Severity discipline** -- Don't let nits block convergence. Fix blockers and majors, skip nits if they're stalling progress.
 - **Concrete over generic** -- "Add error handling" is not a fix. "Add try/catch around the API call in task 3 that returns a 503 fallback response with retry-after header" is a fix.
