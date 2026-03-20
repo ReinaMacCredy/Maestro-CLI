@@ -8,6 +8,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
 
 export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): void {
@@ -16,7 +17,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
     {
       description: 'Send handoff document to another agent via Agent Mail.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active)'),
+        feature: featureParam(),
         task: z.string().describe('Task/bead ID or folder name'),
         target_agent: z.string().optional().describe('Target agent name (omit for broadcast)'),
         additional_context: z.string().optional().describe('Extra context to include'),

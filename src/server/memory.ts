@@ -4,6 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam } from './_utils/params.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -91,7 +92,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     {
       description: 'Promote a feature memory to global project memory.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         name: z.string().describe('Memory file name to promote'),
       },
       annotations: ANNOTATIONS_MUTATING,

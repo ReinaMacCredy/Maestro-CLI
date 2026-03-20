@@ -4,6 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam } from './_utils/params.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { MaestroError } from '../lib/errors.ts';
@@ -17,7 +18,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
         'Write or update the plan for a feature. Plan must include a ## Discovery section (min 100 chars). ' +
         'Also include ## Non-Goals and ## Ghost Diffs sections.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         content: z.string().describe('Full plan content in markdown'),
       },
       annotations: ANNOTATIONS_MUTATING,
@@ -35,7 +36,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'Read the plan and any review comments for a feature.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         summary: z.boolean().optional().default(false).describe('Return outline only (preview, headings, commentCount)'),
       },
       annotations: ANNOTATIONS_READONLY,
@@ -66,7 +67,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'Approve the plan for execution. Address all review comments first.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
@@ -83,7 +84,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'Add a review comment to the plan. Used during plan review to flag issues or suggestions.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         body: z.string().describe('Comment text'),
         line: z.number().optional().describe('Line number in the plan this comment refers to'),
         author: z.string().optional().describe('Comment author name'),

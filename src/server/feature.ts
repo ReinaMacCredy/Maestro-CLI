@@ -4,6 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam } from './_utils/params.ts';
 import { completeFeature } from '../usecases/complete-feature.ts';
 
 export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): void {
@@ -47,7 +48,7 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
     {
       description: 'Mark a feature as completed. All tasks must be done first.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
       },
       annotations: ANNOTATIONS_MUTATING,
     },

@@ -4,6 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam } from './_utils/params.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
 import { derivePipelineStage } from '../utils/workflow.ts';
@@ -14,7 +15,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
     {
       description: 'Get current feature status: pipeline stage, plan, tasks, next action. Call at session start.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         verbose: z.boolean().optional().default(false).describe('Include researchTools in response'),
       },
       annotations: ANNOTATIONS_READONLY,

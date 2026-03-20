@@ -4,6 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
+import { featureParam, taskParam } from './_utils/params.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
 import { translatePlan } from '../usecases/translate-plan.ts';
 import type { ListOpts } from '../ports/tasks.ts';
@@ -16,7 +17,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       description:
         'Generate tasks from an approved plan. Plan must be approved first.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
@@ -38,7 +39,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
         'Return runnable tasks (unclaimed, dependencies met). ' +
         'Includes compiled spec for the recommended (first) task only. Use task_claim to start it.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
       },
       annotations: ANNOTATIONS_READONLY,
     },
@@ -62,8 +63,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'Claim a pending task for an agent.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
-        task: z.string().describe('Task folder ID'),
+        feature: featureParam(),
+        task: taskParam(),
         agent_id: z.string().describe('Agent identifier claiming this task'),
       },
       annotations: ANNOTATIONS_MUTATING,
@@ -81,8 +82,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'Mark a claimed task as complete. Provide a summary of work done.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
-        task: z.string().describe('Task folder ID'),
+        feature: featureParam(),
+        task: taskParam(),
         summary: z.string().describe('Summary of work completed'),
       },
       annotations: ANNOTATIONS_MUTATING,
@@ -101,8 +102,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       description:
         'Mark a task as blocked. Records the blocker reason and releases the claim.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
-        task: z.string().describe('Task folder ID'),
+        feature: featureParam(),
+        task: taskParam(),
         reason: z.string().describe('Why the task is blocked'),
       },
       annotations: ANNOTATIONS_MUTATING,
@@ -121,8 +122,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       description:
         'Unblock a blocked task. Attaches the decision and returns to pending.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
-        task: z.string().describe('Task folder ID'),
+        feature: featureParam(),
+        task: taskParam(),
         decision: z.string().describe('Decision or resolution for the blocker'),
       },
       annotations: ANNOTATIONS_MUTATING,
@@ -140,7 +141,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     {
       description: 'List tasks for a feature with their status. Shows dependency ordering and which tasks are runnable.',
       inputSchema: {
-        feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        feature: featureParam(),
         status: z.enum(['pending', 'claimed', 'done', 'blocked']).optional().describe('Filter by status'),
         includeAll: z.boolean().optional().describe('Include all tasks regardless of status'),
         brief: z.boolean().optional().default(false).describe('Return compact task info (folder, name, status, origin, dependsOn only)'),

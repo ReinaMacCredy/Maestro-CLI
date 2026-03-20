@@ -7,6 +7,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
+import { limitParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
 
 export function registerSearchTools(server: McpServer, thunk: ServicesThunk): void {
@@ -17,7 +18,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
       inputSchema: {
         query: z.string().describe('Search query'),
         agent: z.string().optional().describe('Filter to specific agent (claude, codex, cursor, etc.)'),
-        limit: z.number().optional().default(10).describe('Max results (default: 10)'),
+        limit: limitParam(10),
         days: z.number().optional().describe('Limit to recent N days'),
       },
       annotations: ANNOTATIONS_READONLY,
@@ -43,7 +44,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
         'Find past agent sessions that worked on a specific file.',
       inputSchema: {
         file_path: z.string().describe('File path to search for'),
-        limit: z.number().optional().default(5).describe('Max results (default: 5)'),
+        limit: limitParam(5),
       },
       annotations: ANNOTATIONS_READONLY,
     },
