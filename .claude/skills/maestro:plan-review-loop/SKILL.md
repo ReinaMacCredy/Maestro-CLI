@@ -39,33 +39,31 @@ Each pass is delegated to a fresh subagent with no sunk-cost bias. Issues are au
      |  1. Read Plan      |
      +--------+----------+
               |
-     +--------v----------+
-     |  2a. Structural    |
-     |      Reviewer      |
-     +--------+----------+
-              |
-     +--------v----------+
-     |  2b. Adversarial   |
-     |      Edge-Case     |
-     |      Discovery     |
-     +--------+----------+
-              |
-     +--------v----------+
-     |  3. Merge &        |
-     |     Deduplicate    |
-     |     Issues         |
-     +---+----------+----+
-         |          |
-        ANY         NONE
-        ISSUES      ISSUES
-         |          |
-+--------v---+  +---v-----------+
-| 4. Auto-   |  | 5. Plan is    |
-|    Fix      |  |    OKAY       |
-+--------+---+  +---------------+
-         |
-         | (back to step 2a)
-         +---------->
+  +--+--------v----------+<--+
+  |  |  2a. Structural    |   |
+  |  |      Reviewer      |   |
+  |  +--------+----------+   |
+  |           |               |
+  |  +--------v----------+   |
+  |  |  2b. Adversarial   |   |
+  |  |      Edge-Case     |   |  INFINITE LOOP
+  |  |      Discovery     |   |  (auto-adapts at
+  |  +--------+----------+   |   rounds 3, 5, 7, 9+)
+  |           |               |
+  |  +--------v----------+   |
+  |  |  3. Merge &        |   |
+  |  |     Deduplicate    |   |
+  |  +---+----------+----+   |
+  |      |          |         |
+  |     ANY         NONE      |
+  |     ISSUES      ISSUES    |
+  |      |          |         |
+  | +----v----+  +--v--------+|
+  | | 4. Fix  |  | 5. OKAY   ||
+  | | + Decay |  +-----------+|
+  | +----+----+               |
+  |      |                    |
+  +------+--------------------+
 ```
 
 ### Step 0: Classify Plan Depth
@@ -258,7 +256,8 @@ If BOTH reviewers return VERDICT: PASS --> proceed to Step 5.
 Track the review history:
 - Log which iteration you're on
 - Log how many issues were found per round, broken down by reviewer (structural vs adversarial)
-- If issue count is NOT decreasing after 3 rounds, something is wrong -- report to user and ask for guidance
+- Track issue trend (decreasing = healthy, flat/oscillating = stalled, increasing = diverging)
+- The loop NEVER stops on its own -- it adapts strategy automatically (see Convergence Safety)
 
 ### Step 4: Auto-Fix Issues
 
@@ -300,7 +299,10 @@ For each merged issue, apply the appropriate fix strategy based on category:
 - When fixing edge cases surfaced by adversarial review, include the concrete failure scenario as a comment so future readers understand WHY the handling exists
 - Never fix a nit if it risks introducing a new issue
 
-After fixing all actionable issues, go back to Step 2a with the updated plan.
+After fixing all actionable issues:
+1. Apply severity decay to any recurring issues (see Convergence Safety)
+2. Check if auto-adaptation triggers apply for this round number (3, 5, 7, 9+)
+3. Go back to Step 2a with the updated plan. The loop continues until PASS.
 
 ### Step 5: Plan is OKAY
 
@@ -321,24 +323,32 @@ When both reviewers return VERDICT: PASS:
 
 ## Convergence Safety
 
-The loop has no hard iteration limit -- that's intentional. But watch for these signals:
+The loop runs until BOTH reviewers return VERDICT: PASS. There is no hard iteration limit and no automatic pause. The loop self-corrects through automatic strategy adaptation.
 
-**Healthy convergence:** Issue count drops each round (e.g., 8 --> 3 --> 0). This is normal. Adversarial issues typically drop faster than structural ones because they're more specific.
+**Healthy convergence:** Issue count drops each round (e.g., 8 --> 3 --> 0). This is normal. No intervention needed.
 
-**Stalled convergence:** Issue count stays flat or oscillates (e.g., 5 --> 6 --> 5). This means either:
-- Fixes are introducing new issues (be more careful with edits)
-- The reviewer is being inconsistent (subjective feedback masquerading as issues)
-- The plan has a fundamental structural problem that piecemeal fixes can't solve
-- The adversarial reviewer is generating increasingly speculative scenarios
+**Severity decay (automatic, every round):** After each fix round, before re-reviewing, apply severity decay to recurring issues:
+- An issue that was flagged in the previous round AND was already fixed --> demote one severity level (blocker --> major --> minor --> nit)
+- An issue demoted to [nit] is automatically skipped in the next round
+- This prevents the loop from stalling on subjective or stylistic disagreements between reviewer rounds
+- Track demotions explicitly: "Issue X demoted from [major] to [minor] (recurred after fix in round N)"
 
-**What to do when stalled:**
-- After 3 rounds with no progress, pause and report to the user
-- Show the recurring issues, separated by structural vs adversarial
-- Ask: "These issues keep coming back. Want me to restructure the plan, or are these acceptable?"
-- If the user says acceptable, mark them as acknowledged and continue
-- If adversarial issues are increasingly speculative, consider downgrading review depth (e.g., Deep --> Standard)
+**Stalled convergence (auto-adapt at round 3, 5, 7, ...):** If issue count is not decreasing after an odd-numbered round:
 
-**Divergence (issue count increasing):** Stop immediately. Fixes are making things worse. Report to user with the history.
+| Round | Automatic adaptation |
+|-------|---------------------|
+| 3 | **Nit purge**: Skip ALL remaining [nit] and [minor] issues. Only fix [blocker] and [major]. Report: "Narrowing focus to blockers and majors." |
+| 5 | **Depth downgrade**: Reduce adversarial depth by one level (Deep --> Standard --> Light). Report: "Reducing adversarial depth to break oscillation." |
+| 7 | **Adversarial freeze**: Lock in the adversarial reviewer's last PASS (or skip adversarial entirely if it never passed). Only run structural reviewer. Report: "Freezing adversarial pass -- structural issues only." |
+| 9+ | **Reviewer sharpening**: Add to the structural reviewer prompt: "The following issues have been fixed in prior rounds. Do NOT re-flag them unless the fix was reverted: [list of fixed issues with round numbers]." This prevents reviewer amnesia from re-discovering already-addressed concerns. |
+
+**Divergence (issue count increasing for 2+ consecutive rounds):** Do NOT stop. Instead:
+1. Revert plan to the last-known-good version (the version from the round with fewest issues)
+2. Re-apply only [blocker] fixes from subsequent rounds
+3. Resume the loop from the reverted+blocker-fixed version
+4. Report: "Divergence detected. Reverted to round N baseline, re-applying only blockers."
+
+**The loop never asks the user for guidance on convergence.** It adapts automatically. The user can interrupt at any time by their own choice, but the loop will not prompt them to.
 
 ## Progress Reporting
 
@@ -358,6 +368,6 @@ Keep the user informed during the loop:
 - **Severity discipline** -- Don't let nits block convergence. Fix blockers and majors, skip nits if they're stalling progress.
 - **Concrete over generic** -- "Add error handling" is not a fix. "Add try/catch around the API call in task 3 that returns a 503 fallback response with retry-after header" is a fix.
 - **Adversarial value is in specificity** -- A pre-mortem that says "the migration might fail" is worthless. One that says "the migration deadlocks because task 4 holds a write lock while task 5 reads the same table" is gold.
-- **User stays in control** -- Report progress, surface stalls, ask when stuck. The user can stop the loop anytime.
-- **No iteration limit** -- But watch convergence. Healthy loops converge in 2-4 rounds.
+- **User stays in control** -- Report progress at each round. The user can interrupt anytime, but the loop never prompts them to.
+- **No iteration limit, no pause** -- The loop runs until PASS. It self-corrects through severity decay, depth downgrade, and reviewer sharpening. Healthy loops converge in 2-4 rounds; stalled loops auto-adapt and keep going.
 - **Calibrate depth to risk** -- A 3-task bugfix doesn't need red-team analysis. A multi-phase regulated-domain feature does. Step 0 classification prevents over-reviewing simple plans.
