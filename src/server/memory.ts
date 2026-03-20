@@ -5,6 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
+import { MaestroError } from '../lib/errors.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
@@ -60,7 +61,8 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
         if (content !== null) {
           return respond({ feature, name: input.name, content });
         }
-      } catch {
+      } catch (err) {
+        if (!(err instanceof MaestroError)) throw err;
         // No active feature -- fall through to global
       }
       const content = services.memoryAdapter.readGlobal(input.name);
@@ -83,48 +85,51 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     withErrorHandling(async (input) => {
       const services = thunk.get();
       // Try feature-scoped first (resolves active feature when param omitted)
+      let feature: string;
       try {
-        const feature = requireFeature(services, input.feature);
-        const richFiles = services.memoryAdapter.listWithMeta(feature);
-
-        if (input.task) {
-          // DCP-scored filtering
-          const task = await services.taskPort.get(feature, input.task);
-          if (!task) {
-            return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
-          }
-          const cfg = resolveDcpConfig(services.configAdapter.get().dcp);
-          const budget = input.budget ?? cfg.memoryBudgetBytes;
-          const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
-          const selected = selectMemories(
-            richFiles, task, task.planTitle ?? null, budget,
-            cfg.relevanceThreshold, featureCreatedAt,
-          );
-          const scoreMap = new Map(selected.scores.map(s => [s.name, s.score]));
-          const files = selected.memories.map(m => ({
-            name: m.name,
-            ...(input.brief ? {} : { content: m.bodyContent }),
-            score: scoreMap.get(m.name) ?? 0,
-          }));
-          return respond({ feature, files, dcp: {
-            included: selected.includedCount,
-            dropped: selected.droppedCount,
-            budgetBytes: budget,
-          }});
-        }
-
-        const files = input.brief
-          ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({ name, updatedAt, sizeBytes, ...metadata }))
-          : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({ name, content, updatedAt, sizeBytes, ...metadata }));
-        return respond({ feature, files });
-      } catch {
+        feature = requireFeature(services, input.feature);
+      } catch (err) {
+        if (!(err instanceof MaestroError)) throw err;
         // No active feature -- fall through to global (no metadata for global)
+        const globalFiles = services.memoryAdapter.listGlobal();
+        const files = input.brief
+          ? globalFiles.map(({ name, updatedAt, sizeBytes }) => ({ name, updatedAt, sizeBytes }))
+          : globalFiles;
+        return respond({ scope: 'global', files });
       }
-      const globalFiles = services.memoryAdapter.listGlobal();
+
+      const richFiles = services.memoryAdapter.listWithMeta(feature);
+
+      if (input.task) {
+        // DCP-scored filtering
+        const task = await services.taskPort.get(feature, input.task);
+        if (!task) {
+          return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
+        }
+        const cfg = resolveDcpConfig(services.configAdapter.get().dcp);
+        const budget = input.budget ?? cfg.memoryBudgetBytes;
+        const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
+        const selected = selectMemories(
+          richFiles, task, task.planTitle ?? null, budget,
+          cfg.relevanceThreshold, featureCreatedAt,
+        );
+        const scoreMap = new Map(selected.scores.map(s => [s.name, s.score]));
+        const files = selected.memories.map(m => ({
+          name: m.name,
+          ...(input.brief ? {} : { content: m.bodyContent }),
+          score: scoreMap.get(m.name) ?? 0,
+        }));
+        return respond({ feature, files, dcp: {
+          included: selected.includedCount,
+          dropped: selected.droppedCount,
+          budgetBytes: budget,
+        }});
+      }
+
       const files = input.brief
-        ? globalFiles.map(({ name, updatedAt, sizeBytes }) => ({ name, updatedAt, sizeBytes }))
-        : globalFiles;
-      return respond({ scope: 'global', files });
+        ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({ name, updatedAt, sizeBytes, ...metadata }))
+        : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({ name, content, updatedAt, sizeBytes, ...metadata }));
+      return respond({ feature, files });
     }),
   );
 
