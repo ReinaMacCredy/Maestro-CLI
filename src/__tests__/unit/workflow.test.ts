@@ -132,4 +132,52 @@ describe("getNextAction", () => {
     expect(action).toContain("03-waiting");
     expect(action).toContain("task_unblock");
   });
+
+  test("surfaces review tasks with accept/reject guidance", () => {
+    const tasks: TaskEntry[] = [
+      { status: "done", folder: "01-setup" },
+      { status: "review", folder: "02-core" },
+      { status: "pending", folder: "03-finish" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("02-core");
+    expect(action).toContain("task_accept");
+  });
+
+  test("surfaces revision tasks with claim guidance", () => {
+    const tasks: TaskEntry[] = [
+      { status: "done", folder: "01-setup" },
+      { status: "revision", folder: "02-core" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("02-core");
+    expect(action).toContain("revision");
+    expect(action).toContain("claim");
+  });
+
+  test("review takes priority over claimed in next action", () => {
+    const tasks: TaskEntry[] = [
+      { status: "review", folder: "01-needs-review" },
+      { status: "claimed", folder: "02-in-progress" },
+    ];
+    const action = getNextAction("approved", tasks, []);
+    expect(action).toContain("01-needs-review");
+    expect(action).toContain("review");
+  });
+});
+
+describe("countTaskStatuses with review/revision", () => {
+  test("counts review and revision states", () => {
+    const tasks: Array<{ status: TaskStatusType }> = [
+      { status: "pending" },
+      { status: "claimed" },
+      { status: "done" },
+      { status: "review" },
+      { status: "revision" },
+    ];
+    const counts = countTaskStatuses(tasks);
+    expect(counts).toEqual({
+      pending: 1, inProgress: 1, done: 1, review: 1, revision: 1,
+    });
+  });
 });

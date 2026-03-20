@@ -71,4 +71,27 @@ describe("checkDependencies", () => {
 
     expect(result.allowed).toBe(true);
   });
+
+  test("review status satisfies dependencies", async () => {
+    await port.create(feature, "Step A", { deps: [] });
+    await port.create(feature, "Step B", { deps: ["01-step-a"] });
+
+    port.setStatus(feature, "01-step-a", "review");
+
+    const result = await checkDependencies(port, feature, "02-step-b");
+
+    expect(result.allowed).toBe(true);
+  });
+
+  test("revision status does NOT satisfy dependencies", async () => {
+    await port.create(feature, "Step A", { deps: [] });
+    await port.create(feature, "Step B", { deps: ["01-step-a"] });
+
+    port.setStatus(feature, "01-step-a", "revision");
+
+    const result = await checkDependencies(port, feature, "02-step-b");
+
+    expect(result.allowed).toBe(false);
+    expect(result.error).toContain("01-step-a");
+  });
 });
