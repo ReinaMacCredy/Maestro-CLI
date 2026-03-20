@@ -13,9 +13,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
   server.registerTool(
     'maestro_search_sessions',
     {
-      description:
-        'Search past agent session history for relevant context via CASS. ' +
-        'Searches across Claude Code, Codex, Cursor, Gemini, Aider, and more.',
+      description: 'Search past agent session history via CASS.',
       inputSchema: {
         query: z.string().describe('Search query'),
         agent: z.string().optional().describe('Filter to specific agent (claude, codex, cursor, etc.)'),

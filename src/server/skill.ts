@@ -10,9 +10,7 @@ export function registerSkillTools(server: McpServer, _thunk: ServicesThunk, dir
   server.registerTool(
     'maestro_skill',
     {
-      description:
-        'Load a workflow skill. Returns full skill content (may be large, several KB). ' +
-        'Use to get detailed guidance for writing plans, executing tasks, debugging, etc.',
+      description: 'Load a workflow skill by name. Returns full skill content.',
       inputSchema: {
         name: z.string().describe('Skill name to load (e.g. maestro:design, maestro:implement)'),
         reference: z.string().optional().describe('Optional reference file path to load (e.g. steps/step-01.md)'),

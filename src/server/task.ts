@@ -14,8 +14,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     'maestro_tasks_sync',
     {
       description:
-        'Generate tasks from an approved plan. Parses the plan markdown, creates task folders, ' +
-        'and sets up dependency ordering. Plan must be approved first.',
+        'Generate tasks from an approved plan. Plan must be approved first.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
       },
@@ -61,9 +60,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
   server.registerTool(
     'maestro_task_claim',
     {
-      description:
-        'Claim a task for an agent. Marks the task as taken (pending -> claimed). ' +
-        'Rejects if already claimed or not pending.',
+      description: 'Claim a pending task for an agent.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
         task: z.string().describe('Task folder ID'),
@@ -82,9 +79,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
   server.registerTool(
     'maestro_task_done',
     {
-      description:
-        'Mark a claimed task as complete. Provide a summary of work done. ' +
-        'Unlocks dependent tasks.',
+      description: 'Mark a claimed task as complete. Provide a summary of work done.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
         task: z.string().describe('Task folder ID'),

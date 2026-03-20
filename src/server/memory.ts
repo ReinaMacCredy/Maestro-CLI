@@ -9,10 +9,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
   server.registerTool(
     'maestro_memory_write',
     {
-      description:
-        'Save memory, decisions, or research findings. ' +
-        'Per-feature (default): writes to .maestro/features/<name>/memory/. ' +
-        'Global (global=true): writes to .maestro/memory/.',
+      description: 'Save a memory file. Per-feature by default; set global=true for project-scoped.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature; ignored when global=true)'),
         name: z.string().describe('Memory file name'),
@@ -92,8 +89,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
   server.registerTool(
     'maestro_memory_promote',
     {
-      description:
-        'Promote a feature memory to global project memory. Copies from .maestro/features/<name>/memory/ to .maestro/memory/.',
+      description: 'Promote a feature memory to global project memory.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
         name: z.string().describe('Memory file name to promote'),

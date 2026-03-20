@@ -14,9 +14,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
   server.registerTool(
     'maestro_handoff_send',
     {
-      description:
-        'Build and send a handoff document for a task to another agent via Agent Mail. ' +
-        'Includes bead state, decisions, modified files, blockers, and CASS search pointers.',
+      description: 'Send handoff document to another agent via Agent Mail.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active)'),
         task: z.string().describe('Task/bead ID or folder name'),

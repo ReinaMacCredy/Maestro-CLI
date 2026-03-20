@@ -8,9 +8,7 @@ export function registerPingTools(server: McpServer, thunk: ServicesThunk): void
   server.registerTool(
     'maestro_ping',
     {
-      description:
-        'Health check: returns maestro version, project root, task backend, and integration availability. ' +
-        'Lightweight probe -- no feature context required.',
+      description: 'Health check: version, backend, integrations. No feature context needed.',
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async () => {

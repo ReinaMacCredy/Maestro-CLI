@@ -15,9 +15,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
   server.registerTool(
     'maestro_graph_insights',
     {
-      description:
-        'Get dependency graph intelligence: bottlenecks, critical path, velocity metrics. ' +
-        'Requires bv (beads viewer) to be installed.',
+      description: 'Get dependency graph intelligence: bottlenecks, critical path, velocity. Requires bv.',
       inputSchema: {},
       annotations: ANNOTATIONS_READONLY,
     },
@@ -34,9 +32,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
   server.registerTool(
     'maestro_graph_next',
     {
-      description:
-        'Get the top recommended next bead from bv with scoring rationale. ' +
-        'Uses PageRank, betweenness, and priority to recommend the highest-impact task.',
+      description: 'Get the top recommended next bead from bv with scoring rationale.',
       inputSchema: {},
       annotations: ANNOTATIONS_READONLY,
     },
@@ -56,9 +52,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
   server.registerTool(
     'maestro_graph_plan',
     {
-      description:
-        'Get dependency-respecting parallel execution tracks for N agents. ' +
-        'Returns ordered tracks that can be worked in parallel without conflicts.',
+      description: 'Get dependency-respecting parallel execution tracks for N agents.',
       inputSchema: {
         agents: z.number().optional().default(1).describe('Number of parallel agents (default: 1)'),
       },
