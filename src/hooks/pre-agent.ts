@@ -2,25 +2,77 @@
  * PreToolUse:Agent hook -- inject task spec into agent prompts.
  *
  * When an Agent is spawned for a claimed task, injects:
- * - Compiled task spec
+ * - Compiled task spec (via DCP)
  * - Worker rules (call task_done/task_block)
- * - Feature memories
+ * - Relevant feature memories (DCP-scored)
+ * - Rich context and graph context (when available)
  *
  * Non-task agents pass through without injection.
  */
 
-import { readStdin, writeOutput, resolveProjectDir, logHookError } from './_helpers.ts';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir } from './_helpers.ts';
 import { initServices } from '../services.ts';
+import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
+import { WORKER_RULES } from '../utils/worker-rules.ts';
+import type { TaskInfo } from '../types.ts';
+
+export { WORKER_RULES };
 
 const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
 
-const WORKER_RULES = `
-## Worker Rules
-- Call maestro_task_done with a summary when your work is complete.
-- Call maestro_task_block with a reason if you are stuck and need a decision.
-- Do not start or claim other tasks.
-- Focus exclusively on the task described in this spec.
-`.trim();
+/** Format rich bead context (design/AC) from getRichFields result. */
+export function formatRichContext(
+  richResult: PromiseSettledResult<{ design?: string; acceptanceCriteria?: string } | null>,
+): string {
+  const rich = richResult.status === 'fulfilled' ? richResult.value : null;
+  if (!rich) return '';
+  const parts: string[] = [];
+  if (rich.design) parts.push(`## Design Notes\n\n${rich.design}`);
+  if (rich.acceptanceCriteria) parts.push(`## Acceptance Criteria\n\n${rich.acceptanceCriteria}`);
+  return parts.length > 0 ? '\n' + parts.join('\n\n') + '\n' : '';
+}
+
+/** Format graph context (critical path/bottleneck flags) from getInsights result. */
+export function formatGraphContext(
+  insightsResult: PromiseSettledResult<{ criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> } | null>,
+  taskFolder: string,
+  task: TaskInfo,
+): string {
+  const insights = insightsResult.status === 'fulfilled' ? insightsResult.value : null;
+  if (!insights) return '';
+  const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
+  const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
+  if (!onCriticalPath && !isBottleneck) return '';
+  const flags: string[] = [];
+  if (onCriticalPath) flags.push('on critical path');
+  if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
+  return `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
+}
+
+/** Append DCP metrics to JSONL file (best-effort). */
+function logDcpMetrics(
+  projectDir: string,
+  featureName: string,
+  taskFolder: string,
+  metrics: PruneContextResult['metrics'],
+): void {
+  try {
+    const logDir = getSessionsDir(projectDir);
+    fs.mkdirSync(logDir, { recursive: true });
+    const logPath = path.join(logDir, 'dcp-metrics.jsonl');
+    const entry = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      feature: featureName,
+      task: taskFolder,
+      ...metrics,
+    }) + '\n';
+    fs.appendFileSync(logPath, entry);
+  } catch {
+    // Best effort -- never throw from metrics logging
+  }
+}
 
 async function main(): Promise<void> {
   const input = await readStdin();
@@ -72,59 +124,46 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Read feature memories (capped at 4KB to limit token injection)
-    const MAX_MEMORY_BYTES = 4096;
-    const memories = services.memoryAdapter.list(featureName);
-    let memorySection = memories.length > 0
-      ? '\n## Feature Memories\n\n' + memories.map(m => `### ${m.name}\n\n${m.content}`).join('\n\n---\n\n')
-      : '';
-    if (memorySection.length > MAX_MEMORY_BYTES) {
-      const truncated = memorySection.slice(0, MAX_MEMORY_BYTES);
-      const lastNewline = truncated.lastIndexOf('\n');
-      memorySection = (lastNewline > 0 ? truncated.slice(0, lastNewline) : truncated)
-        + '\n\n[truncated -- use maestro_memory_read for full content]';
-    }
-
     // Parallelize independent async reads (rich fields + graph insights)
     const [richResult, insightsResult] = await Promise.allSettled([
       services.taskPort.getRichFields?.(featureName, taskFolder) ?? Promise.resolve(null),
       services.graphPort?.getInsights() ?? Promise.resolve(null),
     ]);
 
-    // Rich bead context (when br backend provides design/AC)
-    let richContext = '';
-    const rich = richResult.status === 'fulfilled' ? richResult.value : null;
-    if (rich) {
-      const parts: string[] = [];
-      if (rich.design) parts.push(`## Design Notes\n\n${rich.design}`);
-      if (rich.acceptanceCriteria) parts.push(`## Acceptance Criteria\n\n${rich.acceptanceCriteria}`);
-      if (parts.length > 0) richContext = '\n' + parts.join('\n\n') + '\n';
-    }
+    // Format context sections
+    const richContext = formatRichContext(richResult as PromiseSettledResult<{ design?: string; acceptanceCriteria?: string } | null>);
+    const graphContext = formatGraphContext(
+      insightsResult as PromiseSettledResult<{ criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> } | null>,
+      taskFolder, task,
+    );
 
-    // Graph context (when bv available)
-    let graphContext = '';
-    const insights = insightsResult.status === 'fulfilled' ? insightsResult.value : null;
-    if (insights) {
-      const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
-      const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
-      if (onCriticalPath || isBottleneck) {
-        const flags: string[] = [];
-        if (onCriticalPath) flags.push('on critical path');
-        if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
-        graphContext = `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
-      }
-    }
+    // Read memories with metadata for DCP scoring
+    const memories = services.memoryAdapter.listWithMeta(featureName);
 
-    // Build injection
-    const injection = [
-      `## Task Spec: ${taskFolder}`,
-      '',
-      spec,
-      richContext,
-      WORKER_RULES,
-      graphContext,
-      memorySection,
-    ].join('\n');
+    // Get completed tasks for observation masking
+    const allTasks = await services.taskPort.list(featureName, { includeAll: true });
+    const completedTasks = allTasks
+      .filter(t => t.status === 'done' && t.summary)
+      .map(t => ({ name: t.name, summary: t.summary! }));
+
+    // Read DCP config
+    const dcpConfig = services.configAdapter.get().dcp;
+
+    // Get feature creation time for recency scoring
+    const featureInfo = services.featureAdapter.get(featureName);
+    const featureCreatedAt = featureInfo?.createdAt;
+
+    // Prune and assemble
+    const { injection, metrics } = pruneContext({
+      featureName, taskFolder, task, spec,
+      memories, completedTasks,
+      richContext, graphContext,
+      workerRules: WORKER_RULES,
+      dcpConfig, featureCreatedAt,
+    });
+
+    // Log DCP metrics
+    logDcpMetrics(projectDir, featureName, taskFolder, metrics);
 
     writeOutput({
       hookSpecificOutput: {
@@ -137,9 +176,13 @@ async function main(): Promise<void> {
   }
 }
 
-try {
-  await main();
-} catch (error) {
-  logHookError(resolveProjectDir(), 'pre-agent', error);
-  writeOutput({});
+// Only auto-run when executed directly, not when imported by tests or other modules
+const isBunDirect = typeof Bun !== 'undefined' && Bun.main === Bun.resolveSync(import.meta.path, '.');
+if (isBunDirect) {
+  try {
+    await main();
+  } catch (error) {
+    logHookError(resolveProjectDir(), 'pre-agent', error);
+    writeOutput({});
+  }
 }

@@ -17,6 +17,7 @@ import { registerGraphTools } from './server/graph.ts';
 import { registerHandoffTools } from './server/handoff.ts';
 import { registerSearchTools } from './server/search.ts';
 import { registerPingTools } from './server/ping.ts';
+import { registerDcpTools } from './server/dcp.ts';
 import { VERSION } from './version.ts';
 import { checkCli } from './lib/cli-detect.ts';
 
@@ -37,6 +38,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerInitTools(server, thunk, directory);
   registerHandoffTools(server, thunk);
   registerPingTools(server, thunk);
+  registerDcpTools(server, thunk);
 
   // Conditional: only register graph/search tools when CLIs are available
   if (checkCli('bv')) registerGraphTools(server, thunk);

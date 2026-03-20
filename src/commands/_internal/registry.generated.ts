@@ -3,6 +3,7 @@ import cmdAgentsMd from '../agents-md/generate.ts';
 import cmdConfigAgent from '../config/agent.ts';
 import cmdConfigGet from '../config/get.ts';
 import cmdConfigSet from '../config/set.ts';
+import cmdDcpPreview from '../dcp/preview.ts';
 import cmdFeatureActive from '../feature/active.ts';
 import cmdFeatureComplete from '../feature/complete.ts';
 import cmdFeatureCreate from '../feature/create.ts';
@@ -56,6 +57,7 @@ export const subCommands = {
   'config-agent': cmdConfigAgent,
   'config-get': cmdConfigGet,
   'config-set': cmdConfigSet,
+  'dcp-preview': cmdDcpPreview,
   'feature-active': cmdFeatureActive,
   'feature-complete': cmdFeatureComplete,
   'feature-create': cmdFeatureCreate,

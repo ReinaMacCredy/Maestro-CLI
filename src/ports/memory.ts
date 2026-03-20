@@ -3,12 +3,14 @@
  * Concrete implementation: FsMemoryAdapter.
  */
 
-import type { MemoryFile } from '../types.ts';
+import type { MemoryFile, MemoryFileWithMeta } from '../types.ts';
 
 export interface MemoryPort {
   write(featureName: string, fileName: string, content: string): string;
   read(featureName: string, fileName: string): string | null;
   list(featureName: string): MemoryFile[];
+  /** List with parsed metadata + body (for DCP scoring). */
+  listWithMeta(featureName: string): MemoryFileWithMeta[];
   delete(featureName: string, fileName: string): boolean;
   compile(featureName: string): string;
   archive(featureName: string): { archived: string[]; archivePath: string };

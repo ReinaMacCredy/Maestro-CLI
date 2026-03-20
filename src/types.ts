@@ -108,6 +108,19 @@ export interface MemoryFile {
   sizeBytes: number;
 }
 
+export type MemoryCategory = 'decision' | 'research' | 'architecture' | 'convention' | 'debug';
+
+export interface MemoryMetadata {
+  tags?: string[];
+  priority?: number;       // 0 (highest) to 4 (lowest), default 2
+  category?: MemoryCategory;
+}
+
+export interface MemoryFileWithMeta extends MemoryFile {
+  metadata: MemoryMetadata;
+  bodyContent: string;     // content WITHOUT frontmatter block
+}
+
 // ============================================================================
 // Task Spec
 // ============================================================================
@@ -150,6 +163,14 @@ export interface HiveConfig {
   claimExpiresMinutes: number;
   taskBackend?: 'fs' | 'br';
   hook_cadence?: Record<string, number>;
+  dcp?: {
+    enabled?: boolean;                  // default true
+    memoryBudgetBytes?: number;         // default 4096
+    specBudgetBytes?: number;           // default 8192
+    completedTaskBudgetBytes?: number;  // default 2048
+    observationMasking?: boolean;       // default true
+    relevanceThreshold?: number;        // minimum score to include, default 0.1
+  };
 }
 
 export const DEFAULT_AGENT_MODELS = {
@@ -172,6 +193,14 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   agentMode: 'unified',
   claimExpiresMinutes: 120,
   taskBackend: 'fs',
+  dcp: {
+    enabled: true,
+    memoryBudgetBytes: 4096,
+    specBudgetBytes: 8192,
+    completedTaskBudgetBytes: 2048,
+    observationMasking: true,
+    relevanceThreshold: 0.1,
+  },
   agents: {
     'hive-master': {
       model: DEFAULT_AGENT_MODELS['hive-master'],

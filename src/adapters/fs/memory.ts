@@ -8,8 +8,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getMemoryPath, getGlobalMemoryPath } from '../../utils/paths.ts';
 import { ensureDir, fileExists, readText, writeText } from '../../utils/fs-io.ts';
-import type { MemoryFile } from '../../types.ts';
+import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../../types.ts';
 import type { MemoryPort } from '../../ports/memory.ts';
+import { parseFrontmatterRich, stripFrontmatter } from '../../utils/frontmatter.ts';
+import { inferMetadata } from '../../utils/memory-inference.ts';
 
 export class FsMemoryAdapter implements MemoryPort {
   constructor(private projectRoot: string) {}
@@ -28,6 +30,11 @@ export class FsMemoryAdapter implements MemoryPort {
   list(featureName: string): MemoryFile[] {
     const memoryPath = getMemoryPath(this.projectRoot, featureName);
     return this._list(memoryPath);
+  }
+
+  listWithMeta(featureName: string): MemoryFileWithMeta[] {
+    const files = this.list(featureName);
+    return files.map(f => this._enrichWithMeta(f));
   }
 
   delete(featureName: string, fileName: string): boolean {
@@ -168,6 +175,22 @@ export class FsMemoryAdapter implements MemoryPort {
     return fs.readdirSync(dir, { withFileTypes: true })
       .filter(f => f.isFile() && f.name.endsWith('.md'))
       .reduce((sum, f) => sum + fs.statSync(path.join(dir, f.name)).size, 0);
+  }
+
+  private _enrichWithMeta(file: MemoryFile): MemoryFileWithMeta {
+    const bodyContent = stripFrontmatter(file.content);
+    const parsed = parseFrontmatterRich(file.content);
+    const inferred = inferMetadata(bodyContent, file.name);
+
+    const metadata: MemoryMetadata = {
+      tags: parsed && Array.isArray(parsed.tags) ? parsed.tags as string[] : inferred.tags,
+      priority: parsed && typeof parsed.priority === 'number' ? parsed.priority : inferred.priority,
+      category: parsed && typeof parsed.category === 'string'
+        ? parsed.category as MemoryMetadata['category']
+        : inferred.category,
+    };
+
+    return { ...file, metadata, bodyContent };
   }
 
   private normalizeFileName(name: string): string {

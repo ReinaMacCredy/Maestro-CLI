@@ -58,6 +58,12 @@ export interface StatusResult {
     agentMail: boolean;
     cass: boolean;
   };
+  dcp?: {
+    enabled: boolean;
+    memoryBudgetBytes: number;
+    currentMemoryBytes: number;
+    memoryFileCount: number;
+  };
   nextAction: string;
 }
 
@@ -129,6 +135,15 @@ export async function checkStatus(
       agentMail: !!services.handoffPort,
       cass: !!services.searchPort,
     },
+    dcp: (() => {
+      const dcpCfg = configAdapter.get().dcp;
+      return {
+        enabled: dcpCfg?.enabled ?? true,
+        memoryBudgetBytes: dcpCfg?.memoryBudgetBytes ?? 4096,
+        currentMemoryBytes: memoryStats.totalBytes,
+        memoryFileCount: memoryStats.count,
+      };
+    })(),
     nextAction,
   };
 }

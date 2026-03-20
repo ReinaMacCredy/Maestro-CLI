@@ -43,6 +43,13 @@ function formatStatus(result: StatusResult): string {
     lines.push(renderStatusLine('context', `${result.context.count} files, ~${result.context.totalBytes} bytes`));
   }
 
+  if (result.dcp) {
+    const dcpLabel = result.dcp.enabled
+      ? `on (budget: ${result.dcp.memoryBudgetBytes}B, current: ${result.dcp.currentMemoryBytes}B, ${result.dcp.memoryFileCount} files)`
+      : 'off';
+    lines.push(renderStatusLine('dcp', dcpLabel));
+  }
+
   lines.push(renderStatusLine('next', result.nextAction));
 
   return lines.join('\n');

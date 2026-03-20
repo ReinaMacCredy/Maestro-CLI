@@ -19,15 +19,18 @@ export default defineCommand({
   async run({ args }) {
     try {
       const { memoryAdapter } = getServices();
-      const files = memoryAdapter.list(args.feature);
+      const files = memoryAdapter.listWithMeta(args.feature);
       output(files, (items) => {
         if (items.length === 0) return 'No memory files found.';
-        const rows = items.map((f: { name: string; updatedAt: string; content: string }) => [
+        const rows = items.map(f => [
           f.name,
           `${f.content.length} chars`,
+          f.metadata.category ?? '-',
+          f.metadata.tags?.join(', ') || '-',
+          String(f.metadata.priority ?? 2),
           f.updatedAt,
         ]);
-        return renderTable(['Name', 'Size', 'Updated'], rows);
+        return renderTable(['Name', 'Size', 'Category', 'Tags', 'Pri', 'Updated'], rows);
       });
     } catch (err) {
       handleCommandError('memory-list', err);
