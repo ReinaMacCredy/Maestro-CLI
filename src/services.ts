@@ -18,6 +18,7 @@ import { FsMemoryAdapter } from './adapters/fs/memory.ts';
 import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { MaestroError } from './lib/errors.ts';
+import { checkCli } from './lib/cli-detect.ts';
 import type { TaskPort } from './ports/tasks.ts';
 import type { FeaturePort } from './ports/features.ts';
 import type { PlanPort } from './ports/plans.ts';
@@ -25,7 +26,6 @@ import type { MemoryPort } from './ports/memory.ts';
 import type { GraphPort } from './ports/graph.ts';
 import type { HandoffPort } from './ports/handoff.ts';
 import type { SearchPort } from './ports/search.ts';
-import { execFileSync } from 'node:child_process';
 
 export interface MaestroServices {
   taskPort: TaskPort;
@@ -55,18 +55,14 @@ export function initServices(directory: string): MaestroServices {
     : new FsTaskAdapter(directory, config.claimExpiresMinutes);
 
   // Graph port: only if bv is installed
-  let graphPort: GraphPort | undefined;
-  try {
-    execFileSync('command', ['-v', 'bv'], { stdio: 'pipe', shell: true });
-    graphPort = new BvGraphAdapter(directory);
-  } catch { /* bv not available */ }
+  const graphPort: GraphPort | undefined = checkCli('bv')
+    ? new BvGraphAdapter(directory)
+    : undefined;
 
   // Search port: only if cass is installed
-  let searchPort: SearchPort | undefined;
-  try {
-    execFileSync('command', ['-v', 'cass'], { stdio: 'pipe', shell: true });
-    searchPort = new CassSearchAdapter();
-  } catch { /* cass not available */ }
+  const searchPort: SearchPort | undefined = checkCli('cass')
+    ? new CassSearchAdapter()
+    : undefined;
 
   // Handoff port: Agent Mail (lazy -- actual connectivity check on first call)
   const handoffPort: HandoffPort | undefined = new AgentMailHandoffAdapter(
