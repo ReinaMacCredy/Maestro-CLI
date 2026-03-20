@@ -36,10 +36,17 @@ export function extractKeywords(text: string): Set<string> {
 /**
  * Word-boundary tag matching.
  * Tag "auth" matches word "auth" in context, NOT substring "auth" inside "coauthored".
+ * Compiled regexes are cached -- tag cardinality is practically bounded (~250 unique tags).
  */
+const tagRegexCache = new Map<string, RegExp>();
+
 function matchesTag(tag: string, context: string): boolean {
-  const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`\\b${escaped}\\b`, 'i');
+  let re = tagRegexCache.get(tag);
+  if (!re) {
+    const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    re = new RegExp(`\\b${escaped}\\b`, 'i');
+    tagRegexCache.set(tag, re);
+  }
   return re.test(context);
 }
 
