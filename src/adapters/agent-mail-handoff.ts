@@ -11,6 +11,7 @@ import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { FsConfigAdapter } from './fs/config.ts';
 import { selectMemories } from '../utils/context-selector.ts';
+import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { getHandoffPath, getHandoffsPath } from '../utils/paths.ts';
 import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
@@ -52,17 +53,15 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       ? await this.taskPort.getRichFields(feature, taskId)
       : null;
 
-    const dcpConfig = this.configAdapter.get().dcp;
-    const dcpEnabled = dcpConfig?.enabled ?? true;
+    const cfg = resolveDcpConfig(this.configAdapter.get().dcp);
 
     let decisions: Array<{ key: string; value: string }>;
 
-    if (dcpEnabled && task) {
+    if (cfg.enabled && task) {
       const allMemories = this.memoryAdapter.listWithMeta(feature);
-      const budget = dcpConfig?.handoffDecisionBudgetBytes ?? 2048;
       const selected = selectMemories(
-        allMemories, task, null, budget,
-        dcpConfig?.relevanceThreshold ?? 0.1,
+        allMemories, task, null, cfg.handoffDecisionBudgetBytes,
+        cfg.relevanceThreshold,
       );
       decisions = selected.memories.map(m => ({
         key: m.name,

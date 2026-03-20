@@ -14,7 +14,8 @@ import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
-import { DEFAULT_HIVE_CONFIG, type TaskInfo, type FeatureStatusType, type PlanComment } from '../types.ts';
+import { type TaskInfo, type FeatureStatusType, type PlanComment } from '../types.ts';
+import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
 export interface StatusServices {
   taskPort: TaskPort;
@@ -107,6 +108,8 @@ export async function checkStatus(
     runnableFolders,
   );
 
+  const dcpCfg = resolveDcpConfig(configAdapter.get().dcp);
+
   return {
     feature: {
       name: feature.name,
@@ -136,8 +139,8 @@ export async function checkStatus(
       cass: !!services.searchPort,
     },
     dcp: {
-      enabled: configAdapter.get().dcp?.enabled ?? DEFAULT_HIVE_CONFIG.dcp!.enabled!,
-      memoryBudgetBytes: configAdapter.get().dcp?.memoryBudgetBytes ?? DEFAULT_HIVE_CONFIG.dcp!.memoryBudgetBytes!,
+      enabled: dcpCfg.enabled,
+      memoryBudgetBytes: dcpCfg.memoryBudgetBytes,
       currentMemoryBytes: memoryStats.totalBytes,
       memoryFileCount: memoryStats.count,
     },

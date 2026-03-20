@@ -9,8 +9,8 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam, taskParam } from './_utils/params.ts';
-import { DEFAULT_HIVE_CONFIG } from '../types.ts';
 import { pruneContext } from '../usecases/prune-context.ts';
+import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 
 export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void {
@@ -36,6 +36,7 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
       const spec = await services.taskPort.readSpec(feature, input.task) ?? '(no spec)';
       const memories = services.memoryAdapter.listWithMeta(feature);
       const dcpConfig = services.configAdapter.get().dcp;
+      const resolvedDcp = resolveDcpConfig(dcpConfig);
 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;
@@ -58,8 +59,8 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         feature,
         task: input.task,
         dcp: {
-          enabled: dcpConfig?.enabled ?? DEFAULT_HIVE_CONFIG.dcp!.enabled!,
-          memoryBudgetBytes: dcpConfig?.memoryBudgetBytes ?? DEFAULT_HIVE_CONFIG.dcp!.memoryBudgetBytes!,
+          enabled: resolvedDcp.enabled,
+          memoryBudgetBytes: resolvedDcp.memoryBudgetBytes,
         },
         memories: {
           total: metrics.memoriesTotal,

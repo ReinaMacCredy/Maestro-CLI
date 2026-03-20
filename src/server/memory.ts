@@ -7,6 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
 import { selectMemories } from '../utils/context-selector.ts';
+import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -92,12 +93,12 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
           if (!task) {
             return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
           }
-          const dcpConfig = services.configAdapter.get().dcp;
-          const budget = input.budget ?? dcpConfig?.memoryBudgetBytes ?? 4096;
+          const cfg = resolveDcpConfig(services.configAdapter.get().dcp);
+          const budget = input.budget ?? cfg.memoryBudgetBytes;
           const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
           const selected = selectMemories(
             richFiles, task, task.planTitle ?? null, budget,
-            dcpConfig?.relevanceThreshold ?? 0.1, featureCreatedAt,
+            cfg.relevanceThreshold, featureCreatedAt,
           );
           const scoreMap = new Map(selected.scores.map(s => [s.name, s.score]));
           const files = selected.memories.map(m => ({

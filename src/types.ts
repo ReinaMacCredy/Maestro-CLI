@@ -186,6 +186,15 @@ export const DEFAULT_AGENT_MODELS = {
 export type AgentName = keyof typeof DEFAULT_AGENT_MODELS;
 export const AGENT_NAMES = Object.keys(DEFAULT_AGENT_MODELS) as AgentName[];
 
+export const DCP_DEFAULTS = {
+  enabled: true,
+  memoryBudgetBytes: 4096,
+  completedTaskBudgetBytes: 2048,
+  observationMasking: true,
+  relevanceThreshold: 0.1,
+  handoffDecisionBudgetBytes: 2048,
+} satisfies Required<NonNullable<HiveConfig['dcp']>>;
+
 export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   $schema: 'https://raw.githubusercontent.com/tctinh/agent-hive/main/packages/opencode-hive/schema/agent_hive.schema.json',
   enableToolsFor: [],
@@ -194,14 +203,7 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   agentMode: 'unified',
   claimExpiresMinutes: 120,
   taskBackend: 'fs',
-  dcp: {
-    enabled: true,
-    memoryBudgetBytes: 4096,
-    completedTaskBudgetBytes: 2048,
-    observationMasking: true,
-    relevanceThreshold: 0.1,
-    handoffDecisionBudgetBytes: 2048,
-  },
+  dcp: DCP_DEFAULTS,
   agents: {
     'hive-master': {
       model: DEFAULT_AGENT_MODELS['hive-master'],

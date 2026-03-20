@@ -3,8 +3,9 @@
  * Assembles task-aware, budget-conscious context injection for worker agents.
  */
 
-import { DEFAULT_HIVE_CONFIG, type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
+import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
 import { selectMemories } from '../utils/context-selector.ts';
+import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
 export interface PruneContextParams {
   featureName: string;
@@ -46,8 +47,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     richContext, graphContext, workerRules, dcpConfig, featureCreatedAt,
   } = params;
 
-  // Apply config defaults from single source of truth (assertion safe: DEFAULT provides all fields)
-  const cfg = { ...DEFAULT_HIVE_CONFIG.dcp, ...dcpConfig } as Required<NonNullable<HiveConfig['dcp']>>;
+  const cfg = resolveDcpConfig(dcpConfig);
 
   // -- Memory selection --
   let memorySection: string;

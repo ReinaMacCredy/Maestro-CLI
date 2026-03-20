@@ -8,6 +8,7 @@ import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
+import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import type { MemoryFileWithMeta } from '../../types.ts';
 
 function parseBudget(raw: string): number {
@@ -58,12 +59,12 @@ export default defineCommand({
         }
         const memories = memoryAdapter.listWithMeta(args.feature);
         requireMemories(memories, args.feature);
-        const dcpConfig = configAdapter.get().dcp;
-        const budget = args.budget ? parseBudget(args.budget) : dcpConfig?.memoryBudgetBytes ?? 4096;
+        const cfg = resolveDcpConfig(configAdapter.get().dcp);
+        const budget = args.budget ? parseBudget(args.budget) : cfg.memoryBudgetBytes;
         const featureCreatedAt = featureAdapter.get(args.feature)?.createdAt;
         const selected = selectMemories(
           memories, task, task.planTitle ?? null, budget,
-          dcpConfig?.relevanceThreshold ?? 0.1, featureCreatedAt,
+          cfg.relevanceThreshold, featureCreatedAt,
         );
         const compiled = selected.memories.length === 0
           ? ''

@@ -7,8 +7,8 @@ import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 import { requireFeature } from '../../lib/resolve.ts';
-import { DEFAULT_HIVE_CONFIG } from '../../types.ts';
 import { pruneContext } from '../../usecases/prune-context.ts';
+import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { WORKER_RULES } from '../../utils/worker-rules.ts';
 
 export default defineCommand({
@@ -40,6 +40,7 @@ export default defineCommand({
       const spec = await services.taskPort.readSpec(feature, args.task) ?? '(no spec)';
       const memories = services.memoryAdapter.listWithMeta(feature);
       const dcpConfig = services.configAdapter.get().dcp;
+      const resolvedDcp = resolveDcpConfig(dcpConfig);
 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;
@@ -62,8 +63,8 @@ export default defineCommand({
         const lines: string[] = [];
         lines.push(`# DCP Preview: ${args.task}`);
         lines.push(`  feature:  ${feature}`);
-        lines.push(`  enabled:  ${dcpConfig?.enabled ?? DEFAULT_HIVE_CONFIG.dcp!.enabled!}`);
-        lines.push(`  budget:   ${dcpConfig?.memoryBudgetBytes ?? DEFAULT_HIVE_CONFIG.dcp!.memoryBudgetBytes!} bytes`);
+        lines.push(`  enabled:  ${resolvedDcp.enabled}`);
+        lines.push(`  budget:   ${resolvedDcp.memoryBudgetBytes} bytes`);
         lines.push(`  memories: ${m.memoriesIncluded}/${m.memoriesTotal} included, ${m.memoriesDropped} dropped`);
         lines.push('');
 
