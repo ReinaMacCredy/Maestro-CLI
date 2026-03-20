@@ -41,6 +41,7 @@ function inferTags(bodyContent: string, fileName: string): string[] {
   }
 
   // Extract from headings
+  HEADING_RE.lastIndex = 0; // reset stateful /g regex between calls
   let match: RegExpExecArray | null;
   while ((match = HEADING_RE.exec(bodyContent)) !== null) {
     const headingWords = match[1].split(/\s+/);

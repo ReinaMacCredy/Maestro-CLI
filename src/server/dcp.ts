@@ -9,6 +9,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam, taskParam } from './_utils/params.ts';
+import { DEFAULT_HIVE_CONFIG } from '../types.ts';
 import { pruneContext } from '../usecases/prune-context.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 
@@ -57,8 +58,8 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         feature,
         task: input.task,
         dcp: {
-          enabled: dcpConfig?.enabled ?? true,
-          memoryBudgetBytes: dcpConfig?.memoryBudgetBytes ?? 4096,
+          enabled: dcpConfig?.enabled ?? DEFAULT_HIVE_CONFIG.dcp!.enabled!,
+          memoryBudgetBytes: dcpConfig?.memoryBudgetBytes ?? DEFAULT_HIVE_CONFIG.dcp!.memoryBudgetBytes!,
         },
         memories: {
           total: metrics.memoriesTotal,

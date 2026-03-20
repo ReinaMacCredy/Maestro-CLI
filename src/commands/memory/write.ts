@@ -6,7 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { serializeFrontmatter } from '../../utils/frontmatter.ts';
+import { prependMetadataFrontmatter } from '../../utils/frontmatter.ts';
+import { MEMORY_CATEGORIES } from '../../types.ts';
 
 export default defineCommand({
   meta: { name: 'memory-write', description: 'Write a memory file' },
@@ -41,22 +42,18 @@ export default defineCommand({
     },
     category: {
       type: 'string',
-      description: 'Category: decision, research, architecture, convention, debug',
+      description: `Category: ${MEMORY_CATEGORIES.join(', ')}`,
     },
   },
   async run({ args }) {
     try {
       const { memoryAdapter } = getServices();
 
-      // Prepend frontmatter if metadata args provided
-      let finalContent = args.content;
-      const meta: Record<string, unknown> = {};
-      if (args.tags) meta.tags = args.tags.split(',').map(t => t.trim());
-      if (args.priority !== undefined) meta.priority = Number(args.priority);
-      if (args.category) meta.category = args.category;
-      if (Object.keys(meta).length > 0) {
-        finalContent = serializeFrontmatter(meta) + '\n' + args.content;
-      }
+      const finalContent = prependMetadataFrontmatter(args.content, {
+        tags: args.tags ? args.tags.split(',').map(t => t.trim()) : undefined,
+        priority: args.priority !== undefined ? Number(args.priority) : undefined,
+        category: args.category,
+      });
 
       const result = args.global
         ? memoryAdapter.writeGlobal(args.name, finalContent)

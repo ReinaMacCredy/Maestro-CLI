@@ -180,8 +180,16 @@ export class FsMemoryAdapter implements MemoryPort {
   private _enrichWithMeta(file: MemoryFile): MemoryFileWithMeta {
     const bodyContent = stripFrontmatter(file.content);
     const parsed = parseFrontmatterRich(file.content);
-    const inferred = inferMetadata(bodyContent, file.name);
 
+    // Short-circuit: skip inference when frontmatter provides all fields
+    if (parsed && Array.isArray(parsed.tags) && typeof parsed.priority === 'number' && typeof parsed.category === 'string') {
+      return {
+        ...file, bodyContent,
+        metadata: { tags: parsed.tags as string[], priority: parsed.priority, category: parsed.category as MemoryMetadata['category'] },
+      };
+    }
+
+    const inferred = inferMetadata(bodyContent, file.name);
     const metadata: MemoryMetadata = {
       tags: parsed && Array.isArray(parsed.tags) ? parsed.tags as string[] : inferred.tags,
       priority: parsed && typeof parsed.priority === 'number' ? parsed.priority : inferred.priority,

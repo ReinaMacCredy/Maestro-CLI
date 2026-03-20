@@ -5,7 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { serializeFrontmatter } from '../utils/frontmatter.ts';
+import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -25,15 +25,9 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
-      // Prepend frontmatter if any metadata params provided
-      let finalContent = input.content;
-      const meta: Record<string, unknown> = {};
-      if (input.tags?.length) meta.tags = input.tags;
-      if (input.priority !== undefined) meta.priority = input.priority;
-      if (input.category) meta.category = input.category;
-      if (Object.keys(meta).length > 0) {
-        finalContent = serializeFrontmatter(meta) + '\n' + input.content;
-      }
+      const finalContent = prependMetadataFrontmatter(input.content, {
+        tags: input.tags, priority: input.priority, category: input.category,
+      });
 
       if (input.global) {
         const path = services.memoryAdapter.writeGlobal(input.name, finalContent);

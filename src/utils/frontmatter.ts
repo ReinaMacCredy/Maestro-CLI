@@ -114,3 +114,19 @@ export function serializeFrontmatter(meta: Record<string, unknown>): string {
   lines.push('---');
   return lines.join('\n');
 }
+
+/**
+ * Prepend YAML frontmatter with metadata to content.
+ * Returns content unchanged if no metadata fields are provided.
+ */
+export function prependMetadataFrontmatter(
+  content: string,
+  opts: { tags?: string[]; priority?: number; category?: string },
+): string {
+  const meta: Record<string, unknown> = {};
+  if (opts.tags?.length) meta.tags = opts.tags;
+  if (opts.priority !== undefined) meta.priority = opts.priority;
+  if (opts.category) meta.category = opts.category;
+  if (Object.keys(meta).length === 0) return content;
+  return serializeFrontmatter(meta) + '\n' + content;
+}

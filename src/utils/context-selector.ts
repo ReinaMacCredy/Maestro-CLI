@@ -4,7 +4,7 @@
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
-import { scoreRelevance } from './relevance.ts';
+import { scoreRelevance, buildTaskContext } from './relevance.ts';
 
 export interface SelectedContext {
   memories: MemoryFileWithMeta[];  // ordered by score desc, within budget
@@ -33,10 +33,13 @@ export function selectMemories(
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: 0, scores: [] };
   }
 
+  // Pre-compute task context once for all memories
+  const taskCtx = buildTaskContext(task, planSection);
+
   if (budgetBytes <= 0) {
     const scores = memories.map(m => ({
       name: m.name,
-      score: scoreRelevance(m, task, planSection, featureCreatedAt),
+      score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx),
       included: false,
     }));
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: memories.length, scores };
@@ -45,7 +48,7 @@ export function selectMemories(
   // Score all memories
   const scored = memories.map(m => ({
     memory: m,
-    score: scoreRelevance(m, task, planSection, featureCreatedAt),
+    score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx),
     bodyBytes: Buffer.byteLength(m.bodyContent),
   }));
 

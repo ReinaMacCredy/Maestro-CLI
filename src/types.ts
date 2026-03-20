@@ -108,7 +108,8 @@ export interface MemoryFile {
   sizeBytes: number;
 }
 
-export type MemoryCategory = 'decision' | 'research' | 'architecture' | 'convention' | 'debug';
+export const MEMORY_CATEGORIES = ['decision', 'research', 'architecture', 'convention', 'debug'] as const;
+export type MemoryCategory = typeof MEMORY_CATEGORIES[number];
 
 export interface MemoryMetadata {
   tags?: string[];
@@ -166,7 +167,6 @@ export interface HiveConfig {
   dcp?: {
     enabled?: boolean;                  // default true
     memoryBudgetBytes?: number;         // default 4096
-    specBudgetBytes?: number;           // default 8192
     completedTaskBudgetBytes?: number;  // default 2048
     observationMasking?: boolean;       // default true
     relevanceThreshold?: number;        // minimum score to include, default 0.1
@@ -196,7 +196,6 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   dcp: {
     enabled: true,
     memoryBudgetBytes: 4096,
-    specBudgetBytes: 8192,
     completedTaskBudgetBytes: 2048,
     observationMasking: true,
     relevanceThreshold: 0.1,

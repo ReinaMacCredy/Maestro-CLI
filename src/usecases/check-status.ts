@@ -14,7 +14,7 @@ import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
 import { MaestroError } from '../lib/errors.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
-import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
+import { DEFAULT_HIVE_CONFIG, type TaskInfo, type FeatureStatusType, type PlanComment } from '../types.ts';
 
 export interface StatusServices {
   taskPort: TaskPort;
@@ -135,15 +135,12 @@ export async function checkStatus(
       agentMail: !!services.handoffPort,
       cass: !!services.searchPort,
     },
-    dcp: (() => {
-      const dcpCfg = configAdapter.get().dcp;
-      return {
-        enabled: dcpCfg?.enabled ?? true,
-        memoryBudgetBytes: dcpCfg?.memoryBudgetBytes ?? 4096,
-        currentMemoryBytes: memoryStats.totalBytes,
-        memoryFileCount: memoryStats.count,
-      };
-    })(),
+    dcp: {
+      enabled: configAdapter.get().dcp?.enabled ?? DEFAULT_HIVE_CONFIG.dcp!.enabled!,
+      memoryBudgetBytes: configAdapter.get().dcp?.memoryBudgetBytes ?? DEFAULT_HIVE_CONFIG.dcp!.memoryBudgetBytes!,
+      currentMemoryBytes: memoryStats.totalBytes,
+      memoryFileCount: memoryStats.count,
+    },
     nextAction,
   };
 }
