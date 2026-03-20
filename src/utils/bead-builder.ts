@@ -18,7 +18,6 @@ export interface BeadBuildParams {
   allTasks: ParsedTask[];
   dependsOn: string[];
   memoryFiles?: Array<{ name: string; content: string }>;
-  completedTasks?: Array<{ name: string; summary: string }>;
 }
 
 /**
@@ -26,14 +25,14 @@ export interface BeadBuildParams {
  * Populates description, design, acceptanceCriteria, notes, type.
  */
 export function buildBeadOpts(params: BeadBuildParams): CreateOpts {
-  const { featureName, task, planContent, allTasks, dependsOn, memoryFiles = [], completedTasks = [] } = params;
+  const { featureName, task, planContent, allTasks, dependsOn, memoryFiles = [] } = params;
 
   const planSection = extractPlanSection(planContent, task) ?? '';
 
   return {
-    description: buildBeadDescription(task, planSection, featureName, dependsOn, allTasks, memoryFiles, completedTasks),
+    description: buildBeadDescription(task, planSection, featureName, dependsOn, allTasks, memoryFiles),
     design: extractDesignNotes(planSection),
-    acceptanceCriteria: extractAcceptanceCriteria(planSection, task),
+    acceptanceCriteria: extractAcceptanceCriteria(planSection),
     notes: buildBeadNotes(task, featureName),
     type: inferBeadType(planSection, task.name),
     deps: dependsOn,
@@ -43,7 +42,7 @@ export function buildBeadOpts(params: BeadBuildParams): CreateOpts {
 
 /**
  * Build a rich, self-contained description for the bead.
- * Includes full plan section, dependencies, memory context, and completed work.
+ * Includes full plan section, dependencies, and memory context.
  */
 function buildBeadDescription(
   task: ParsedTask,
@@ -52,7 +51,6 @@ function buildBeadDescription(
   dependsOn: string[],
   allTasks: ParsedTask[],
   memoryFiles: Array<{ name: string; content: string }>,
-  completedTasks: Array<{ name: string; summary: string }>,
 ): string {
   const sections: string[] = [];
 
@@ -84,16 +82,6 @@ function buildBeadDescription(
       } else {
         sections.push(`- \`${dep}\``);
       }
-    }
-    sections.push('');
-  }
-
-  // Completed tasks for context
-  if (completedTasks.length > 0) {
-    sections.push('## Prior Work');
-    sections.push('');
-    for (const ct of completedTasks) {
-      sections.push(`- **${ct.name}**: ${ct.summary}`);
     }
     sections.push('');
   }
@@ -138,7 +126,7 @@ function extractDesignNotes(planSection: string): string | undefined {
  * Looks for ## Acceptance Criteria, ## AC, ## Done When subsections,
  * or checklist-style items.
  */
-function extractAcceptanceCriteria(planSection: string, _task: ParsedTask): string | undefined {
+function extractAcceptanceCriteria(planSection: string): string | undefined {
   if (!planSection) return undefined;
 
   // Look for explicit AC subsections

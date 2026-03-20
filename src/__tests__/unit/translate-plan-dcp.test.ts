@@ -92,9 +92,7 @@ describe('translate-plan: no memories in bead descriptions', () => {
     expect(services).not.toHaveProperty('memoryAdapter');
   });
 
-  test('bead descriptions do NOT contain "## Prior Work" even with completedTasks param', () => {
-    // Even if completedTasks is explicitly passed, buildBeadOpts defaults to []
-    // and does not include a "## Prior Work" section
+  test('bead descriptions do not contain Prior Work section', () => {
     const opts = buildBeadOpts({
       featureName: FEATURE,
       task: { folder: '01-add-widget', name: 'Add Widget', order: 1, description: '', dependsOnNumbers: null },
