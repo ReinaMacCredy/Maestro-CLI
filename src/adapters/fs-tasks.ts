@@ -18,10 +18,13 @@ import {
   getTaskStatusPath,
   getTaskSpecPath,
   getTaskReportPath,
+  getTaskVerificationPath,
 } from '../utils/paths.ts';
+import type { VerificationReport } from '../ports/verification.ts';
 import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
 import { writeJsonAtomic } from '../utils/fs-io.ts';
 import { buildTaskFolder } from '../utils/slug.ts';
+import { extractDesignNotes, extractAcceptanceCriteria } from '../utils/bead-builder.ts';
 import * as fs from 'fs';
 
 export class FsTaskAdapter implements TaskPort {
@@ -104,9 +107,10 @@ export class FsTaskAdapter implements TaskPort {
   async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
     const status = this.readStatus(feature, id);
     if (!status) throw new MaestroError(`Task '${id}' not found`);
-    if (status.status !== 'pending') {
-      throw new MaestroError(`Cannot claim task '${id}': status is '${status.status}', expected 'pending'`);
+    if (status.status !== 'pending' && status.status !== 'revision') {
+      throw new MaestroError(`Cannot claim task '${id}': status is '${status.status}', expected 'pending' or 'revision'`);
     }
+    // Preserve revision metadata when re-claiming from revision
     status.status = 'claimed';
     status.claimedBy = agentId;
     status.claimedAt = new Date().toISOString();
@@ -117,14 +121,19 @@ export class FsTaskAdapter implements TaskPort {
   async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
     const status = this.readStatus(feature, id);
     if (!status) throw new MaestroError(`Task '${id}' not found`);
-    if (status.status !== 'claimed') {
-      throw new MaestroError(`Cannot complete task '${id}': status is '${status.status}', expected 'claimed'`);
+    if (status.status !== 'claimed' && status.status !== 'review') {
+      throw new MaestroError(`Cannot complete task '${id}': status is '${status.status}', expected 'claimed' or 'review'`);
     }
     status.status = 'done';
     status.summary = summary;
     status.completedAt = new Date().toISOString();
     status.claimedBy = undefined;
     status.claimedAt = undefined;
+    // Clear verification state on acceptance from review
+    if (status.verificationResult) {
+      status.verificationResult = undefined;
+      status.verificationScore = undefined;
+    }
     this.writeStatus(feature, id, status);
     return this.statusToInfo(id, status);
   }
@@ -156,9 +165,50 @@ export class FsTaskAdapter implements TaskPort {
     return this.statusToInfo(id, status);
   }
 
+  async review(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'claimed') {
+      throw new MaestroError(`Cannot review task '${id}': status is '${status.status}', expected 'claimed'`);
+    }
+    status.status = 'review';
+    status.summary = summary;
+    // Do NOT set completedAt -- task is not done yet
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
+  }
+
+  async revision(feature: string, id: string, feedback: string, revisionCount: number): Promise<TaskInfo> {
+    const status = this.readStatus(feature, id);
+    if (!status) throw new MaestroError(`Task '${id}' not found`);
+    if (status.status !== 'review') {
+      throw new MaestroError(`Cannot send task '${id}' to revision: status is '${status.status}', expected 'review'`);
+    }
+    status.status = 'revision';
+    status.revisionFeedback = feedback;
+    status.revisionCount = revisionCount;
+    status.claimedBy = undefined;
+    status.claimedAt = undefined;
+    this.writeStatus(feature, id, status);
+    return this.statusToInfo(id, status);
+  }
+
+  async readVerification(feature: string, id: string): Promise<VerificationReport | null> {
+    return readJson<VerificationReport>(getTaskVerificationPath(this.projectRoot, feature, id));
+  }
+
+  async writeVerification(feature: string, id: string, report: VerificationReport): Promise<void> {
+    const taskDir = getTaskPath(this.projectRoot, feature, id);
+    ensureDir(taskDir);
+    writeJsonAtomic(getTaskVerificationPath(this.projectRoot, feature, id), report);
+  }
+
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const all = await this.list(feature, { includeAll: true });
-    const doneSet = new Set(all.filter(t => t.status === 'done').map(t => t.folder));
+    // Both done and review satisfy dependencies
+    const satisfiedSet = new Set(
+      all.filter(t => t.status === 'done' || t.status === 'review').map(t => t.folder),
+    );
     const now = Date.now();
     const expiryMs = this.claimExpiresMinutes * 60 * 1000;
 
@@ -186,10 +236,11 @@ export class FsTaskAdapter implements TaskPort {
       }
     }
 
+    // Both pending and revision tasks are claimable (revision tasks need re-claim)
     return all.filter(t => {
-      if (t.status !== 'pending') return false;
+      if (t.status !== 'pending' && t.status !== 'revision') return false;
       const deps = t.dependsOn || [];
-      return deps.every(d => doneSet.has(d));
+      return deps.every(d => satisfiedSet.has(d));
     });
   }
 
@@ -239,12 +290,27 @@ export class FsTaskAdapter implements TaskPort {
       blockerReason: status.blockerReason,
       blockerDecision: status.blockerDecision,
       dependsOn: status.dependsOn,
+      verificationResult: status.verificationResult,
+      verificationScore: status.verificationScore,
+      revisionCount: status.revisionCount,
+      revisionFeedback: status.revisionFeedback,
     };
   }
 
-  // Optional rich methods -- stubs for fs backend (br adapter implements these)
-  async getRichFields(_feature: string, _id: string): Promise<RichTaskFields | null> {
-    return null;
+  // Optional rich methods -- fs backend extracts from spec file
+  async getRichFields(feature: string, id: string): Promise<RichTaskFields | null> {
+    const specContent = await this.readSpec(feature, id);
+    if (!specContent) return null;
+
+    const planMatch = specContent.match(/(?:^|\n)## Plan Section\n([\s\S]*?)(?=\n## |$)/);
+    const planSection = planMatch?.[1]?.trim() ?? '';
+    if (!planSection) return null;
+
+    return {
+      description: planSection,
+      design: extractDesignNotes(planSection),
+      acceptanceCriteria: extractAcceptanceCriteria(planSection),
+    };
   }
 
   async updateRichFields(_feature: string, _id: string, _fields: Partial<RichTaskFields>): Promise<void> {

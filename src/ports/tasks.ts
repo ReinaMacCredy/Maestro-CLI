@@ -1,10 +1,11 @@
 /**
  * TaskPort -- abstract interface for task storage.
- * Updated for 4-state model: pending, claimed, done, blocked.
+ * Updated for 6-state model: pending, claimed, done, blocked, review, revision.
  * Extended with rich bead fields for br backend.
  */
 
 import type { TaskStatusType, TaskInfo } from '../types.ts';
+import type { VerificationReport } from './verification.ts';
 
 export interface CreateOpts {
   labels?: string[];
@@ -51,11 +52,17 @@ export interface TaskPort {
   unblock(feature: string, id: string, decision: string): Promise<TaskInfo>;
   // Queries
   getRunnable(feature: string): Promise<TaskInfo[]>;
+  // State transitions (verification)
+  review(feature: string, id: string, summary: string): Promise<TaskInfo>;
+  revision(feature: string, id: string, feedback: string, revisionCount: number): Promise<TaskInfo>;
   // Specs and reports
   readSpec(feature: string, id: string): Promise<string | null>;
   writeSpec(feature: string, id: string, content: string): Promise<void>;
   readReport(feature: string, id: string): Promise<string | null>;
   writeReport(feature: string, id: string, content: string): Promise<void>;
+  // Verification reports
+  readVerification(feature: string, id: string): Promise<VerificationReport | null>;
+  writeVerification(feature: string, id: string, report: VerificationReport): Promise<void>;
 
   // Optional rich methods (BrTaskAdapter implements, FsTaskAdapter returns null/no-op)
   getRichFields?(feature: string, id: string): Promise<RichTaskFields | null>;
@@ -65,16 +72,20 @@ export interface TaskPort {
 }
 
 /**
- * Valid state transitions for task status (4-state model).
+ * Valid state transitions for task status (6-state model).
  *
  *   pending  --> claimed, blocked
- *   claimed  --> done, blocked, pending (release)
+ *   claimed  --> review, done, blocked, pending (release)
+ *   review   --> done (accept), revision (reject)
+ *   revision --> claimed (re-claim)
  *   blocked  --> pending (unblock)
  *   done     --> pending (reopen)
  */
 export const VALID_TRANSITIONS: Record<TaskStatusType, TaskStatusType[]> = {
   pending: ['claimed', 'blocked'],
-  claimed: ['done', 'blocked', 'pending'],
+  claimed: ['review', 'done', 'blocked', 'pending'],
+  review: ['done', 'revision'],
+  revision: ['claimed'],
   blocked: ['pending'],
   done: ['pending'],
 };

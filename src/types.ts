@@ -1,6 +1,6 @@
 /**
  * Core types for maestroCLI.
- * Updated for v2 plugin model -- 4-state task model, no worker/session/sandbox types.
+ * Updated for v2 plugin model -- 6-state task model, no worker/session/sandbox types.
  */
 
 // ============================================================================
@@ -23,7 +23,7 @@ export interface FeatureJson {
 // Task Types
 // ============================================================================
 
-export type TaskStatusType = 'pending' | 'claimed' | 'done' | 'blocked';
+export type TaskStatusType = 'pending' | 'claimed' | 'done' | 'blocked' | 'review' | 'revision';
 export type TaskOrigin = 'plan' | 'manual';
 
 export interface TaskStatus {
@@ -38,6 +38,11 @@ export interface TaskStatus {
   blockerReason?: string;
   blockerDecision?: string;
   dependsOn?: string[];
+  // Verification fields
+  verificationResult?: 'pass' | 'fail';
+  verificationScore?: number;
+  revisionCount?: number;
+  revisionFeedback?: string;
 }
 
 export interface TaskInfo {
@@ -54,6 +59,11 @@ export interface TaskInfo {
   blockerDecision?: string;
   /** Task dependencies */
   dependsOn?: string[];
+  // Verification fields
+  verificationResult?: 'pass' | 'fail';
+  verificationScore?: number;
+  revisionCount?: number;
+  revisionFeedback?: string;
 }
 
 // ============================================================================
@@ -83,6 +93,7 @@ export interface TasksSyncResult {
   removed: string[];
   kept: string[];
   manual: string[];
+  warnings?: string[];
 }
 
 // ============================================================================
@@ -172,6 +183,15 @@ export interface HiveConfig {
     relevanceThreshold?: number;        // minimum score to include, default 0.1
     handoffDecisionBudgetBytes?: number; // default 2048
   };
+  verification?: {
+    enabled?: boolean;              // default: true
+    autoReject?: boolean;           // default: true (auto-transition review -> revision)
+    maxRevisions?: number;          // default: 2
+    autoAcceptTypes?: string[];     // task types that skip verification
+    buildCommand?: string;          // auto-detected from package.json if omitted
+    buildTimeoutMs?: number;        // default: 30000
+    scoreThreshold?: number;        // 0.0-1.0, default: 0.7
+  };
 }
 
 export const DEFAULT_AGENT_MODELS = {
@@ -194,6 +214,15 @@ export const DCP_DEFAULTS = {
   relevanceThreshold: 0.1,
   handoffDecisionBudgetBytes: 2048,
 } satisfies Required<NonNullable<HiveConfig['dcp']>>;
+
+export const VERIFICATION_DEFAULTS = {
+  enabled: true,
+  autoReject: true,
+  maxRevisions: 2,
+  autoAcceptTypes: [] as string[],
+  buildTimeoutMs: 30000,
+  scoreThreshold: 0.7,
+} satisfies Omit<Required<NonNullable<HiveConfig['verification']>>, 'buildCommand'>;
 
 export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   $schema: 'https://raw.githubusercontent.com/tctinh/agent-hive/main/packages/opencode-hive/schema/agent_hive.schema.json',

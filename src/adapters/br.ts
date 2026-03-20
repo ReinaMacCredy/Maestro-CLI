@@ -13,6 +13,7 @@
 
 import type { TaskInfo, TaskStatusType } from '../types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
+import type { VerificationReport } from '../ports/verification.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
@@ -285,6 +286,47 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   // --------------------------------------------------------------------------
+  // Verification state transitions (stub -- full impl in Phase 5)
+  // --------------------------------------------------------------------------
+
+  async review(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.requireTransition(feature, id, 'review');
+    // br maps review -> in_progress with label
+    await this.exec(['update', String(brId), '-l', 'review', '--notes', summary]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after review`);
+    return result;
+  }
+
+  async revision(feature: string, id: string, feedback: string, revisionCount: number): Promise<TaskInfo> {
+    const brId = this.resolveBrId(feature, id);
+    await this.requireTransition(feature, id, 'revision');
+    // br maps revision -> deferred with label
+    await this.exec(['update', String(brId), '-s', 'deferred', '-l', 'revision',
+      '--notes', `Revision ${revisionCount}: ${feedback}`]);
+    const result = await this.get(feature, id);
+    if (!result) throw new MaestroError(`Task '${id}' not found after revision`);
+    return result;
+  }
+
+  async readVerification(feature: string, id: string): Promise<VerificationReport | null> {
+    // Stored as sidecar JSON (same as fs backend)
+    const { getTaskVerificationPath } = await import('../utils/paths.ts');
+    const folder = this.resolveTaskFolder(feature, id);
+    return readJson<VerificationReport>(getTaskVerificationPath(this.projectRoot, feature, folder));
+  }
+
+  async writeVerification(feature: string, id: string, report: VerificationReport): Promise<void> {
+    const { getTaskVerificationPath, getTaskPath } = await import('../utils/paths.ts');
+    const folder = this.resolveTaskFolder(feature, id);
+    const taskDir = getTaskPath(this.projectRoot, feature, folder);
+    ensureDir(taskDir);
+    const { writeJsonAtomic } = await import('../utils/fs-io.ts');
+    writeJsonAtomic(getTaskVerificationPath(this.projectRoot, feature, folder), report);
+  }
+
+  // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
 
@@ -317,6 +359,11 @@ export class BrTaskAdapter implements TaskPort {
   // --------------------------------------------------------------------------
 
   private toMaestroStatus(issue: BrIssue): TaskStatusType {
+    // Check labels for review/revision distinction
+    const labels = issue.labels ?? [];
+    if (labels.includes('review') && issue.status === BR_STATUS.IN_PROGRESS) return 'review';
+    if (labels.includes('revision') && issue.status === BR_STATUS.DEFERRED) return 'revision';
+
     switch (issue.status) {
       case BR_STATUS.OPEN: return 'pending';
       case BR_STATUS.IN_PROGRESS: return 'claimed';
@@ -330,7 +377,9 @@ export class BrTaskAdapter implements TaskPort {
     switch (status) {
       case 'pending': return BR_STATUS.OPEN;
       case 'claimed': return BR_STATUS.IN_PROGRESS;
+      case 'review': return BR_STATUS.IN_PROGRESS;
       case 'blocked': return BR_STATUS.DEFERRED;
+      case 'revision': return BR_STATUS.DEFERRED;
       case 'done': return BR_STATUS.CLOSED;
       default: return BR_STATUS.OPEN;
     }

@@ -1,10 +1,11 @@
 /**
  * InMemoryTaskPort -- mock TaskPort for unit testing.
- * Updated for 4-state model (pending/claimed/done/blocked).
+ * Updated for 6-state model (pending/claimed/done/blocked/review/revision).
  */
 
 import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
 import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
+import type { VerificationReport } from '../../ports/verification.ts';
 import { MaestroError } from '../../lib/errors.ts';
 import { buildTaskFolder } from '../../utils/slug.ts';
 
@@ -16,6 +17,7 @@ export class InMemoryTaskPort implements TaskPort {
   private tasks = new Map<string, Map<string, StoredTask>>();
   private specs = new Map<string, string>();
   private reports = new Map<string, string>();
+  private verifications = new Map<string, VerificationReport>();
   private nextId = 1;
 
   private getFeatureTasks(feature: string): Map<string, StoredTask> {
@@ -74,7 +76,10 @@ export class InMemoryTaskPort implements TaskPort {
   async claim(feature: string, id: string, agentId: string): Promise<TaskInfo> {
     const task = this.getFeatureTasks(feature).get(id);
     if (!task) throw new MaestroError(`Task '${id}' not found`);
-    if (task.status !== 'pending') throw new MaestroError(`Cannot claim: status is '${task.status}'`);
+    if (task.status !== 'pending' && task.status !== 'revision') {
+      throw new MaestroError(`Cannot claim: status is '${task.status}'`);
+    }
+    // Preserve revision metadata when re-claiming
     task.status = 'claimed';
     task.claimedBy = agentId;
     task.claimedAt = new Date().toISOString();
@@ -84,11 +89,46 @@ export class InMemoryTaskPort implements TaskPort {
   async done(feature: string, id: string, summary: string): Promise<TaskInfo> {
     const task = this.getFeatureTasks(feature).get(id);
     if (!task) throw new MaestroError(`Task '${id}' not found`);
-    if (task.status !== 'claimed') throw new MaestroError(`Cannot complete: status is '${task.status}'`);
+    if (task.status !== 'claimed' && task.status !== 'review') {
+      throw new MaestroError(`Cannot complete: status is '${task.status}'`);
+    }
     task.status = 'done';
     task.summary = summary;
     task.completedAt = new Date().toISOString();
+    if (task.verificationResult) {
+      task.verificationResult = undefined;
+      task.verificationScore = undefined;
+    }
     return { ...task };
+  }
+
+  async review(feature: string, id: string, summary: string): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    if (task.status !== 'claimed') throw new MaestroError(`Cannot review: status is '${task.status}'`);
+    task.status = 'review';
+    task.summary = summary;
+    return { ...task };
+  }
+
+  async revision(feature: string, id: string, feedback: string, revisionCount: number): Promise<TaskInfo> {
+    const task = this.getFeatureTasks(feature).get(id);
+    if (!task) throw new MaestroError(`Task '${id}' not found`);
+    if (task.status !== 'review') throw new MaestroError(`Cannot revise: status is '${task.status}'`);
+    task.status = 'revision';
+    task.revisionFeedback = feedback;
+    task.revisionCount = revisionCount;
+    task.claimedBy = undefined;
+    task.claimedAt = undefined;
+    return { ...task };
+  }
+
+  async readVerification(feature: string, id: string): Promise<VerificationReport | null> {
+    return this.verifications.get(this.specKey(feature, id)) ?? null;
+  }
+
+  async writeVerification(feature: string, id: string, report: VerificationReport): Promise<void> {
+    this.verifications.set(this.specKey(feature, id), report);
   }
 
   async block(feature: string, id: string, reason: string): Promise<TaskInfo> {
@@ -110,12 +150,14 @@ export class InMemoryTaskPort implements TaskPort {
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const tasks = [...this.getFeatureTasks(feature).values()];
-    const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.folder));
+    const satisfiedSet = new Set(
+      tasks.filter(t => t.status === 'done' || t.status === 'review').map(t => t.folder),
+    );
 
     return tasks.filter(t => {
-      if (t.status !== 'pending') return false;
+      if (t.status !== 'pending' && t.status !== 'revision') return false;
       const deps = t.dependsOn || [];
-      return deps.every(d => doneSet.has(d));
+      return deps.every(d => satisfiedSet.has(d));
     }).map(t => ({ ...t }));
   }
 
@@ -140,6 +182,7 @@ export class InMemoryTaskPort implements TaskPort {
     this.tasks.clear();
     this.specs.clear();
     this.reports.clear();
+    this.verifications.clear();
     this.nextId = 1;
   }
 

@@ -21,6 +21,7 @@ const SPEC_FILE = 'spec.md';
 const SESSION_FILE = 'session.json';
 const WORKER_PROMPT_FILE = 'worker-prompt.md';
 const HANDOFFS_DIR = 'handoffs';
+const VERIFICATION_FILE = 'verification.json';
 
 export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
@@ -117,4 +118,8 @@ export function getHandoffPath(projectRoot: string, featureName: string, beadId:
 
 export function getWorkerPromptPath(projectRoot: string, featureName: string, taskFolder: string): string {
   return path.join(getTaskPath(projectRoot, featureName, taskFolder), WORKER_PROMPT_FILE);
+}
+
+export function getTaskVerificationPath(projectRoot: string, featureName: string, taskFolder: string): string {
+  return path.join(getTaskPath(projectRoot, featureName, taskFolder), VERIFICATION_FILE);
 }
