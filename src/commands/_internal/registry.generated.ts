@@ -8,12 +8,19 @@ import cmdFeatureComplete from '../feature/complete.ts';
 import cmdFeatureCreate from '../feature/create.ts';
 import cmdFeatureInfo from '../feature/info.ts';
 import cmdFeatureList from '../feature/list.ts';
+import cmdGraphInsights from '../graph/insights.ts';
+import cmdGraphNext from '../graph/next.ts';
+import cmdGraphPlan from '../graph/plan.ts';
+import cmdHandoffAck from '../handoff/ack.ts';
+import cmdHandoffReceive from '../handoff/receive.ts';
+import cmdHandoffSend from '../handoff/send.ts';
 import cmdInit from '../init/run.ts';
 import cmdInstall from '../install/index.ts';
 import cmdMemoryArchive from '../memory/archive.ts';
 import cmdMemoryCompile from '../memory/compile.ts';
 import cmdMemoryDelete from '../memory/delete.ts';
 import cmdMemoryList from '../memory/list.ts';
+import cmdMemoryPromote from '../memory/promote.ts';
 import cmdMemoryRead from '../memory/read.ts';
 import cmdMemoryStats from '../memory/stats.ts';
 import cmdMemoryWrite from '../memory/write.ts';
@@ -24,6 +31,8 @@ import cmdPlanCommentsClear from '../plan/comments-clear.ts';
 import cmdPlanRead from '../plan/read.ts';
 import cmdPlanRevoke from '../plan/revoke.ts';
 import cmdPlanWrite from '../plan/write.ts';
+import cmdSearchRelated from '../search/related.ts';
+import cmdSearchSessions from '../search/sessions.ts';
 import cmdSelfUpdate from '../update/self.ts';
 import cmdSkill from '../skill/load.ts';
 import cmdSkillList from '../skill/list.ts';
@@ -33,6 +42,7 @@ import cmdTaskClaim from '../task/claim.ts';
 import cmdTaskDone from '../task/done.ts';
 import cmdTaskInfo from '../task/info.ts';
 import cmdTaskList from '../task/list.ts';
+import cmdTaskNext from '../task/next.ts';
 import cmdTaskReportRead from '../task/report-read.ts';
 import cmdTaskReportWrite from '../task/report-write.ts';
 import cmdTaskSpecRead from '../task/spec-read.ts';
@@ -51,12 +61,19 @@ export const subCommands = {
   'feature-create': cmdFeatureCreate,
   'feature-info': cmdFeatureInfo,
   'feature-list': cmdFeatureList,
+  'graph-insights': cmdGraphInsights,
+  'graph-next': cmdGraphNext,
+  'graph-plan': cmdGraphPlan,
+  'handoff-ack': cmdHandoffAck,
+  'handoff-receive': cmdHandoffReceive,
+  'handoff-send': cmdHandoffSend,
   'init': cmdInit,
   'install': cmdInstall,
   'memory-archive': cmdMemoryArchive,
   'memory-compile': cmdMemoryCompile,
   'memory-delete': cmdMemoryDelete,
   'memory-list': cmdMemoryList,
+  'memory-promote': cmdMemoryPromote,
   'memory-read': cmdMemoryRead,
   'memory-stats': cmdMemoryStats,
   'memory-write': cmdMemoryWrite,
@@ -67,6 +84,8 @@ export const subCommands = {
   'plan-read': cmdPlanRead,
   'plan-revoke': cmdPlanRevoke,
   'plan-write': cmdPlanWrite,
+  'search-related': cmdSearchRelated,
+  'search-sessions': cmdSearchSessions,
   'self-update': cmdSelfUpdate,
   'skill': cmdSkill,
   'skill-list': cmdSkillList,
@@ -76,6 +95,7 @@ export const subCommands = {
   'task-done': cmdTaskDone,
   'task-info': cmdTaskInfo,
   'task-list': cmdTaskList,
+  'task-next': cmdTaskNext,
   'task-report-read': cmdTaskReportRead,
   'task-report-write': cmdTaskReportWrite,
   'task-spec-read': cmdTaskSpecRead,

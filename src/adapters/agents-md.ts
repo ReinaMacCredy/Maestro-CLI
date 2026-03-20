@@ -27,10 +27,23 @@ export interface ApplyResult {
 }
 
 export class AgentsMdAdapter {
+  private rootFiles: Set<string> | null = null;
+
   constructor(
     private readonly rootDir: string,
     private readonly memoryAdapter: FsMemoryAdapter,
   ) {}
+
+  private getRootFiles(): Set<string> {
+    if (!this.rootFiles) {
+      try {
+        this.rootFiles = new Set(fs.readdirSync(this.rootDir));
+      } catch {
+        this.rootFiles = new Set();
+      }
+    }
+    return this.rootFiles;
+  }
 
   async init(): Promise<InitResult> {
     const agentsMdPath = path.join(this.rootDir, 'AGENTS.md');
@@ -145,19 +158,21 @@ export class AgentsMdAdapter {
   }
 
   private detectPackageManager(): string {
-    if (fileExists(path.join(this.rootDir, 'bun.lockb'))) return 'bun';
-    if (fileExists(path.join(this.rootDir, 'pnpm-lock.yaml'))) return 'pnpm';
-    if (fileExists(path.join(this.rootDir, 'yarn.lock'))) return 'yarn';
-    if (fileExists(path.join(this.rootDir, 'package-lock.json'))) return 'npm';
+    const files = this.getRootFiles();
+    if (files.has('bun.lockb')) return 'bun';
+    if (files.has('pnpm-lock.yaml')) return 'pnpm';
+    if (files.has('yarn.lock')) return 'yarn';
+    if (files.has('package-lock.json')) return 'npm';
     return 'npm';
   }
 
   private detectLanguage(): string {
-    if (fileExists(path.join(this.rootDir, 'tsconfig.json'))) return 'TypeScript';
-    if (fileExists(path.join(this.rootDir, 'package.json'))) return 'JavaScript';
-    if (fileExists(path.join(this.rootDir, 'requirements.txt'))) return 'Python';
-    if (fileExists(path.join(this.rootDir, 'go.mod'))) return 'Go';
-    if (fileExists(path.join(this.rootDir, 'Cargo.toml'))) return 'Rust';
+    const files = this.getRootFiles();
+    if (files.has('tsconfig.json')) return 'TypeScript';
+    if (files.has('package.json')) return 'JavaScript';
+    if (files.has('requirements.txt')) return 'Python';
+    if (files.has('go.mod')) return 'Go';
+    if (files.has('Cargo.toml')) return 'Rust';
     return 'Unknown';
   }
 

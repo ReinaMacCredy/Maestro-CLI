@@ -18,6 +18,7 @@ import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
 import { readJson, writeJson, ensureDir, readText, writeText } from '../utils/fs-io.ts';
 import { CliRunner } from '../utils/cli-runner.ts';
+import { buildTaskFolder } from '../utils/slug.ts';
 import * as path from 'path';
 
 const BR_STATUS = {
@@ -104,7 +105,7 @@ export class BrTaskAdapter implements TaskPort {
 
     const raw = await this.exec<BrIssue | BrIssue[]>(args);
     const issue = Array.isArray(raw) ? raw[0] : raw;
-    const folder = this.titleToFolder(title, issue.id);
+    const folder = buildTaskFolder(issue.id, title);
 
     this.saveMappingEntry(feature, folder, issue.id);
 
@@ -417,8 +418,4 @@ export class BrTaskAdapter implements TaskPort {
     };
   }
 
-  private titleToFolder(title: string, id: number | string): string {
-    const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    return `${String(id).padStart(2, '0')}-${slug}`;
-  }
 }

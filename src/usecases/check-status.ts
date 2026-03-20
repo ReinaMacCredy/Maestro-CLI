@@ -11,6 +11,8 @@ import type { GraphPort } from '../ports/graph.ts';
 import type { SearchPort } from '../ports/search.ts';
 import type { HandoffPort } from '../ports/handoff.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
+import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
+import { MaestroError } from '../lib/errors.ts';
 import type { FsConfigAdapter } from '../adapters/fs/config.ts';
 import type { TaskInfo, FeatureStatusType, PlanComment } from '../types.ts';
 
@@ -66,7 +68,7 @@ export async function checkStatus(
   const { taskPort, featureAdapter, planAdapter, memoryAdapter, configAdapter } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
-    throw new Error(`Feature '${featureName}' not found`);
+    throw new MaestroError(`Feature '${featureName}' not found`);
   }
 
   const plan = planAdapter.read(featureName);
@@ -87,10 +89,8 @@ export async function checkStatus(
     .filter((t) => t.status === 'blocked')
     .map((t) => t.folder);
 
-  // Use getRunnable() for accurate dependency-aware resolution
-  // (br list doesn't include dependency data, so local computation misses deps)
-  const runnable = await taskPort.getRunnable(featureName);
-  const runnableFolders = runnable.map(t => t.folder);
+  // Compute runnable from already-fetched task list (avoids second list() call)
+  const { runnable: runnableFolders } = computeRunnableAndBlocked(tasks);
 
   const counts = countTaskStatuses(tasks);
 

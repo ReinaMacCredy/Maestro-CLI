@@ -26,3 +26,6 @@ Thumbs.db
 coverage/
 tmp/
 /hooks/
+
+# bv (beads viewer) local config and caches
+.bv/

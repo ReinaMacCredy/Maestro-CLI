@@ -21,6 +21,7 @@ import {
 } from '../utils/paths.ts';
 import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
 import { writeJsonAtomic } from '../utils/fs-io.ts';
+import { buildTaskFolder } from '../utils/slug.ts';
 import * as fs from 'fs';
 
 export class FsTaskAdapter implements TaskPort {
@@ -37,8 +38,7 @@ export class FsTaskAdapter implements TaskPort {
     ensureDir(tasksDir);
 
     const nextOrder = this.getNextOrder(feature);
-    const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const folder = `${String(nextOrder).padStart(2, '0')}-${slug}`;
+    const folder = buildTaskFolder(nextOrder, title);
 
     const taskDir = getTaskPath(this.projectRoot, feature, folder);
     ensureDir(taskDir);

@@ -6,6 +6,7 @@
 import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
 import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
 import { MaestroError } from '../../lib/errors.ts';
+import { buildTaskFolder } from '../../utils/slug.ts';
 
 interface StoredTask extends TaskInfo {
   description?: string;
@@ -30,7 +31,7 @@ export class InMemoryTaskPort implements TaskPort {
 
   async create(feature: string, title: string, opts?: CreateOpts): Promise<TaskInfo> {
     const id = String(this.nextId++);
-    const folder = `${id.padStart(2, '0')}-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`;
+    const folder = buildTaskFolder(id, title);
 
     const task: StoredTask = {
       folder,

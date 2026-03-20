@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireFeature } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'task-claim', description: 'Claim a task for an agent' },
@@ -29,16 +30,9 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      let featureName: string | undefined = args.feature;
-      if (!featureName) {
-        const active = services.featureAdapter.getActive();
-        featureName = active?.name;
-      }
-      if (!featureName) {
-        throw new MaestroError('No feature specified and no active feature set', [
-          'Specify --feature <name> or set active: maestro feature-active <name>',
-        ]);
-      }
+      const featureName = requireFeature(services, args.feature, [
+        'Specify --feature <name> or set active: maestro feature-active <name>',
+      ]);
 
       const task = await services.taskPort.claim(featureName, args.task, args.agentId);
       output(task, () => `[ok] claimed '${args.task}' for agent '${args.agentId}'`);

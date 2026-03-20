@@ -6,7 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { checkStatus, type StatusResult } from '../../usecases/check-status.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireFeature } from '../../lib/resolve.ts';
 import { truncateList, formatTruncation } from '../../lib/truncation.ts';
 
 function formatStatus(result: StatusResult): string {
@@ -59,16 +60,9 @@ export default defineCommand({
     try {
       const services = getServices();
 
-      let featureName: string | undefined = args.feature;
-      if (!featureName) {
-        const active = services.featureAdapter.getActive();
-        featureName = active?.name;
-      }
-      if (!featureName) {
-        throw new MaestroError('No feature specified and no active feature set', [
-          'Specify --feature <name> or set active: maestro feature-active <name>',
-        ]);
-      }
+      const featureName = requireFeature(services, args.feature, [
+        'Specify --feature <name> or set active: maestro feature-active <name>',
+      ]);
 
       const result = await checkStatus(services, featureName);
       output(result, formatStatus);

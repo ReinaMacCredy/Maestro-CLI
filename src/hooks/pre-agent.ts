@@ -85,34 +85,34 @@ async function main(): Promise<void> {
         + '\n\n[truncated -- use maestro_memory_read for full content]';
     }
 
+    // Parallelize independent async reads (rich fields + graph insights)
+    const [richResult, insightsResult] = await Promise.allSettled([
+      services.taskPort.getRichFields?.(featureName, taskFolder) ?? Promise.resolve(null),
+      services.graphPort?.getInsights() ?? Promise.resolve(null),
+    ]);
+
     // Rich bead context (when br backend provides design/AC)
     let richContext = '';
-    if (services.taskPort.getRichFields) {
-      try {
-        const rich = await services.taskPort.getRichFields(featureName, taskFolder);
-        if (rich) {
-          const parts: string[] = [];
-          if (rich.design) parts.push(`## Design Notes\n\n${rich.design}`);
-          if (rich.acceptanceCriteria) parts.push(`## Acceptance Criteria\n\n${rich.acceptanceCriteria}`);
-          if (parts.length > 0) richContext = '\n' + parts.join('\n\n') + '\n';
-        }
-      } catch { /* rich fields unavailable */ }
+    const rich = richResult.status === 'fulfilled' ? richResult.value : null;
+    if (rich) {
+      const parts: string[] = [];
+      if (rich.design) parts.push(`## Design Notes\n\n${rich.design}`);
+      if (rich.acceptanceCriteria) parts.push(`## Acceptance Criteria\n\n${rich.acceptanceCriteria}`);
+      if (parts.length > 0) richContext = '\n' + parts.join('\n\n') + '\n';
     }
 
     // Graph context (when bv available)
     let graphContext = '';
-    if (services.graphPort) {
-      try {
-        const insights = await services.graphPort.getInsights();
-        const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
-        const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
-        if (onCriticalPath || isBottleneck) {
-          const flags: string[] = [];
-          if (onCriticalPath) flags.push('on critical path');
-          if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
-          graphContext = `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
-        }
-      } catch { /* bv unavailable */ }
+    const insights = insightsResult.status === 'fulfilled' ? insightsResult.value : null;
+    if (insights) {
+      const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
+      const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
+      if (onCriticalPath || isBottleneck) {
+        const flags: string[] = [];
+        if (onCriticalPath) flags.push('on critical path');
+        if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
+        graphContext = `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
+      }
     }
 
     // Build injection

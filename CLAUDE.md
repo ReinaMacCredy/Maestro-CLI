@@ -11,7 +11,7 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **4 task states**: pending, claimed, done, blocked
-- **20 MCP tools** across 5 groups
+- **30 MCP tools** across 8 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Pipeline**: discovery --> research --> planning --> approval --> execution --> done (stages are skippable)
@@ -55,7 +55,7 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (20)
+## MCP Tools (30)
 
 | Group | Tools |
 |-------|-------|
@@ -63,7 +63,10 @@ Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto
 | Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
 | Task (7) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_block`, `task_unblock`, `task_list` |
 | Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
-| Meta (2) | `status`, `skill` |
+| Meta (4) | `status`, `skill`, `ping`, `init` |
+| Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
+| Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
+| Search (2) | `search_sessions`, `search_related` |
 
 All tools are prefixed `maestro_` in MCP (e.g. `maestro_task_claim`).
 
@@ -77,11 +80,20 @@ Commands organized by domain:
 ### Plan (6)
 `plan-write`, `plan-read`, `plan-approve`, `plan-revoke`, `plan-comment`, `plan-comments-clear`
 
-### Task (7)
-`task-sync`, `task-list`, `task-info`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
+### Task (8)
+`task-sync`, `task-list`, `task-next`, `task-info`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
 
-### Memory (7)
-`memory-write`, `memory-read`, `memory-list`, `memory-delete`, `memory-compile`, `memory-archive`, `memory-stats`
+### Memory (8)
+`memory-write`, `memory-read`, `memory-list`, `memory-delete`, `memory-compile`, `memory-archive`, `memory-stats`, `memory-promote`
+
+### Handoff (3)
+`handoff-send`, `handoff-receive`, `handoff-ack`
+
+### Graph (3)
+`graph-insights`, `graph-next`, `graph-plan`
+
+### Search (2)
+`search-sessions`, `search-related`
 
 ### Config (3)
 `config-get`, `config-set`, `config-agent`
