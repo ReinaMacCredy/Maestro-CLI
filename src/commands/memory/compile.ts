@@ -20,6 +20,12 @@ function parseBudget(raw: string): number {
   return n;
 }
 
+function formatMemories(memories: MemoryFileWithMeta[]): string {
+  return memories.length === 0
+    ? ''
+    : memories.map(m => `## ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n');
+}
+
 function requireMemories(memories: MemoryFileWithMeta[], feature: string): asserts memories is [MemoryFileWithMeta, ...MemoryFileWithMeta[]] {
   if (memories.length === 0) {
     console.error(formatError('memory-compile', `no memory files for feature '${feature}'`));
@@ -66,10 +72,7 @@ export default defineCommand({
           memories, task, task.planTitle ?? null, budget,
           cfg.relevanceThreshold, featureCreatedAt,
         );
-        const compiled = selected.memories.length === 0
-          ? ''
-          : selected.memories.map(m => `## ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n');
-        output(compiled, (c) => c);
+        output(formatMemories(selected.memories), (c) => c);
         return;
       }
 
@@ -89,10 +92,7 @@ export default defineCommand({
           included.push(m);
           usedBytes += mBytes;
         }
-        const compiled = included.length === 0
-          ? ''
-          : included.map(m => `## ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n');
-        output(compiled, (c) => c);
+        output(formatMemories(included), (c) => c);
         return;
       }
 
