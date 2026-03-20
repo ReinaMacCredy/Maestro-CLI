@@ -3,6 +3,7 @@ import {
   parseTasksFromPlan,
   validateDependencyGraph,
   resolveDependencies,
+  extractPlanOutline,
 } from "../../utils/plan-parser";
 import type { ParsedTask } from "../../utils/plan-parser";
 
@@ -201,5 +202,54 @@ describe("resolveDependencies", () => {
     };
     const deps = resolveDependencies(task, allTasks);
     expect(deps).toEqual(["01-setup", "02-core"]);
+  });
+});
+
+describe("extractPlanOutline", () => {
+  test("returns full content as preview when under 500 chars", () => {
+    const short = "## Overview\n\nA short plan.";
+    const { preview, headings } = extractPlanOutline(short);
+    expect(preview).toBe(short);
+    expect(headings).toEqual(["Overview"]);
+  });
+
+  test("truncates preview at last newline before 500 chars", () => {
+    const lines = Array.from({ length: 50 }, (_, i) => `Line ${i + 1} of the plan content.`);
+    const content = lines.join("\n");
+    expect(content.length).toBeGreaterThan(500);
+
+    const { preview } = extractPlanOutline(content);
+    expect(preview.length).toBeLessThanOrEqual(500);
+    expect(preview.endsWith("\n")).toBe(false);
+    // Should end at a complete line
+    expect(content.startsWith(preview)).toBe(true);
+  });
+
+  test("extracts ## and ### headings", () => {
+    const plan = [
+      "# Title",
+      "## Discovery",
+      "Some notes.",
+      "### 1. Setup",
+      "Details.",
+      "### 2. Build",
+      "More details.",
+      "## Non-Goals",
+      "None.",
+    ].join("\n");
+
+    const { headings } = extractPlanOutline(plan);
+    expect(headings).toEqual(["Discovery", "1. Setup", "2. Build", "Non-Goals"]);
+  });
+
+  test("returns empty headings for plan with no headings", () => {
+    const { headings } = extractPlanOutline("Just plain text.");
+    expect(headings).toEqual([]);
+  });
+
+  test("handles empty string", () => {
+    const { preview, headings } = extractPlanOutline("");
+    expect(preview).toBe("");
+    expect(headings).toEqual([]);
   });
 });

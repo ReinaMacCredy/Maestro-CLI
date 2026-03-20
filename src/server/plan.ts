@@ -7,6 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { MaestroError } from '../lib/errors.ts';
+import { extractPlanOutline } from '../utils/plan-parser.ts';
 
 export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -35,6 +36,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       description: 'Read the plan and any review comments for a feature.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature)'),
+        summary: z.boolean().optional().default(false).describe('Return outline only (preview, headings, commentCount)'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
@@ -45,6 +47,14 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       const plan = services.planAdapter.read(feature);
       if (!plan) {
         throw new MaestroError(`No plan found for feature '${feature}'`, ['Write a plan with maestro_plan_write']);
+      }
+
+      if (input.summary) {
+        const { preview, headings } = extractPlanOutline(plan.content);
+        return respond({
+          feature,
+          plan: { preview, headings, status: plan.status, commentCount: plan.comments.length },
+        });
       }
 
       return respond({ feature, plan });

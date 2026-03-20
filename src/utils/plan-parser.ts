@@ -6,6 +6,8 @@
  * annotations, validates the dependency graph, and detects cycles.
  */
 
+import { buildTaskFolder } from './slug.ts';
+
 export interface ParsedTask {
   folder: string;
   order: number;
@@ -39,8 +41,7 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
 
       const order = parseInt(taskMatch[1], 10);
       const rawName = taskMatch[2].trim();
-      const folderName = rawName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const folder = `${String(order).padStart(2, '0')}-${folderName}`;
+      const folder = buildTaskFolder(order, rawName);
 
       // Parse [depends: N, M] from task title
       let titleDeps: number[] | null = null;
@@ -185,6 +186,30 @@ export function detectCycles(tasks: ParsedTask[]): void {
       dfs(task.order);
     }
   }
+}
+
+/**
+ * Extract a compact outline from plan markdown.
+ * Returns a short preview (first 500 chars, truncated at last complete line)
+ * and an array of ## / ### heading texts.
+ */
+export function extractPlanOutline(content: string): { preview: string; headings: string[] } {
+  // Preview: first 500 chars, truncated at last newline
+  let preview: string;
+  if (content.length <= 500) {
+    preview = content;
+  } else {
+    const cut = content.lastIndexOf('\n', 500);
+    preview = cut > 0 ? content.slice(0, cut) : content.slice(0, 500);
+  }
+
+  // Headings: all ## and ### lines
+  const headings = content
+    .split('\n')
+    .filter(line => /^#{2,3}\s+/.test(line))
+    .map(line => line.replace(/^#{2,3}\s+/, '').trim());
+
+  return { preview, headings };
 }
 
 /**
