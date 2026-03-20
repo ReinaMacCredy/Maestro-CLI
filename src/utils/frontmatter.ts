@@ -3,13 +3,16 @@
  * Handles the subset of YAML we need: simple `key: value` pairs.
  */
 
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/;
+const FRONTMATTER_BLOCK_RE = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
+
 /**
  * Parse YAML frontmatter between `---` markers.
  * Returns null if no valid frontmatter is found.
  * Returns Record<string, string> -- DO NOT widen this type (5 callers depend on it).
  */
 export function parseFrontmatter(content: string): Record<string, string> | null {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const match = content.match(FRONTMATTER_RE);
   if (!match) return null;
 
   const body = match[1];
@@ -41,7 +44,7 @@ export function parseFrontmatter(content: string): Record<string, string> | null
  * Multi-line YAML lists degrade to raw string (not crash).
  */
 export function parseFrontmatterRich(content: string): Record<string, string | string[] | number> | null {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const match = content.match(FRONTMATTER_RE);
   if (!match) return null;
 
   const body = match[1];
@@ -93,7 +96,7 @@ export function parseFrontmatterRich(content: string): Record<string, string | s
  * Returns the content body without the frontmatter block.
  */
 export function stripFrontmatter(content: string): string {
-  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  const match = content.match(FRONTMATTER_BLOCK_RE);
   if (!match) return content;
   return content.slice(match[0].length);
 }

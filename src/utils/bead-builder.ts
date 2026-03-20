@@ -11,6 +11,10 @@ import type { ParsedTask } from './plan-parser.ts';
 import { extractPlanSection, getTaskType } from './spec-builder.ts';
 import type { CreateOpts } from '../ports/tasks.ts';
 
+const DESIGN_SECTION_RE = /(?:####?\s*(?:Design|Architecture|Approach|Technical Design)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i;
+const AC_SECTION_RE = /(?:####?\s*(?:Acceptance Criteria|Done When|Success Criteria|Verification|AC)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i;
+const CHECKLIST_RE = /^\s*-\s*\[[ x]\].+$/gm;
+
 export interface BeadBuildParams {
   featureName: string;
   task: ParsedTask;
@@ -109,10 +113,7 @@ function buildBeadDescription(
 function extractDesignNotes(planSection: string): string | undefined {
   if (!planSection) return undefined;
 
-  // Look for explicit design subsections
-  const designMatch = planSection.match(
-    /(?:####?\s*(?:Design|Architecture|Approach|Technical Design)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i
-  );
+  const designMatch = planSection.match(DESIGN_SECTION_RE);
   if (designMatch) {
     const content = designMatch[1].trim();
     if (content) return content;
@@ -129,17 +130,14 @@ function extractDesignNotes(planSection: string): string | undefined {
 function extractAcceptanceCriteria(planSection: string): string | undefined {
   if (!planSection) return undefined;
 
-  // Look for explicit AC subsections
-  const acMatch = planSection.match(
-    /(?:####?\s*(?:Acceptance Criteria|Done When|Success Criteria|Verification|AC)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i
-  );
+  const acMatch = planSection.match(AC_SECTION_RE);
   if (acMatch) {
     const content = acMatch[1].trim();
     if (content) return content;
   }
 
   // Look for checklist items (- [ ] patterns)
-  const checklistItems = planSection.match(/^\s*-\s*\[[ x]\].+$/gm);
+  const checklistItems = planSection.match(CHECKLIST_RE);
   if (checklistItems && checklistItems.length > 0) {
     return checklistItems.join('\n');
   }
