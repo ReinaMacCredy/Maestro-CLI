@@ -51,7 +51,6 @@ export default defineCommand({
         task,
         spec,
         memories,
-        completedTasks: [],
         richContext: '',
         graphContext: '',
         workerRules: WORKER_RULES,

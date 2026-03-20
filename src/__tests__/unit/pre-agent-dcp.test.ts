@@ -137,7 +137,7 @@ describe('pre-agent hook integration with pruneContext', () => {
       task: makeTask(),
       spec: 'Implement JWT authentication',
       memories,
-      completedTasks: [],
+
       richContext: formatRichContext({ status: 'fulfilled', value: { design: 'Use JWT' } }),
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -163,7 +163,7 @@ describe('pre-agent hook integration with pruneContext', () => {
       task: makeTask(),
       spec: 'Task spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -181,7 +181,7 @@ describe('pre-agent hook integration with pruneContext', () => {
       task: makeTask(),
       spec: 'Task spec',
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,

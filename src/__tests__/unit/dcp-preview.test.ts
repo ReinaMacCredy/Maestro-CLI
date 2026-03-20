@@ -51,7 +51,7 @@ describe('DCP preview metrics', () => {
       task: makeTask(),
       spec: 'Implement JWT auth',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -77,7 +77,7 @@ describe('DCP preview metrics', () => {
       task: makeTask(),
       spec: 'Task spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -97,7 +97,7 @@ describe('DCP preview metrics', () => {
       task: makeTask(),
       spec: 'Task specification content',
       memories: [makeMemory('note', 'Some memory')],
-      completedTasks: [],
+
       richContext: '\n## Design\n\nDesign notes here.',
       graphContext: '\n## Graph\n\nCritical path.',
       workerRules: WORKER_RULES,
@@ -119,7 +119,7 @@ describe('DCP preview metrics', () => {
       task: makeTask(),
       spec: 'Spec',
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,

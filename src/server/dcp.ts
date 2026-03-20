@@ -47,7 +47,6 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         task,
         spec,
         memories,
-        completedTasks: [],
         richContext: '',
         graphContext: '',
         workerRules: WORKER_RULES,

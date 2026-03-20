@@ -44,7 +44,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Task spec content',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -71,7 +71,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -92,7 +92,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -111,7 +111,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -159,7 +159,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -180,7 +180,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -197,7 +197,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec content here',
       memories: [makeMemory('test', 'Memory body')],
-      completedTasks: [],
+
       richContext: '\n## Design\n\nSome design.',
       graphContext: '\n## Graph\n\nOn critical path.',
       workerRules: WORKER_RULES,
@@ -222,7 +222,7 @@ describe('pruneContext', () => {
       task: makeTask(),
       spec: 'Spec',
       memories,
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,

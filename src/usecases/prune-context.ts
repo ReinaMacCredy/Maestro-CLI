@@ -13,7 +13,7 @@ export interface PruneContextParams {
   task: TaskInfo;
   spec: string;
   memories: MemoryFileWithMeta[];
-  completedTasks: Array<{ name: string; summary: string }>;
+  completedTasks?: Array<{ name: string; summary: string }>;
   richContext: string;
   graphContext: string;
   workerRules: string;
@@ -43,7 +43,7 @@ const PRIOR_WORK_RE = /\n?## Prior Work\n[\s\S]*?(?=\n##\s|\n*$)/;
  */
 export function pruneContext(params: PruneContextParams): PruneContextResult {
   const {
-    taskFolder, task, spec, memories, completedTasks,
+    taskFolder, task, spec, memories, completedTasks = [],
     richContext, graphContext, workerRules, dcpConfig, featureCreatedAt,
   } = params;
 

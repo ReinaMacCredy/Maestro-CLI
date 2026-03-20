@@ -55,7 +55,7 @@ describe('prune-context: legacy spec stripping', () => {
       task: makeTask(),
       spec: specWithPriorWork,
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -80,7 +80,7 @@ describe('prune-context: legacy spec stripping', () => {
       task: makeTask(),
       spec: cleanSpec,
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -100,7 +100,7 @@ describe('prune-context: legacy spec stripping', () => {
       task: makeTask(),
       spec: specTrailing,
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
@@ -168,7 +168,7 @@ describe('prune-context: observationMasking fallback', () => {
       task: makeTask(),
       spec: 'Spec',
       memories: [],
-      completedTasks: [],
+
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
