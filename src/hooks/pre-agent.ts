@@ -22,9 +22,12 @@ export { WORKER_RULES };
 
 const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
 
+type RichFields = { design?: string; acceptanceCriteria?: string };
+type GraphInsights = { criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> };
+
 /** Format rich bead context (design/AC) from getRichFields result. */
 export function formatRichContext(
-  richResult: PromiseSettledResult<{ design?: string; acceptanceCriteria?: string } | null>,
+  richResult: PromiseSettledResult<RichFields | null>,
 ): string {
   const rich = richResult.status === 'fulfilled' ? richResult.value : null;
   if (!rich) return '';
@@ -36,7 +39,7 @@ export function formatRichContext(
 
 /** Format graph context (critical path/bottleneck flags) from getInsights result. */
 export function formatGraphContext(
-  insightsResult: PromiseSettledResult<{ criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> } | null>,
+  insightsResult: PromiseSettledResult<GraphInsights | null>,
   taskFolder: string,
   task: TaskInfo,
 ): string {
@@ -131,9 +134,9 @@ async function main(): Promise<void> {
     ]);
 
     // Format context sections
-    const richContext = formatRichContext(richResult as PromiseSettledResult<{ design?: string; acceptanceCriteria?: string } | null>);
+    const richContext = formatRichContext(richResult as PromiseSettledResult<RichFields | null>);
     const graphContext = formatGraphContext(
-      insightsResult as PromiseSettledResult<{ criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> } | null>,
+      insightsResult as PromiseSettledResult<GraphInsights | null>,
       taskFolder, task,
     );
 
