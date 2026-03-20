@@ -6,6 +6,7 @@ import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+import { selectMemories } from '../utils/context-selector.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -69,10 +70,12 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
   server.registerTool(
     'maestro_memory_list',
     {
-      description: 'List memory files. Lists feature memory by default, or global memory if feature is omitted.',
+      description: 'List memory files. Lists feature memory by default, or global memory if feature is omitted. Pass task for DCP-scored filtering.',
       inputSchema: {
         feature: z.string().optional().describe('Feature name (defaults to active feature; omit for global memory)'),
         brief: z.boolean().optional().default(false).describe('Return metadata only (omit content)'),
+        task: z.string().optional().describe('Task folder for DCP-scored filtering'),
+        budget: z.number().optional().describe('Memory budget in bytes (default from config)'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
@@ -82,6 +85,33 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       try {
         const feature = requireFeature(services, input.feature);
         const richFiles = services.memoryAdapter.listWithMeta(feature);
+
+        if (input.task) {
+          // DCP-scored filtering
+          const task = await services.taskPort.get(feature, input.task);
+          if (!task) {
+            return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
+          }
+          const dcpConfig = services.configAdapter.get().dcp;
+          const budget = input.budget ?? dcpConfig?.memoryBudgetBytes ?? 4096;
+          const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
+          const selected = selectMemories(
+            richFiles, task, task.planTitle ?? null, budget,
+            dcpConfig?.relevanceThreshold ?? 0.1, featureCreatedAt,
+          );
+          const scoreMap = new Map(selected.scores.map(s => [s.name, s.score]));
+          const files = selected.memories.map(m => ({
+            name: m.name,
+            ...(input.brief ? {} : { content: m.bodyContent }),
+            score: scoreMap.get(m.name) ?? 0,
+          }));
+          return respond({ feature, files, dcp: {
+            included: selected.includedCount,
+            dropped: selected.droppedCount,
+            budgetBytes: budget,
+          }});
+        }
+
         const files = input.brief
           ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({ name, updatedAt, sizeBytes, ...metadata }))
           : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({ name, content, updatedAt, sizeBytes, ...metadata }));

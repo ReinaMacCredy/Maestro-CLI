@@ -9,14 +9,13 @@ export interface BuildSpecParams {
   dependsOn: string[];
   allTasks: Array<{ folder: string; name: string; order: number }>;
   planContent?: string | null;
-  completedTasks?: Array<{ name: string; summary: string }>;
 }
 
 /**
  * Build spec content for a task.
  */
 export function buildSpecContent(params: BuildSpecParams): string {
-  const { featureName, task, dependsOn, allTasks, planContent, completedTasks = [] } = params;
+  const { featureName, task, dependsOn, allTasks, planContent } = params;
 
   const specLines: string[] = [
     `# Task: ${task.folder}`,
@@ -54,11 +53,6 @@ export function buildSpecContent(params: BuildSpecParams): string {
   const taskType = getTaskType(planSection, task.name);
   if (taskType) {
     specLines.push('## Task Type', '', taskType, '');
-  }
-
-  if (completedTasks.length > 0) {
-    const completedLines = completedTasks.map(t => `- ${t.name}: ${t.summary}`);
-    specLines.push('## Completed Tasks', '', ...completedLines, '');
   }
 
   return specLines.join('\n');

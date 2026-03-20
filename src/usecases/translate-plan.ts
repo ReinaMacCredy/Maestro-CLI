@@ -46,10 +46,9 @@ export async function translatePlan(
   const existingByFolder = new Map(existingTasks.map(t => [t.folder, t]));
   const parsedFolderSet = new Set(parsedTasks.map(p => p.folder));
 
-  // Gather completed task summaries for context injection
-  const completedTasks = existingTasks
-    .filter(t => t.status === 'done' && t.summary)
-    .map(t => ({ name: t.name, summary: t.summary! }));
+  // Completed tasks deliberately omitted from bead descriptions.
+  // The pre-agent hook handles completed task injection via DCP observation
+  // masking, so baking them into beads would cause double injection.
 
   const result: TasksSyncResult = {
     created: [],
@@ -91,7 +90,6 @@ export async function translatePlan(
       planContent: plan.content,
       allTasks: parsedTasks,
       dependsOn,
-      completedTasks,
     });
 
     const created = await taskPort.create(featureName, parsedTask.name, beadOpts);

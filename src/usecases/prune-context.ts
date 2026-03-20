@@ -34,6 +34,9 @@ export interface PruneContextResult {
 
 const LEGACY_MEMORY_CAP = 4096;
 
+/** Strip legacy "## Prior Work" sections baked into beads before DCP Phase 3. */
+const PRIOR_WORK_RE = /\n?## Prior Work\n[\s\S]*?(?=\n##\s|\n*$)/;
+
 /**
  * Build context injection with DCP scoring or legacy passthrough.
  */
@@ -89,29 +92,40 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
   // -- Completed tasks (observation masking) --
   let completedSection = '';
   let completedBytes = 0;
-  if (completedTasks.length > 0 && cfg.observationMasking) {
-    // Keep newest first, drop oldest when over budget
-    const items = [...completedTasks].reverse();
-    const parts: string[] = [];
-    let used = 0;
-    for (const ct of items) {
-      const line = `- ${ct.name}: ${ct.summary}`;
-      const lineBytes = Buffer.byteLength(line);
-      if (used + lineBytes > cfg.completedTaskBudgetBytes) break;
-      parts.push(line);
-      used += lineBytes;
-    }
-    if (parts.length > 0) {
+  if (completedTasks.length > 0) {
+    if (cfg.observationMasking) {
+      // Budget-capped, newest first (DCP behavior)
+      const items = [...completedTasks].reverse();
+      const parts: string[] = [];
+      let used = 0;
+      for (const ct of items) {
+        const line = `- ${ct.name}: ${ct.summary}`;
+        const lineBytes = Buffer.byteLength(line);
+        if (used + lineBytes > cfg.completedTaskBudgetBytes) break;
+        parts.push(line);
+        used += lineBytes;
+      }
+      if (parts.length > 0) {
+        completedSection = '\n## Completed Tasks\n\n' + parts.join('\n');
+        completedBytes = Buffer.byteLength(completedSection);
+      }
+    } else {
+      // No masking: include ALL completed tasks (legacy behavior)
+      const parts = completedTasks.map(ct => `- ${ct.name}: ${ct.summary}`);
       completedSection = '\n## Completed Tasks\n\n' + parts.join('\n');
       completedBytes = Buffer.byteLength(completedSection);
     }
   }
 
+  // Strip legacy "## Prior Work" from spec to prevent double injection
+  // with the hook's own "## Completed Tasks" section.
+  const cleanSpec = spec.replace(PRIOR_WORK_RE, '');
+
   // -- Assemble injection --
   const injection = [
     `## Task Spec: ${taskFolder}`,
     '',
-    spec,
+    cleanSpec,
     richContext,
     workerRules,
     graphContext,

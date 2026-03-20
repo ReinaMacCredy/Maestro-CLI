@@ -6,6 +6,7 @@
 
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { translatePlan, type TranslatePlanServices } from '../../usecases/translate-plan.ts';
+import { buildBeadOpts } from '../../utils/bead-builder.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
 import type { PlanPort } from '../../ports/plans.ts';
@@ -91,7 +92,26 @@ describe('translate-plan: no memories in bead descriptions', () => {
     expect(services).not.toHaveProperty('memoryAdapter');
   });
 
-  test('completed tasks are still included in bead context', async () => {
+  test('bead descriptions do NOT contain "## Prior Work" even with completedTasks param', () => {
+    // Even if completedTasks is explicitly passed, buildBeadOpts defaults to []
+    // and does not include a "## Prior Work" section
+    const opts = buildBeadOpts({
+      featureName: FEATURE,
+      task: { folder: '01-add-widget', name: 'Add Widget', order: 1, description: '', dependsOnNumbers: null },
+      planContent: PLAN,
+      allTasks: [
+        { folder: '01-add-widget', name: 'Add Widget', order: 1, description: '', dependsOnNumbers: null },
+        { folder: '02-add-tests', name: 'Add Tests', order: 2, description: '', dependsOnNumbers: [1] },
+      ],
+      dependsOn: [],
+      // completedTasks not passed -- translate-plan no longer gathers them
+    });
+
+    expect(opts.description).not.toContain('## Prior Work');
+    expect(opts.description).not.toContain('Widget created');
+  });
+
+  test('translatePlan keeps done tasks and creates new ones (no completedTasks in beads)', async () => {
     // Create a completed task first
     const created = await taskPort.create(FEATURE, 'Add Widget');
     await taskPort.claim(FEATURE, created.folder, 'agent-1');
@@ -102,7 +122,6 @@ describe('translate-plan: no memories in bead descriptions', () => {
       planAdapter: makePlanAdapter(PLAN),
     };
 
-    // translatePlan should still gather completed task summaries
     const result = await translatePlan(services, FEATURE);
 
     // Task 1 already exists (done), so only task 2 should be created

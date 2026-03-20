@@ -1,11 +1,30 @@
 /**
  * maestro memory-compile -- compile all memory into a single string.
+ * Supports DCP-scored compile (--task) and budget-capped compile (--budget).
  */
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { selectMemories } from '../../utils/context-selector.ts';
+import type { MemoryFileWithMeta } from '../../types.ts';
+
+function parseBudget(raw: string): number {
+  const n = parseInt(raw, 10);
+  if (Number.isNaN(n) || n <= 0) {
+    console.error(formatError('memory-compile', `--budget must be a positive integer, got '${raw}'`));
+    process.exit(1);
+  }
+  return n;
+}
+
+function requireMemories(memories: MemoryFileWithMeta[], feature: string): asserts memories is [MemoryFileWithMeta, ...MemoryFileWithMeta[]] {
+  if (memories.length === 0) {
+    console.error(formatError('memory-compile', `no memory files for feature '${feature}'`));
+    process.exit(1);
+  }
+}
 
 export default defineCommand({
   meta: { name: 'memory-compile', description: 'Compile all memory into single string' },
@@ -15,10 +34,68 @@ export default defineCommand({
       description: 'Feature name',
       required: true,
     },
+    task: {
+      type: 'string',
+      description: 'Task folder for DCP-scored filtering',
+      required: false,
+    },
+    budget: {
+      type: 'string',
+      description: 'Byte budget (default from config)',
+      required: false,
+    },
   },
   async run({ args }) {
     try {
-      const { memoryAdapter } = getServices();
+      const { memoryAdapter, taskPort, featureAdapter, configAdapter } = getServices();
+
+      if (args.task) {
+        // DCP-scored compile
+        const task = await taskPort.get(args.feature, args.task);
+        if (!task) {
+          console.error(formatError('memory-compile', `task '${args.task}' not found in feature '${args.feature}'`));
+          process.exit(1);
+        }
+        const memories = memoryAdapter.listWithMeta(args.feature);
+        requireMemories(memories, args.feature);
+        const dcpConfig = configAdapter.get().dcp;
+        const budget = args.budget ? parseBudget(args.budget) : dcpConfig?.memoryBudgetBytes ?? 4096;
+        const featureCreatedAt = featureAdapter.get(args.feature)?.createdAt;
+        const selected = selectMemories(
+          memories, task, task.planTitle ?? null, budget,
+          dcpConfig?.relevanceThreshold ?? 0.1, featureCreatedAt,
+        );
+        const compiled = selected.memories.length === 0
+          ? ''
+          : selected.memories.map(m => `## ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n');
+        output(compiled, (c) => c);
+        return;
+      }
+
+      if (args.budget) {
+        // Budget-capped compile (no DCP scoring, newest first)
+        const memories = memoryAdapter.listWithMeta(args.feature);
+        requireMemories(memories, args.feature);
+        const budget = parseBudget(args.budget);
+        const sorted = [...memories].sort((a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+        const included: typeof sorted = [];
+        let usedBytes = 0;
+        for (const m of sorted) {
+          const mBytes = Buffer.byteLength(m.bodyContent);
+          if (usedBytes + mBytes > budget) break;
+          included.push(m);
+          usedBytes += mBytes;
+        }
+        const compiled = included.length === 0
+          ? ''
+          : included.map(m => `## ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n');
+        output(compiled, (c) => c);
+        return;
+      }
+
+      // Legacy: full dump (backward compat)
       const compiled = memoryAdapter.compile(args.feature);
       if (!compiled) {
         console.error(formatError('memory-compile', `no memory files for feature '${args.feature}'`));
