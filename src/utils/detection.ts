@@ -6,20 +6,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { getFeaturesPath } from './paths.ts';
 
-export interface DetectionResult {
-  projectRoot: string;
-  feature: string | null;
-  task: string | null;
-}
-
-export function detectContext(cwd: string): DetectionResult {
-  return {
-    projectRoot: cwd,
-    feature: null,
-    task: null,
-  };
-}
-
 export function listFeatures(projectRoot: string): string[] {
   const featuresPath = getFeaturesPath(projectRoot);
   if (!fs.existsSync(featuresPath)) return [];

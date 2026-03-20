@@ -5,7 +5,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { ensureDir, writeJsonAtomic, readJson, deepMerge } from './fs-io.ts';
+import { ensureDir, readJson } from './fs-io.ts';
 
 /** Check if a process is still running. */
 function isProcessAlive(pid: number): boolean {
@@ -101,15 +101,6 @@ function acquireLockImpl(
   }
 }
 
-export async function acquireLock(
-  filePath: string,
-  options: LockOptions = {}
-): Promise<() => void> {
-  // All fs ops are synchronous; brief sync sleep on retry is acceptable
-  // since lock contention is rare and retry intervals are short (50ms).
-  return acquireLockImpl(filePath, options, sleepSync);
-}
-
 export function acquireLockSync(
   filePath: string,
   options: LockOptions = {}
@@ -117,60 +108,3 @@ export function acquireLockSync(
   return acquireLockImpl(filePath, options, sleepSync);
 }
 
-export async function writeJsonLocked<T>(
-  filePath: string,
-  data: T,
-  options: LockOptions = {}
-): Promise<void> {
-  const release = acquireLockImpl(filePath, options, sleepSync);
-  try {
-    writeJsonAtomic(filePath, data);
-  } finally {
-    release();
-  }
-}
-
-export function writeJsonLockedSync<T>(
-  filePath: string,
-  data: T,
-  options: LockOptions = {}
-): void {
-  const release = acquireLockSync(filePath, options);
-  try {
-    writeJsonAtomic(filePath, data);
-  } finally {
-    release();
-  }
-}
-
-export async function patchJsonLocked<T extends object>(
-  filePath: string,
-  patch: Partial<T>,
-  options: LockOptions = {}
-): Promise<T> {
-  const release = acquireLockImpl(filePath, options, sleepSync);
-  try {
-    const current = readJson<T>(filePath) || ({} as T);
-    const merged = deepMerge(current as Record<string, unknown>, patch as Record<string, unknown>) as T;
-    writeJsonAtomic(filePath, merged);
-    return merged;
-  } finally {
-    release();
-  }
-}
-
-export function patchJsonLockedSync<T extends object>(
-  filePath: string,
-  patch: Partial<T>,
-  options: LockOptions = {}
-): T {
-  const release = acquireLockSync(filePath, options);
-  try {
-    const current = readJson<T>(filePath) || ({} as T);
-    const merged = deepMerge(current as Record<string, unknown>, patch as Record<string, unknown>) as T;
-    writeJsonAtomic(filePath, merged);
-    return merged;
-  } finally {
-    release();
-  }
-}

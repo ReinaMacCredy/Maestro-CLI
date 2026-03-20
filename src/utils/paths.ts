@@ -58,11 +58,6 @@ export function getGlobalMemoryPath(projectRoot: string): string {
   return path.join(getMaestroPath(projectRoot), MEMORY_DIR);
 }
 
-/** @deprecated Use getMemoryPath instead. */
-export function getContextPath(projectRoot: string, featureName: string): string {
-  return getMemoryPath(projectRoot, featureName);
-}
-
 export function getTasksPath(projectRoot: string, featureName: string): string {
   return path.join(getFeaturePath(projectRoot, featureName), TASKS_DIR);
 }
