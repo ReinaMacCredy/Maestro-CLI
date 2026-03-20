@@ -186,8 +186,10 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     return { filePath, threadId, agentMailSent };
   }
 
-  async receiveHandoffs(feature: string, _agentId?: string): Promise<HandoffDocument[]> {
+  async receiveHandoffs(feature: string | undefined, _agentId?: string): Promise<HandoffDocument[]> {
     const handoffs: HandoffDocument[] = [];
+
+    if (!feature) return handoffs;
 
     // Read local handoff files
     const handoffsDir = getHandoffsPath(this.projectRoot, feature);

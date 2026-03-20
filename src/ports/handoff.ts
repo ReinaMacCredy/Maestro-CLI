@@ -37,7 +37,7 @@ export interface HandoffPort {
   /** Write handoff to local file + send via Agent Mail. File is primary, Agent Mail is notification. */
   sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult>;
   /** Receive pending handoffs (reads local files + Agent Mail inbox). */
-  receiveHandoffs(feature: string, agentId?: string): Promise<HandoffDocument[]>;
+  receiveHandoffs(feature: string | undefined, agentId?: string): Promise<HandoffDocument[]>;
   /** Acknowledge receipt of a handoff. */
   acknowledgeHandoff(threadId: string): Promise<void>;
 }

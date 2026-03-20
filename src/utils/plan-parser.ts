@@ -204,10 +204,10 @@ export function extractPlanOutline(content: string): { preview: string; headings
   }
 
   // Headings: all ## and ### lines
-  const headings = content
-    .split('\n')
-    .filter(line => /^#{2,3}\s+/.test(line))
-    .map(line => line.replace(/^#{2,3}\s+/, '').trim());
+  const headings = Array.from(
+    content.matchAll(/^#{2,3}\s+(.+)$/gm),
+    m => m[1].trim(),
+  );
 
   return { preview, headings };
 }

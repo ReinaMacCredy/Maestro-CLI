@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError, MaestroError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { resolveFeature } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'handoff-receive', description: 'Check for pending handoffs' },
@@ -29,11 +29,9 @@ export default defineCommand({
         throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
       }
 
-      const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
-      ]);
+      const featureName = resolveFeature(services, args.feature);
 
-      const handoffs = await services.handoffPort.receiveHandoffs(featureName, args.agentId);
+      const handoffs = await services.handoffPort.receiveHandoffs(featureName ?? undefined, args.agentId);
 
       output({ handoffs }, () => {
         if (handoffs.length === 0) return 'No pending handoffs.';

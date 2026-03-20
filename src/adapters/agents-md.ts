@@ -8,7 +8,7 @@ import * as path from 'path';
 import { fileExists, readText, writeText } from '../utils/fs-io.ts';
 import type { MemoryFile } from '../types.ts';
 import type { FsMemoryAdapter } from './fs/memory.ts';
-import { execFileSync } from 'node:child_process';
+import { checkCli } from '../lib/cli-detect.ts';
 
 export interface InitResult {
   content: string;
@@ -246,22 +246,22 @@ export class AgentsMdAdapter {
   generateToolBlurbs(): string | null {
     const sections: string[] = [];
 
-    if (this.isToolAvailable('br')) {
+    if (checkCli('br')) {
       sections.push(BLURB_BEADS);
     }
 
-    if (this.isToolAvailable('bv')) {
+    if (checkCli('bv')) {
       sections.push(BLURB_BV);
     }
 
-    if (this.isToolAvailable('cass')) {
+    if (checkCli('cass')) {
       sections.push(BLURB_CASS);
     }
 
     // Agent Mail: check if server is reachable (best effort)
     try {
       // Check for am alias or MCP config
-      if (this.isToolAvailable('am') || process.env.AGENT_MAIL_URL) {
+      if (checkCli('am') || process.env.AGENT_MAIL_URL) {
         sections.push(BLURB_AGENT_MAIL);
       }
     } catch { /* skip */ }
@@ -269,14 +269,6 @@ export class AgentsMdAdapter {
     return sections.length > 0 ? sections.join('\n') : null;
   }
 
-  private isToolAvailable(binary: string): boolean {
-    try {
-      execFileSync('command', ['-v', binary], { stdio: 'pipe', shell: true });
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }
 
 // -- Tool blurbs (flywheel style: always in context, re-read after compaction) --

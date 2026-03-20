@@ -7,7 +7,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { requireFeature } from './_utils/resolve.ts';
+import { requireFeature, resolveFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
 
@@ -55,8 +55,8 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       if (!services.handoffPort) {
         throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
       }
-      const feature = requireFeature(services, input.feature);
-      const handoffs = await services.handoffPort.receiveHandoffs(feature, input.agent_id);
+      const feature = resolveFeature(services, input.feature);
+      const handoffs = await services.handoffPort.receiveHandoffs(feature ?? undefined, input.agent_id);
       return respond({ handoffs });
     }),
   );
