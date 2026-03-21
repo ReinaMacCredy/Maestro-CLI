@@ -5,9 +5,11 @@
 
 import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
+import type { DoctrineItem } from '../ports/doctrine.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
+import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 
 export interface PruneContextParams {
   featureName: string;
@@ -21,6 +23,8 @@ export interface PruneContextParams {
   revisionContext?: string;
   workerRules: string;
   dcpConfig?: HiveConfig['dcp'];
+  doctrineConfig?: HiveConfig['doctrine'];
+  doctrineItems?: DoctrineItem[];
   featureCreatedAt?: string;
   allTasks?: TaskWithDeps[];
 }
@@ -29,11 +33,12 @@ export interface PruneContextResult {
   injection: string;
   metrics: {
     totalBytes: number;
-    sections: { spec: number; memories: number; completed: number; rich: number; graph: number; rules: number };
+    sections: { spec: number; memories: number; completed: number; rich: number; graph: number; rules: number; doctrine: number };
     memoriesIncluded: number;
     memoriesDropped: number;
     memoriesTotal: number;
     executionMemoriesIncluded: number;
+    doctrineItemsIncluded: number;
     scores: Array<{ name: string; score: number; included: boolean }>;
   };
 }
@@ -50,10 +55,11 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
   const {
     taskFolder, task, spec, memories, completedTasks = [],
     richContext, graphContext, revisionContext = '', workerRules,
-    dcpConfig, featureCreatedAt, allTasks,
+    dcpConfig, doctrineConfig, doctrineItems = [], featureCreatedAt, allTasks,
   } = params;
 
   const cfg = resolveDcpConfig(dcpConfig);
+  const doctrineCfg = resolveDoctrineConfig(doctrineConfig);
 
   // -- Memory selection --
   let memorySection: string;
@@ -133,6 +139,28 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     }
   }
 
+  // -- Doctrine section (separate budget from memories) --
+  let doctrineSection = '';
+  let doctrineBytes = 0;
+  let doctrineItemsIncluded = 0;
+
+  if (doctrineCfg.enabled && doctrineItems.length > 0) {
+    const parts: string[] = [];
+    let used = 0;
+    for (const item of doctrineItems) {
+      const block = `### ${item.name}\n**Rule**: ${item.rule}\n**Rationale**: ${item.rationale}`;
+      const blockBytes = Buffer.byteLength(block);
+      if (used + blockBytes > doctrineCfg.doctrineBudgetBytes) break;
+      parts.push(block);
+      used += blockBytes;
+      doctrineItemsIncluded++;
+    }
+    if (parts.length > 0) {
+      doctrineSection = '\n## Applicable Doctrine\n\n' + parts.join('\n\n---\n\n');
+      doctrineBytes = Buffer.byteLength(doctrineSection);
+    }
+  }
+
   // Strip legacy "## Prior Work" from spec to prevent double injection
   // with the hook's own "## Completed Tasks" section.
   const cleanSpec = spec.replace(PRIOR_WORK_RE, '');
@@ -147,6 +175,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     revisionContext,
     graphContext,
     completedSection,
+    doctrineSection,
     memorySection,
   ].join('\n');
 
@@ -166,11 +195,13 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
         rich: richBytes,
         graph: graphBytes,
         rules: rulesBytes,
+        doctrine: doctrineBytes,
       },
       memoriesIncluded,
       memoriesDropped,
       memoriesTotal: memories.length,
       executionMemoriesIncluded,
+      doctrineItemsIncluded,
       scores,
     },
   };

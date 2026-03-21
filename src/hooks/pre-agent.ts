@@ -16,6 +16,9 @@ import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir
 import { initServices } from '../services.ts';
 import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
+import { deriveFolderTags } from '../utils/execution-memory.ts';
+import { extractKeywords } from '../utils/relevance.ts';
+import type { DoctrineItem } from '../ports/doctrine.ts';
 import type { TaskInfo } from '../types.ts';
 import type { RichTaskFields } from '../ports/tasks.ts';
 
@@ -60,7 +63,7 @@ function logDcpMetrics(
   projectDir: string,
   featureName: string,
   taskFolder: string,
-  metrics: PruneContextResult['metrics'],
+  metrics: PruneContextResult['metrics'] & { doctrineInjected?: boolean; doctrineNames?: string[] },
 ): void {
   try {
     const logDir = getSessionsDir(projectDir);
@@ -175,14 +178,30 @@ async function main(): Promise<void> {
     // Read memories with metadata for DCP scoring
     const memories = services.memoryAdapter.listWithMeta(featureName);
 
+    // Doctrine lookup (separate from memory DCP scoring)
+    let doctrineItems: DoctrineItem[] = [];
+    let doctrineInjected = false;
+    try {
+      if (services.doctrinePort) {
+        const derivedTags = deriveFolderTags(taskFolder);
+        const specKeywords = extractKeywords(spec);
+        doctrineItems = services.doctrinePort.findRelevant(derivedTags, specKeywords);
+        doctrineInjected = doctrineItems.length > 0;
+      }
+    } catch (err) {
+      logHookError(projectDir, 'pre-agent:doctrine', err);
+    }
+
     // Get completed tasks for observation masking
     const allTasks = await services.taskPort.list(featureName, { includeAll: true });
     const completedTasks = allTasks
       .filter(t => t.status === 'done' && t.summary)
       .map(t => ({ name: t.name, summary: t.summary! }));
 
-    // Read DCP config
-    const dcpConfig = services.configAdapter.get().dcp;
+    // Read configs
+    const config = services.configAdapter.get();
+    const dcpConfig = config.dcp;
+    const doctrineConfig = config.doctrine;
 
     // Get feature creation time for recency scoring
     const featureInfo = services.featureAdapter.get(featureName);
@@ -199,12 +218,17 @@ async function main(): Promise<void> {
       memories, completedTasks,
       richContext, graphContext, revisionContext,
       workerRules: WORKER_RULES,
-      dcpConfig, featureCreatedAt,
+      dcpConfig, doctrineConfig, doctrineItems,
+      featureCreatedAt,
       allTasks: taskDeps,
     });
 
-    // Log DCP metrics
-    logDcpMetrics(projectDir, featureName, taskFolder, metrics);
+    // Log DCP metrics (includes doctrine observability)
+    logDcpMetrics(projectDir, featureName, taskFolder, {
+      ...metrics,
+      doctrineInjected,
+      doctrineNames: doctrineItems.map(d => d.name),
+    });
 
     writeOutput({
       hookSpecificOutput: {

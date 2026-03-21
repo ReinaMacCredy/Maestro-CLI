@@ -31,6 +31,8 @@ import type { MemoryPort } from './ports/memory.ts';
 import type { GraphPort } from './ports/graph.ts';
 import type { HandoffPort } from './ports/handoff.ts';
 import type { SearchPort } from './ports/search.ts';
+import type { DoctrinePort } from './ports/doctrine.ts';
+import { FsDoctrineAdapter } from './adapters/fs/doctrine.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;
@@ -45,6 +47,7 @@ export interface MaestroServices {
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
+  doctrinePort?: DoctrinePort;
 }
 
 let _services: MaestroServices | undefined;
@@ -92,6 +95,7 @@ export function initServices(directory: string): MaestroServices {
     graphPort,
     handoffPort,
     searchPort,
+    doctrinePort: new FsDoctrineAdapter(directory),
   };
 
   return _services;
