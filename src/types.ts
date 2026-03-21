@@ -115,7 +115,7 @@ export interface MemoryFile {
   sizeBytes: number;
 }
 
-export const MEMORY_CATEGORIES = ['decision', 'research', 'architecture', 'convention', 'debug'] as const;
+export const MEMORY_CATEGORIES = ['decision', 'research', 'architecture', 'convention', 'debug', 'execution'] as const;
 export type MemoryCategory = typeof MEMORY_CATEGORIES[number];
 
 export interface MemoryMetadata {

@@ -11,6 +11,8 @@ import { verifyTask } from '../usecases/verify-task.ts';
 import { resolveVerificationConfig } from '../utils/verification-config.ts';
 import type { ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
+import { buildExecutionMemory } from '../utils/execution-memory.ts';
+import { getChangedFilesSince } from '../utils/git.ts';
 
 export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -116,7 +118,18 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const revisionCount = result.task.revisionCount ?? 0;
 
       if (vConfig.autoReject && revisionCount >= vConfig.maxRevisions) {
-        // Max revisions reached -- force-accept
+        // Max revisions reached -- force-accept: write execution memory first
+        try {
+          const sinceISO = result.task.claimedAt;
+          const changedFiles = await getChangedFilesSince(services.directory, sinceISO);
+          const execMem = buildExecutionMemory({
+            taskFolder: input.task, taskName: result.task.name ?? input.task,
+            summary: input.summary, verificationReport: result.report,
+            claimedAt: result.task.claimedAt, completedAt: new Date().toISOString(),
+            revisionCount, changedFiles,
+          });
+          services.memoryAdapter.write(feature, execMem.fileName, execMem.content);
+        } catch { /* best-effort */ }
         const acceptedTask = await services.taskPort.done(feature, input.task, input.summary);
         try {
           const { prependMetadataFrontmatter } = await import('../utils/frontmatter.ts');
@@ -169,6 +182,19 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
         throw new Error(`Task '${input.task}' is not in review state (current: ${existing?.status ?? 'not found'})`);
       }
       const summary = input.summary ?? existing.summary ?? '';
+      // Write execution memory before done transition (best-effort)
+      try {
+        let report = null;
+        try { report = await services.taskPort.readVerification(feature, input.task); } catch { /* advisory */ }
+        const changedFiles = await getChangedFilesSince(services.directory, existing.claimedAt);
+        const execMem = buildExecutionMemory({
+          taskFolder: input.task, taskName: existing.name ?? input.task,
+          summary, verificationReport: report,
+          claimedAt: existing.claimedAt, completedAt: new Date().toISOString(),
+          revisionCount: existing.revisionCount, changedFiles,
+        });
+        services.memoryAdapter.write(feature, execMem.fileName, execMem.content);
+      } catch { /* best-effort */ }
       const task = await services.taskPort.done(feature, input.task, summary);
       return respond({ feature, task, message: 'Task accepted (verification override)' });
     }),

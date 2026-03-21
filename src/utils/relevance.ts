@@ -68,6 +68,7 @@ function scoreCategoryMatch(
   if (category === 'convention') return 0.75;
   if (category === 'debug') return task.status === 'blocked' ? 1.0 : 0.0;
   if (category === 'research') return 0.5;
+  if (category === 'execution') return 0.30;
   return 0;
 }
 

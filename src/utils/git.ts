@@ -20,6 +20,60 @@ export async function getHeadCommit(projectRoot: string): Promise<string> {
   return (await git.revparse(['HEAD'])).trim();
 }
 
+/**
+ * Get files changed since a given ISO timestamp. Combines committed and uncommitted changes.
+ * Best-effort: returns [] on any failure (no git repo, detached HEAD, etc.).
+ */
+export async function getChangedFilesSince(
+  projectRoot: string,
+  sinceISO?: string,
+): Promise<string[]> {
+  try {
+    const git = simpleGit(projectRoot);
+    const files = new Set<string>();
+
+    // Committed files since timestamp
+    if (sinceISO) {
+      try {
+        const logResult = await git.log({ '--since': sinceISO, '--name-only': null, '--format': '' });
+        for (const commit of logResult.all) {
+          const diff = (commit as Record<string, unknown>).diff;
+          if (diff && typeof diff === 'object' && 'files' in (diff as object)) {
+            for (const f of (diff as { files: Array<{ file: string }> }).files) {
+              if (f.file) files.add(f.file);
+            }
+          }
+        }
+      } catch {
+        // git log may fail on shallow clones or missing refs -- fall through to status
+      }
+
+      // Alternative: use diff with --name-only for committed changes
+      try {
+        const diffOutput = await git.diff(['--name-only', `--diff-filter=ACDMRT`, `HEAD@{${sinceISO}}..HEAD`]);
+        for (const f of parseNameOnly(diffOutput)) files.add(f);
+      } catch {
+        // Reflog may not have the timestamp -- acceptable
+      }
+    }
+
+    // Uncommitted + staged files
+    const status = await git.status();
+    for (const f of status.not_added) files.add(f);
+    for (const f of status.modified) files.add(f);
+    for (const f of status.created) files.add(f);
+    for (const f of status.renamed.map(r => r.to)) files.add(f);
+    const stagedDiff = parseNameOnly(await git.diff(['--cached', '--name-only']));
+    for (const f of stagedDiff) files.add(f);
+    const unstaged = parseNameOnly(await git.diff(['--name-only']));
+    for (const f of unstaged) files.add(f);
+
+    return Array.from(files).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export async function collectGitAuditSummary(
   projectRoot: string,
   baseCommit?: string,

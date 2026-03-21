@@ -9,6 +9,7 @@ import { MaestroError } from '../lib/errors.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
+import { MEMORY_CATEGORIES } from '../types.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -22,7 +23,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
         global: z.boolean().optional().default(false).describe('Write to global project memory instead of feature memory'),
         tags: z.array(z.string()).optional().describe('Optional tags for DCP relevance scoring'),
         priority: z.number().min(0).max(4).optional().describe('Priority 0 (highest) to 4 (lowest), default 2'),
-        category: z.enum(['decision', 'research', 'architecture', 'convention', 'debug']).optional().describe('Memory category for DCP scoring'),
+        category: z.enum(MEMORY_CATEGORIES).optional().describe('Memory category for DCP scoring'),
       },
       annotations: ANNOTATIONS_MUTATING,
     },

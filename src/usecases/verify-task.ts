@@ -18,6 +18,8 @@ import type { MemoryPort } from '../ports/memory.ts';
 import type { ResolvedVerificationConfig } from '../utils/verification-config.ts';
 import type { TaskInfo } from '../types.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+import { buildExecutionMemory } from '../utils/execution-memory.ts';
+import { getChangedFilesSince } from '../utils/git.ts';
 
 export interface VerifyTaskOpts {
   taskPort: TaskPort;
@@ -46,6 +48,41 @@ function makeAutoPass(criteria: VerificationCriterion[] = []): VerificationRepor
   };
 }
 
+/** Write execution memory before task transitions to done. Best-effort. */
+async function writeExecutionMemory(
+  memoryAdapter: MemoryPort | undefined,
+  featureName: string,
+  taskFolder: string,
+  task: TaskInfo,
+  summary: string,
+  projectRoot: string,
+  verificationReport: VerificationReport | null,
+  specContent?: string,
+  featureCreatedAt?: string,
+): Promise<void> {
+  if (!memoryAdapter) return;
+  try {
+    const sinceISO = task.claimedAt ?? featureCreatedAt;
+    const changedFiles = await getChangedFilesSince(projectRoot, sinceISO);
+    const now = new Date().toISOString();
+    const result = buildExecutionMemory({
+      taskFolder,
+      taskName: task.name ?? taskFolder,
+      summary,
+      verificationReport,
+      claimedAt: task.claimedAt,
+      completedAt: now,
+      revisionCount: task.revisionCount,
+      dependsOn: task.dependsOn,
+      changedFiles,
+      specContent,
+    });
+    memoryAdapter.write(featureName, result.fileName, result.content);
+  } catch {
+    // Best-effort -- never block task completion
+  }
+}
+
 export async function verifyTask(opts: VerifyTaskOpts): Promise<VerifyTaskResult> {
   const { taskPort, verificationPort, memoryAdapter, config,
     projectRoot, featureName, taskFolder, summary } = opts;
@@ -54,8 +91,9 @@ export async function verifyTask(opts: VerifyTaskOpts): Promise<VerifyTaskResult
   const task = await taskPort.get(featureName, taskFolder);
   if (!task) throw new Error(`Task '${taskFolder}' not found`);
 
-  // Verification disabled -- direct done
+  // Verification disabled -- direct done (spec not read on this fast path)
   if (!config.enabled) {
+    await writeExecutionMemory(memoryAdapter, featureName, taskFolder, task, summary, projectRoot, null);
     const doneTask = await taskPort.done(featureName, taskFolder, summary);
     return { report: makeAutoPass(), newStatus: 'done', task: doneTask };
   }
@@ -70,6 +108,7 @@ export async function verifyTask(opts: VerifyTaskOpts): Promise<VerifyTaskResult
   if (config.autoAcceptTypes.length > 0) {
     const taskType = richFields?.type ?? inferTaskType(spec);
     if (taskType && config.autoAcceptTypes.includes(taskType)) {
+      await writeExecutionMemory(memoryAdapter, featureName, taskFolder, task, summary, projectRoot, null, spec ?? undefined);
       const doneTask = await taskPort.done(featureName, taskFolder, summary);
       return {
         report: makeAutoPass([{ name: 'auto-accept', passed: true, detail: `Task type '${taskType}' auto-accepted` }]),
@@ -93,6 +132,7 @@ export async function verifyTask(opts: VerifyTaskOpts): Promise<VerifyTaskResult
   await taskPort.writeVerification(featureName, taskFolder, report);
 
   if (report.passed) {
+    await writeExecutionMemory(memoryAdapter, featureName, taskFolder, task, summary, projectRoot, report, spec ?? undefined);
     const doneTask = await taskPort.done(featureName, taskFolder, summary);
     return { report, newStatus: 'done', task: doneTask };
   }
