@@ -33,7 +33,10 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
           'Provide content or set scaffold: true',
         ]);
       }
-      const result = await writePlan(services, feature, input.content ?? '', { scaffold: input.scaffold });
+      const result = await writePlan(
+        { ...services, memoryAdapter: services.memoryAdapter },
+        feature, input.content ?? '', { scaffold: input.scaffold },
+      );
       return respond({ ...result });
     }),
   );

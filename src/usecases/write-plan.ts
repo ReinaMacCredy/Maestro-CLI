@@ -1,8 +1,10 @@
 import type { PlanPort } from '../ports/plans.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { TaskPort } from '../ports/tasks.ts';
+import type { MemoryPort } from '../ports/memory.ts';
 import { MaestroError } from '../lib/errors.ts';
 import scaffoldTemplate from '../templates/plan-scaffold.md';
+import { queryHistoricalContext, type HistoricalPitfall } from './query-historical-context.ts';
 
 const TASK_HEADING_RE = /^###\s+\d+\.\s+.+$/gm;
 
@@ -10,6 +12,7 @@ export interface WritePlanServices {
   planAdapter: PlanPort;
   featureAdapter: FeaturePort;
   taskPort?: TaskPort;
+  memoryAdapter?: MemoryPort;
 }
 
 export interface WritePlanResult {
@@ -17,6 +20,7 @@ export interface WritePlanResult {
   feature: string;
   taskCount: number;
   scaffold?: boolean;
+  historicalPitfalls?: HistoricalPitfall[];
 }
 
 export interface WritePlanOpts {
@@ -77,5 +81,19 @@ export async function writePlan(
   if (wasApproved) {
     featureAdapter.updateStatus(featureName, 'planning');
   }
-  return { path: planPath, feature: featureName, taskCount: taskHeadings.length };
+
+  // Query cross-feature historical context (advisory, never blocking)
+  let historicalPitfalls: HistoricalPitfall[] | undefined;
+  if (services.memoryAdapter) {
+    try {
+      const result = queryHistoricalContext(content, featureAdapter, services.memoryAdapter);
+      if (result.pitfalls.length > 0) {
+        historicalPitfalls = result.pitfalls;
+      }
+    } catch {
+      // Best-effort -- never block plan writing
+    }
+  }
+
+  return { path: planPath, feature: featureName, taskCount: taskHeadings.length, historicalPitfalls };
 }
