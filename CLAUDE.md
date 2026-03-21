@@ -55,9 +55,10 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **6 task states**: pending, claimed, done, blocked, review, revision
-- **34 MCP tools** across 8 groups
+- **39 MCP tools** across 9 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
+- **Doctrine Compiler**: cross-feature learning from execution history, injected into workers via separate budget
 - **Pipeline**: discovery --> research --> planning --> approval --> execution --> done (stages are skippable)
 
 ## Workflow Phases
@@ -69,7 +70,7 @@ Claude Code is the orchestrator (spawning agents natively), maestro is the filin
 | Planning | Research done | `maestro_plan_write`, `maestro_plan_read` |
 | Approval | Plan written | `maestro_plan_approve` |
 | Execution | Plan approved | `maestro_tasks_sync`, `maestro_task_next`, `maestro_task_claim`, `maestro_task_done` |
-| Completion | All tasks done | `maestro_feature_complete`, `maestro_memory_promote` |
+| Completion | All tasks done | `maestro_feature_complete`, `maestro_memory_promote`, `maestro_doctrine_approve` |
 
 ## Planning Mode
 
@@ -99,7 +100,7 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (34)
+## MCP Tools (39)
 
 | Group | Tools |
 |-------|-------|
@@ -107,6 +108,7 @@ Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto
 | Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
 | Task (9) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` |
 | Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
+| Doctrine (5) | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve` |
 | Meta (6) | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` |
 | Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
 | Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
@@ -139,11 +141,14 @@ Commands organized by domain:
 ### Search (2)
 `search-sessions`, `search-related`
 
+### Doctrine (6)
+`doctrine-list`, `doctrine-read`, `doctrine-write`, `doctrine-deprecate`, `doctrine-suggest`, `doctrine-approve`
+
 ### Config (3)
 `config-get`, `config-set`, `config-agent`
 
-### Other (8)
-`init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `self-update`, `update`
+### Other (9)
+`init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `dcp-preview`, `self-update`, `update`
 
 All commands accept `--json`. Use `maestro <command> --help` for full usage.
 

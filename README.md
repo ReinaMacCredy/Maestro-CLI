@@ -64,7 +64,7 @@ src/
   hooks/        # Claude Code hooks (session-start, pre-agent, pre-compact)
   lib/          # Output, errors, signals, truncation
   plugins/      # Plugin registry and loader (built-in: br, git, rg, tilth)
-  ports/        # Interfaces (tasks, plans, features, memory, search, graph, handoff)
+  ports/        # Interfaces (tasks, plans, features, memory, doctrine, search, graph, handoff)
   server/       # MCP tool registration (one file per domain)
   skills/       # Skill loader and registry generator
   templates/    # Plan scaffolding
@@ -88,7 +88,7 @@ Stages are skippable. Hooks inject pipeline context automatically.
 
 Stale claims expire after a configurable timeout (default 120 min) and auto-reset to `pending` on `task-next`.
 
-## MCP Tools (34)
+## MCP Tools (39)
 
 All tools are prefixed `maestro_` in MCP (e.g., `maestro_task_claim`).
 
@@ -98,12 +98,13 @@ All tools are prefixed `maestro_` in MCP (e.g., `maestro_task_claim`).
 | Plan | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` | 4 |
 | Task | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` | 9 |
 | Memory | `memory_write`, `memory_read`, `memory_list`, `memory_promote` | 4 |
+| Doctrine | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve` | 5 |
 | Meta | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` | 6 |
 | Graph | `graph_insights`, `graph_next`, `graph_plan` | 3 |
 | Handoff | `handoff_send`, `handoff_receive`, `handoff_ack` | 3 |
 | Search | `search_sessions`, `search_related` | 2 |
 
-## CLI Commands (53)
+## CLI Commands (58)
 
 All commands accept `--json` for machine-readable output. Use `maestro <command> --help` for full usage.
 
@@ -113,6 +114,7 @@ All commands accept `--json` for machine-readable output. Use `maestro <command>
 | Plan | write, read, approve, revoke, comment, comments-clear | 6 |
 | Task | sync, list, next, info, claim, done, block, unblock, spec-read, spec-write, report-read, report-write | 12 |
 | Memory | write, read, list, delete, compile, archive, stats, promote | 8 |
+| Doctrine | list, read, write, deprecate, suggest, approve | 6 |
 | Graph | insights, next, plan | 3 |
 | Handoff | send, receive, ack | 3 |
 | Search | sessions, related | 2 |
@@ -169,6 +171,9 @@ Old skill names (e.g., `writing-plans`) are aliased with deprecation warnings.
 ```text
 .maestro/
   config.json                           # Project configuration
+  doctrine/                             # Doctrine items (cross-feature operating rules)
+    <name>.json                         # Structured rule with effectiveness metrics
+  memory/                               # Global project-scoped memory files
   features/
     <feature>/
       feature.json                      # Feature metadata and state
@@ -180,6 +185,7 @@ Old skill names (e.g., `writing-plans`) are aliased with deprecation warnings.
           task.json                     # Task state, claims, summaries
           spec.md                       # Compiled task specification
           report.md                     # Task completion report
+          doctrine-trace.json           # Doctrine injection trace (Phase 4)
 ```
 
 ## License
