@@ -19,6 +19,7 @@ import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { MaestroError } from './lib/errors.ts';
 import { checkCli } from './lib/cli-detect.ts';
+import { resolveTaskBackend } from './lib/resolve-backend.ts';
 import { FsVerificationAdapter } from './adapters/verification.ts';
 import { resolveVerificationConfig } from './utils/verification-config.ts';
 import type { TaskPort } from './ports/tasks.ts';
@@ -53,8 +54,8 @@ export function initServices(directory: string): MaestroServices {
 
   const configAdapter = new FsConfigAdapter();
   const config = configAdapter.get();
-  _taskBackend = config.taskBackend ?? 'fs';
-  const taskPort: TaskPort = config.taskBackend === 'br'
+  _taskBackend = resolveTaskBackend(config.taskBackend, directory);
+  const taskPort: TaskPort = _taskBackend === 'br'
     ? new BrTaskAdapter(directory)
     : new FsTaskAdapter(directory, config.claimExpiresMinutes);
 
@@ -103,7 +104,7 @@ export function getServices(): MaestroServices {
 
   // Hot-swap taskPort if taskBackend config changed mid-session
   const config = _services.configAdapter.get();
-  const currentBackend = config.taskBackend ?? 'fs';
+  const currentBackend = resolveTaskBackend(config.taskBackend, _services.directory);
   if (currentBackend !== _taskBackend) {
     _taskBackend = currentBackend;
     _services.taskPort = currentBackend === 'br'

@@ -17,6 +17,7 @@ import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { resolveTaskBackend } from '../lib/resolve-backend.ts';
 
 const DEFAULT_AGENT_MAIL_URL = 'http://localhost:8765';
 
@@ -165,7 +166,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   async sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult> {
-    const taskBackend = this.configAdapter.get().taskBackend ?? 'fs';
+    const taskBackend = resolveTaskBackend(this.configAdapter.get().taskBackend, this.projectRoot);
     const body = this.formatHandoffMessage(handoff, feature, taskBackend);
 
     // 1. Write to local file (primary artifact)

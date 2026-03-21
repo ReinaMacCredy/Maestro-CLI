@@ -1,5 +1,5 @@
 /**
- * Plugin loader -- discovers TOOL.md files from ~/.config/maestro/tools/.
+ * Plugin loader -- discovers TOOL.md files from ~/.maestro/tools/.
  *
  * Each subdirectory may contain a TOOL.md whose YAML frontmatter (between
  * `---` markers) defines a ToolDefinition.
@@ -12,7 +12,7 @@ import type { ToolDefinition } from "./types";
 import { parseFrontmatter } from "../utils/frontmatter.ts";
 export { parseFrontmatter };
 
-const TOOLS_DIR = join(homedir(), ".config", "maestro", "tools");
+const TOOLS_DIR = join(homedir(), ".maestro", "tools");
 
 /**
  * Convert parsed frontmatter into a ToolDefinition.

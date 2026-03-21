@@ -8,6 +8,7 @@ import { syncPlan } from '../../usecases/sync-plan.ts';
 import { translatePlan } from '../../usecases/translate-plan.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import { resolveTaskBackend } from '../../lib/resolve-backend.ts';
 
 export default defineCommand({
   meta: { name: 'task-sync', description: 'Sync tasks from approved plan' },
@@ -22,7 +23,7 @@ export default defineCommand({
     try {
       const services = getServices();
       const config = services.configAdapter.get();
-      const result = config.taskBackend === 'br'
+      const result = resolveTaskBackend(config.taskBackend, services.directory) === 'br'
         ? await translatePlan(services, args.feature)
         : await syncPlan(services, args.feature);
 

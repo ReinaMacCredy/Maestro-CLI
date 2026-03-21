@@ -12,6 +12,7 @@ import { resolveVerificationConfig } from '../utils/verification-config.ts';
 import type { ListOpts } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 import { writeExecutionMemory } from '../utils/execution-memory.ts';
+import { resolveTaskBackend } from '../lib/resolve-backend.ts';
 
 export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -28,7 +29,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const config = services.configAdapter.get();
-      const result = config.taskBackend === 'br'
+      const result = resolveTaskBackend(config.taskBackend, services.directory) === 'br'
         ? await translatePlan(services, feature)
         : await syncPlan(services, feature);
       return respond({ ...result });

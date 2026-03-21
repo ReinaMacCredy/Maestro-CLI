@@ -1,6 +1,6 @@
 /**
  * Filesystem-based config adapter for maestroCLI.
- * Config path: ~/.config/maestro/config.json (user-scoped, no directory arg).
+ * Config path: ~/.maestro/config.json (user-scoped, no directory arg).
  */
 
 import * as path from 'path';
@@ -15,7 +15,7 @@ export class FsConfigAdapter {
   private cachedConfig: HiveConfig | null = null;
 
   constructor() {
-    const configDir = path.join(homedir(), '.config', 'maestro');
+    const configDir = path.join(homedir(), '.maestro');
     this.configPath = path.join(configDir, 'config.json');
   }
 

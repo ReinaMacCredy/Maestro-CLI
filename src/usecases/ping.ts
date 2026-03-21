@@ -8,6 +8,7 @@ import type { GraphPort } from '../ports/graph.ts';
 import type { HandoffPort } from '../ports/handoff.ts';
 import type { SearchPort } from '../ports/search.ts';
 import { VERSION } from '../version.ts';
+import { resolveTaskBackend } from '../lib/resolve-backend.ts';
 
 export interface PingServices {
   configAdapter: FsConfigAdapter;
@@ -31,13 +32,14 @@ export interface PingResult {
 
 export function ping(services: PingServices): PingResult {
   const config = services.configAdapter.get();
+  const backend = resolveTaskBackend(config.taskBackend, services.directory);
 
   return {
     version: VERSION,
     projectRoot: services.directory,
-    taskBackend: config.taskBackend ?? 'fs',
+    taskBackend: backend,
     integrations: {
-      br: config.taskBackend === 'br',
+      br: backend === 'br',
       bv: !!services.graphPort,
       cass: !!services.searchPort,
       agentMail: !!services.handoffPort,

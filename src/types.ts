@@ -169,7 +169,7 @@ export interface HiveConfig {
     'hygienic-reviewer'?: AgentModelConfig;
   };
   claimExpiresMinutes: number;
-  taskBackend?: 'fs' | 'br';
+  taskBackend?: 'fs' | 'br' | 'auto';
   hook_cadence?: Record<string, number>;
   dcp?: {
     enabled?: boolean;                  // default true
@@ -227,7 +227,7 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   disableMcps: [],
   agentMode: 'unified',
   claimExpiresMinutes: 120,
-  taskBackend: 'fs',
+  taskBackend: 'auto',
   dcp: DCP_DEFAULTS,
   agents: {
     'hive-master': {
