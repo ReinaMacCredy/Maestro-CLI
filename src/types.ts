@@ -188,6 +188,14 @@ export interface HiveConfig {
     buildTimeoutMs?: number;        // default: 30000
     scoreThreshold?: number;        // 0.0-1.0, default: 0.7
   };
+  doctrine?: {
+    enabled?: boolean;                // default: true
+    doctrineBudgetBytes?: number;     // default: 1024
+    maxSuggestionsPerFeature?: number; // default: 5
+    staleThresholdDays?: number;       // default: 90
+    crossFeatureScanLimit?: number;    // default: 20
+    minSampleSize?: number;            // default: 5 (min features with pattern for suggestion)
+  };
 }
 
 export const DEFAULT_AGENT_MODELS = {
@@ -211,6 +219,15 @@ export const DCP_DEFAULTS = {
   handoffDecisionBudgetBytes: 2048,
 } satisfies Required<NonNullable<HiveConfig['dcp']>>;
 
+export const DOCTRINE_DEFAULTS = {
+  enabled: true,
+  doctrineBudgetBytes: 1024,
+  maxSuggestionsPerFeature: 5,
+  staleThresholdDays: 90,
+  crossFeatureScanLimit: 20,
+  minSampleSize: 5,
+} satisfies Required<NonNullable<HiveConfig['doctrine']>>;
+
 export const VERIFICATION_DEFAULTS = {
   enabled: true,
   autoReject: true,
@@ -229,6 +246,7 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   claimExpiresMinutes: 120,
   taskBackend: 'auto',
   dcp: DCP_DEFAULTS,
+  doctrine: DOCTRINE_DEFAULTS,
   agents: {
     'hive-master': {
       model: DEFAULT_AGENT_MODELS['hive-master'],
