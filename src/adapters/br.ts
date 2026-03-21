@@ -16,8 +16,8 @@ import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/ta
 import type { VerificationReport } from '../ports/verification.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { getFeaturePath, getTaskReportPath } from '../utils/paths.ts';
-import { readJson, writeJson, ensureDir, readText, writeText } from '../utils/fs-io.ts';
+import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../utils/paths.ts';
+import { readJson, writeJson, writeJsonAtomic, ensureDir, readText, writeText } from '../utils/fs-io.ts';
 import { CliRunner } from '../utils/cli-runner.ts';
 import { buildTaskFolder } from '../utils/slug.ts';
 import * as path from 'path';
@@ -311,18 +311,13 @@ export class BrTaskAdapter implements TaskPort {
   }
 
   async readVerification(feature: string, id: string): Promise<VerificationReport | null> {
-    // Stored as sidecar JSON (same as fs backend)
-    const { getTaskVerificationPath } = await import('../utils/paths.ts');
     const folder = this.resolveTaskFolder(feature, id);
     return readJson<VerificationReport>(getTaskVerificationPath(this.projectRoot, feature, folder));
   }
 
   async writeVerification(feature: string, id: string, report: VerificationReport): Promise<void> {
-    const { getTaskVerificationPath, getTaskPath } = await import('../utils/paths.ts');
     const folder = this.resolveTaskFolder(feature, id);
-    const taskDir = getTaskPath(this.projectRoot, feature, folder);
-    ensureDir(taskDir);
-    const { writeJsonAtomic } = await import('../utils/fs-io.ts');
+    ensureDir(getTaskPath(this.projectRoot, feature, folder));
     writeJsonAtomic(getTaskVerificationPath(this.projectRoot, feature, folder), report);
   }
 

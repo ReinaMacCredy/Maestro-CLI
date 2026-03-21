@@ -13,10 +13,22 @@
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
-import type { VerificationPort, VerificationReport } from '../ports/verification.ts';
+import type { VerificationPort, VerificationReport, VerificationCriterion } from '../ports/verification.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { ResolvedVerificationConfig } from '../utils/verification-config.ts';
 import type { TaskInfo } from '../types.ts';
+import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+
+export interface VerifyTaskOpts {
+  taskPort: TaskPort;
+  verificationPort: VerificationPort;
+  memoryAdapter?: MemoryPort;
+  config: ResolvedVerificationConfig;
+  projectRoot: string;
+  featureName: string;
+  taskFolder: string;
+  summary: string;
+}
 
 export interface VerifyTaskResult {
   report: VerificationReport;
@@ -24,16 +36,20 @@ export interface VerifyTaskResult {
   task: TaskInfo;
 }
 
-export async function verifyTask(
-  taskPort: TaskPort,
-  verificationPort: VerificationPort,
-  memoryAdapter: MemoryPort | undefined,
-  config: ResolvedVerificationConfig,
-  projectRoot: string,
-  featureName: string,
-  taskFolder: string,
-  summary: string,
-): Promise<VerifyTaskResult> {
+function makeAutoPass(criteria: VerificationCriterion[] = []): VerificationReport {
+  return {
+    passed: true,
+    score: 1,
+    criteria,
+    suggestions: [],
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export async function verifyTask(opts: VerifyTaskOpts): Promise<VerifyTaskResult> {
+  const { taskPort, verificationPort, memoryAdapter, config,
+    projectRoot, featureName, taskFolder, summary } = opts;
+
   // Read current task state
   const task = await taskPort.get(featureName, taskFolder);
   if (!task) throw new Error(`Task '${taskFolder}' not found`);
@@ -41,38 +57,28 @@ export async function verifyTask(
   // Verification disabled -- direct done
   if (!config.enabled) {
     const doneTask = await taskPort.done(featureName, taskFolder, summary);
-    const autoPass: VerificationReport = {
-      passed: true,
-      score: 1,
-      criteria: [],
-      suggestions: [],
-      timestamp: new Date().toISOString(),
-    };
-    return { report: autoPass, newStatus: 'done', task: doneTask };
+    return { report: makeAutoPass(), newStatus: 'done', task: doneTask };
   }
+
+  // Hoist reads -- used by both auto-accept check and verification
+  const [spec, richFields] = await Promise.all([
+    taskPort.readSpec(featureName, taskFolder),
+    taskPort.getRichFields?.(featureName, taskFolder) ?? Promise.resolve(null),
+  ]);
 
   // Auto-accept types -- skip verification for matching task types
   if (config.autoAcceptTypes.length > 0) {
-    const spec = await taskPort.readSpec(featureName, taskFolder);
-    const richFields = await taskPort.getRichFields?.(featureName, taskFolder);
     const taskType = richFields?.type ?? inferTaskType(spec);
     if (taskType && config.autoAcceptTypes.includes(taskType)) {
       const doneTask = await taskPort.done(featureName, taskFolder, summary);
-      const autoPass: VerificationReport = {
-        passed: true,
-        score: 1,
-        criteria: [{ name: 'auto-accept', passed: true, detail: `Task type '${taskType}' auto-accepted` }],
-        suggestions: [],
-        timestamp: new Date().toISOString(),
+      return {
+        report: makeAutoPass([{ name: 'auto-accept', passed: true, detail: `Task type '${taskType}' auto-accepted` }]),
+        newStatus: 'done', task: doneTask,
       };
-      return { report: autoPass, newStatus: 'done', task: doneTask };
     }
   }
 
   // Run verification checks
-  const spec = await taskPort.readSpec(featureName, taskFolder);
-  const richFields = await taskPort.getRichFields?.(featureName, taskFolder);
-
   const report = await verificationPort.verify({
     projectRoot,
     featureName,
@@ -98,17 +104,16 @@ export async function verifyTask(
   if (memoryAdapter) {
     try {
       const failedCriteria = report.criteria.filter(c => !c.passed).map(c => c.name).join(', ');
-      const content = [
-        '---',
-        'tags: [verification, failure-pattern]',
-        'category: debug',
-        'priority: 1',
-        '---',
-        '',
+      const body = [
         `Verification failed for ${taskFolder}: ${failedCriteria}.`,
         `Score: ${report.score.toFixed(2)}.`,
         `Suggestions: ${report.suggestions.join('; ')}`,
       ].join('\n');
+      const content = prependMetadataFrontmatter(body, {
+        tags: ['verification', 'failure-pattern'],
+        category: 'debug',
+        priority: 1,
+      });
       memoryAdapter.write(featureName, `verification-fail-${taskFolder}`, content);
     } catch {
       // Memory write is best-effort

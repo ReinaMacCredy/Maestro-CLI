@@ -17,6 +17,13 @@ import * as path from 'path';
 
 const MAX_BUILD_OUTPUT = 2048;
 const MIN_SUMMARY_LENGTH = 20;
+const SIGNIFICANT_WORD_RE = /\b[a-z]{4,}\b/g;
+const STOP_WORDS = new Set(['this', 'that', 'with', 'from', 'have', 'been', 'will', 'should', 'would', 'could', 'task', 'plan', 'spec', 'section', 'feature']);
+
+function extractSignificantWords(text: string, filterStopWords = false): string[] {
+  const words = text.toLowerCase().match(SIGNIFICANT_WORD_RE) ?? [];
+  return filterStopWords ? words.filter(w => !STOP_WORDS.has(w)) : words;
+}
 
 export class FsVerificationAdapter implements VerificationPort {
   private config: ResolvedVerificationConfig;
@@ -182,13 +189,7 @@ export class FsVerificationAdapter implements VerificationPort {
     }
 
     if (specContent) {
-      // Extract key terms from spec (words 4+ chars, skip common words)
-      const stopWords = new Set(['this', 'that', 'with', 'from', 'have', 'been', 'will', 'should', 'would', 'could', 'task', 'plan', 'spec', 'section', 'feature']);
-      const specTerms = specContent
-        .toLowerCase()
-        .match(/\b[a-z]{4,}\b/g)
-        ?.filter(w => !stopWords.has(w)) ?? [];
-      const uniqueTerms = [...new Set(specTerms)];
+      const uniqueTerms = [...new Set(extractSignificantWords(specContent, true))];
 
       if (uniqueTerms.length > 0) {
         const summaryLower = summary.toLowerCase();
@@ -219,9 +220,7 @@ export class FsVerificationAdapter implements VerificationPort {
 
     const summaryLower = summary.toLowerCase();
     const matchedCount = bullets.filter(bullet => {
-      // Extract significant words from bullet
-      const words = bullet.toLowerCase().match(/\b[a-z]{4,}\b/g) ?? [];
-      // At least one significant word from the bullet appears in summary
+      const words = extractSignificantWords(bullet);
       return words.some(w => summaryLower.includes(w));
     }).length;
 

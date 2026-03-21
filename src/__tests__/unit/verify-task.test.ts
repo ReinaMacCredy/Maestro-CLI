@@ -6,7 +6,7 @@
 
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
-import { verifyTask } from '../../usecases/verify-task.ts';
+import { verifyTask, type VerifyTaskOpts } from '../../usecases/verify-task.ts';
 import type { VerificationPort, VerificationReport, VerifyParams } from '../../ports/verification.ts';
 import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
 import { VERIFICATION_DEFAULTS } from '../../types.ts';
@@ -57,6 +57,23 @@ function makeMemoryAdapter() {
   };
 }
 
+/** Build opts with defaults. */
+function makeOpts(
+  taskPort: InMemoryTaskPort,
+  vPort: VerificationPort,
+  overrides: Partial<VerifyTaskOpts> = {},
+): VerifyTaskOpts {
+  return {
+    taskPort, verificationPort: vPort,
+    config: makeConfig(),
+    projectRoot: '/tmp',
+    featureName: FEATURE,
+    taskFolder: TASK,
+    summary: 'Done',
+    ...overrides,
+  };
+}
+
 describe('verifyTask', () => {
   let taskPort: InMemoryTaskPort;
 
@@ -67,10 +84,7 @@ describe('verifyTask', () => {
 
   test('pass -> done transition', async () => {
     const vPort = makeVerificationPort({ passed: true, score: 1 });
-    const result = await verifyTask(
-      taskPort, vPort, undefined, makeConfig(),
-      '/tmp', FEATURE, TASK, 'Implemented the thing',
-    );
+    const result = await verifyTask(makeOpts(taskPort, vPort, { summary: 'Implemented the thing' }));
     expect(result.newStatus).toBe('done');
     expect(result.report.passed).toBe(true);
     const task = await taskPort.get(FEATURE, TASK);
@@ -84,10 +98,7 @@ describe('verifyTask', () => {
       criteria: [{ name: 'build', passed: false, detail: 'Build failed' }],
       suggestions: ['Fix build'],
     });
-    const result = await verifyTask(
-      taskPort, vPort, undefined, makeConfig(),
-      '/tmp', FEATURE, TASK, 'Attempted impl',
-    );
+    const result = await verifyTask(makeOpts(taskPort, vPort, { summary: 'Attempted impl' }));
     expect(result.newStatus).toBe('review');
     expect(result.report.passed).toBe(false);
     const task = await taskPort.get(FEATURE, TASK);
@@ -96,10 +107,10 @@ describe('verifyTask', () => {
 
   test('verification disabled -> direct done', async () => {
     const vPort = makeVerificationPort({ passed: false });
-    const result = await verifyTask(
-      taskPort, vPort, undefined, makeConfig({ enabled: false }),
-      '/tmp', FEATURE, TASK, 'Done without checks',
-    );
+    const result = await verifyTask(makeOpts(taskPort, vPort, {
+      config: makeConfig({ enabled: false }),
+      summary: 'Done without checks',
+    }));
     expect(result.newStatus).toBe('done');
     expect(result.report.passed).toBe(true);
     expect(result.report.criteria).toHaveLength(0);
@@ -108,13 +119,12 @@ describe('verifyTask', () => {
   });
 
   test('auto-accept types bypass verification', async () => {
-    // Write a spec with task type
     await taskPort.writeSpec(FEATURE, TASK, '## Task Type\ndocs\n');
     const vPort = makeVerificationPort({ passed: false });
-    const result = await verifyTask(
-      taskPort, vPort, undefined, makeConfig({ autoAcceptTypes: ['docs'] }),
-      '/tmp', FEATURE, TASK, 'Updated docs',
-    );
+    const result = await verifyTask(makeOpts(taskPort, vPort, {
+      config: makeConfig({ autoAcceptTypes: ['docs'] }),
+      summary: 'Updated docs',
+    }));
     expect(result.newStatus).toBe('done');
     expect(result.report.passed).toBe(true);
   });
@@ -127,17 +137,16 @@ describe('verifyTask', () => {
       criteria: [{ name: 'build', passed: false, detail: 'fail' }],
       suggestions: ['Fix it'],
     });
-    await verifyTask(
-      taskPort, vPort, memAdapter, makeConfig(),
-      '/tmp', FEATURE, TASK, 'Broken impl',
-    );
+    await verifyTask(makeOpts(taskPort, vPort, {
+      memoryAdapter: memAdapter,
+      summary: 'Broken impl',
+    }));
     expect(memAdapter.written).toHaveLength(1);
     expect(memAdapter.written[0].name).toContain('verification-fail');
     expect(memAdapter.written[0].content).toContain('build');
   });
 
   test('passes claimedAt to verification adapter', async () => {
-    // Claim with a known time
     taskPort.seed(FEATURE, TASK, { status: 'pending' });
     await taskPort.claim(FEATURE, TASK, 'agent-1');
     const task = await taskPort.get(FEATURE, TASK);
@@ -151,19 +160,13 @@ describe('verifyTask', () => {
       },
     };
 
-    await verifyTask(
-      taskPort, vPort, undefined, makeConfig(),
-      '/tmp', FEATURE, TASK, 'Done',
-    );
+    await verifyTask(makeOpts(taskPort, vPort));
     expect(capturedParams?.claimedAt).toBe(task?.claimedAt);
   });
 
   test('writes verification report to task port', async () => {
     const vPort = makeVerificationPort({ passed: true, score: 1 });
-    await verifyTask(
-      taskPort, vPort, undefined, makeConfig(),
-      '/tmp', FEATURE, TASK, 'Done',
-    );
+    await verifyTask(makeOpts(taskPort, vPort));
     const report = await taskPort.readVerification(FEATURE, TASK);
     expect(report).toBeTruthy();
     expect(report?.passed).toBe(true);

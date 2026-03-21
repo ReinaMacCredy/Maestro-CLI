@@ -93,3 +93,13 @@ export const VALID_TRANSITIONS: Record<TaskStatusType, TaskStatusType[]> = {
 export function isValidTransition(from: TaskStatusType, to: TaskStatusType): boolean {
   return VALID_TRANSITIONS[from]?.includes(to) ?? false;
 }
+
+/** Task should not be overwritten by re-sync (any status other than pending/blocked). */
+export function isActiveTask(status: TaskStatusType): boolean {
+  return status === 'done' || status === 'claimed' || status === 'review' || status === 'revision';
+}
+
+/** A dependency is satisfied when the upstream task is done or in review. */
+export function isDependencySatisfied(status: TaskStatusType): boolean {
+  return status === 'done' || status === 'review';
+}

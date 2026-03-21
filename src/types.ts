@@ -38,9 +38,7 @@ export interface TaskStatus {
   blockerReason?: string;
   blockerDecision?: string;
   dependsOn?: string[];
-  // Verification fields
-  verificationResult?: 'pass' | 'fail';
-  verificationScore?: number;
+  // Verification fields (stored inline; full report in verification.json)
   revisionCount?: number;
   revisionFeedback?: string;
 }
@@ -59,9 +57,7 @@ export interface TaskInfo {
   blockerDecision?: string;
   /** Task dependencies */
   dependsOn?: string[];
-  // Verification fields
-  verificationResult?: 'pass' | 'fail';
-  verificationScore?: number;
+  // Verification fields (stored inline; full report in verification.json)
   revisionCount?: number;
   revisionFeedback?: string;
 }

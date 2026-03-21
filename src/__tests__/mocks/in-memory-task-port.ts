@@ -5,6 +5,7 @@
 
 import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
 import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
+import { isDependencySatisfied } from '../../ports/tasks.ts';
 import type { VerificationReport } from '../../ports/verification.ts';
 import { MaestroError } from '../../lib/errors.ts';
 import { buildTaskFolder } from '../../utils/slug.ts';
@@ -95,10 +96,6 @@ export class InMemoryTaskPort implements TaskPort {
     task.status = 'done';
     task.summary = summary;
     task.completedAt = new Date().toISOString();
-    if (task.verificationResult) {
-      task.verificationResult = undefined;
-      task.verificationScore = undefined;
-    }
     return { ...task };
   }
 
@@ -151,7 +148,7 @@ export class InMemoryTaskPort implements TaskPort {
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const tasks = [...this.getFeatureTasks(feature).values()];
     const satisfiedSet = new Set(
-      tasks.filter(t => t.status === 'done' || t.status === 'review').map(t => t.folder),
+      tasks.filter(t => isDependencySatisfied(t.status)).map(t => t.folder),
     );
 
     return tasks.filter(t => {

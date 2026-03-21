@@ -4,6 +4,7 @@
  */
 
 import type { TaskStatusType } from '../types.ts';
+import { isDependencySatisfied } from '../ports/tasks.ts';
 
 export interface TaskWithDeps {
   folder: string;
@@ -37,8 +38,7 @@ export function computeRunnableAndBlocked(tasks: TaskWithDeps[]): RunnableBlocke
 
     const unmetDeps = deps.filter(dep => {
       const depStatus = statusByFolder.get(dep);
-      // Both done and review satisfy dependencies
-      return depStatus !== 'done' && depStatus !== 'review';
+      return !depStatus || !isDependencySatisfied(depStatus);
     });
 
     if (unmetDeps.length === 0) {

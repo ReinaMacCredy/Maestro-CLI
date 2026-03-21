@@ -96,25 +96,34 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const config = services.configAdapter.get();
       const vConfig = resolveVerificationConfig(config.verification);
 
-      const result = await verifyTask(
-        services.taskPort, services.verificationPort,
-        services.memoryAdapter, vConfig,
-        services.directory, feature, input.task, input.summary,
-      );
+      const result = await verifyTask({
+        taskPort: services.taskPort,
+        verificationPort: services.verificationPort,
+        memoryAdapter: services.memoryAdapter,
+        config: vConfig,
+        projectRoot: services.directory,
+        featureName: feature,
+        taskFolder: input.task,
+        summary: input.summary,
+      });
 
       if (result.newStatus === 'done') {
         return respond({ feature, task: result.task, verification: result.report });
       }
 
       // Verification failed -- task is in 'review' state
-      const currentTask = await services.taskPort.get(feature, input.task);
-      const revisionCount = currentTask?.revisionCount ?? 0;
+      // result.task already has current revisionCount from the review transition
+      const revisionCount = result.task.revisionCount ?? 0;
 
       if (vConfig.autoReject && revisionCount >= vConfig.maxRevisions) {
         // Max revisions reached -- force-accept
         const acceptedTask = await services.taskPort.done(feature, input.task, input.summary);
-        services.memoryAdapter.write(feature, `verification-auto-accept-${input.task}`,
-          `---\ntags: [verification, auto-accept]\ncategory: debug\npriority: 1\n---\n\nTask ${input.task} auto-accepted after ${vConfig.maxRevisions} revision(s). Score: ${result.report.score.toFixed(2)}`);
+        try {
+          const { prependMetadataFrontmatter } = await import('../utils/frontmatter.ts');
+          const body = `Task ${input.task} auto-accepted after ${vConfig.maxRevisions} revision(s). Score: ${result.report.score.toFixed(2)}`;
+          services.memoryAdapter.write(feature, `verification-auto-accept-${input.task}`,
+            prependMetadataFrontmatter(body, { tags: ['verification', 'auto-accept'], category: 'debug', priority: 1 }));
+        } catch { /* best-effort */ }
         return respond({
           feature, task: acceptedTask, verification: result.report,
           warning: `Auto-accepted after ${vConfig.maxRevisions} revision(s) with score ${result.report.score.toFixed(2)}`,

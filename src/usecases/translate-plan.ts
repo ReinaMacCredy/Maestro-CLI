@@ -9,6 +9,7 @@
  */
 
 import type { TaskPort } from '../ports/tasks.ts';
+import { isActiveTask } from '../ports/tasks.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
 import { buildBeadOpts } from '../utils/bead-builder.ts';
@@ -71,7 +72,7 @@ export async function translatePlan(
       continue;
     }
 
-    if (existing.status === 'done' || existing.status === 'claimed' || existing.status === 'review' || existing.status === 'revision') {
+    if (isActiveTask(existing.status)) {
       result.kept.push(existing.folder);
       continue;
     }

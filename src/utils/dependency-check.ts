@@ -4,6 +4,7 @@
 
 import { buildEffectiveDependencies } from './task-dependency-graph.ts';
 import type { TaskPort } from '../ports/tasks.ts';
+import { isDependencySatisfied } from '../ports/tasks.ts';
 import type { TaskInfo } from '../types.ts';
 
 /**
@@ -34,9 +35,9 @@ export async function checkDependencies(
   const unmetDeps: Array<{ folder: string; status: string }> = [];
 
   for (const depFolder of deps) {
-    const depStatus = statusByFolder.get(depFolder) ?? 'unknown';
-    if (depStatus !== 'done' && depStatus !== 'review') {
-      unmetDeps.push({ folder: depFolder, status: depStatus });
+    const depStatus = statusByFolder.get(depFolder);
+    if (!depStatus || !isDependencySatisfied(depStatus)) {
+      unmetDeps.push({ folder: depFolder, status: depStatus ?? 'unknown' });
     }
   }
 

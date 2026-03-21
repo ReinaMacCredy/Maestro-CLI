@@ -11,6 +11,7 @@
 
 import type { TaskInfo, TaskStatus } from '../types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
+import { isDependencySatisfied } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import {
   getTasksPath,
@@ -129,11 +130,6 @@ export class FsTaskAdapter implements TaskPort {
     status.completedAt = new Date().toISOString();
     status.claimedBy = undefined;
     status.claimedAt = undefined;
-    // Clear verification state on acceptance from review
-    if (status.verificationResult) {
-      status.verificationResult = undefined;
-      status.verificationScore = undefined;
-    }
     this.writeStatus(feature, id, status);
     return this.statusToInfo(id, status);
   }
@@ -205,9 +201,8 @@ export class FsTaskAdapter implements TaskPort {
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const all = await this.list(feature, { includeAll: true });
-    // Both done and review satisfy dependencies
     const satisfiedSet = new Set(
-      all.filter(t => t.status === 'done' || t.status === 'review').map(t => t.folder),
+      all.filter(t => isDependencySatisfied(t.status)).map(t => t.folder),
     );
     const now = Date.now();
     const expiryMs = this.claimExpiresMinutes * 60 * 1000;
@@ -290,8 +285,6 @@ export class FsTaskAdapter implements TaskPort {
       blockerReason: status.blockerReason,
       blockerDecision: status.blockerDecision,
       dependsOn: status.dependsOn,
-      verificationResult: status.verificationResult,
-      verificationScore: status.verificationScore,
       revisionCount: status.revisionCount,
       revisionFeedback: status.revisionFeedback,
     };
