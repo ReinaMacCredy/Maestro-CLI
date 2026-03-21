@@ -70,7 +70,7 @@ function deriveExtensionTags(files: string[]): string[] {
   return Array.from(tags);
 }
 
-function deriveFolderTags(folder: string): string[] {
+export function deriveFolderTags(folder: string): string[] {
   return folder
     .split('-')
     .filter(seg => seg.length >= 4 && !/^\d+$/.test(seg))

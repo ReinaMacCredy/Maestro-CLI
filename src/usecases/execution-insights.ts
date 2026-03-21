@@ -7,8 +7,8 @@ import type { TaskPort } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import { buildDownstreamMap, extractSourceTask, scoreDependencyProximity } from '../utils/dependency-proximity.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
-import { parseFrontmatterRich, stripFrontmatter } from '../utils/frontmatter.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
+import { parseExecMemory } from '../utils/parse-exec-memory.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;
@@ -28,34 +28,6 @@ export interface ExecutionInsightsResult {
     percent: number;
   };
   knowledgeFlow: Array<{ from: string; to: string; proximity: number }>;
-}
-
-/** Parse structured fields from execution memory body. */
-function parseExecMemory(content: string): {
-  summary: string;
-  filesChanged: number;
-  verificationPassed: boolean;
-  tags: string[];
-} {
-  const meta = parseFrontmatterRich(content);
-  const body = stripFrontmatter(content);
-
-  // Extract summary
-  const summaryMatch = body.match(/\*\*Summary\*\*:\s*(.+)/);
-  const summary = summaryMatch?.[1] ?? '';
-
-  // Extract files changed count
-  const filesMatch = body.match(/\*\*Files changed\*\*\s*\((\d+)\)/);
-  const filesChanged = filesMatch ? parseInt(filesMatch[1], 10) : 0;
-
-  // Extract verification result
-  const verificationPassed = body.includes('**Verification**: passed');
-
-  // Extract tags from frontmatter
-  const rawTags = meta?.tags;
-  const tags = Array.isArray(rawTags) ? rawTags as string[] : [];
-
-  return { summary, filesChanged, verificationPassed, tags };
 }
 
 export async function executionInsights(
