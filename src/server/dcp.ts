@@ -40,6 +40,12 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;
 
+      // Load all tasks for dependency-proximity scoring
+      const allTasks = await services.taskPort.list(feature, { includeAll: true });
+      const taskDeps = allTasks.map(t => ({
+        folder: t.folder, status: t.status, dependsOn: t.dependsOn,
+      }));
+
       const { metrics } = pruneContext({
         featureName: feature,
         taskFolder: input.task,
@@ -51,6 +57,7 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         workerRules: WORKER_RULES,
         dcpConfig: resolvedDcp,
         featureCreatedAt,
+        allTasks: taskDeps,
       });
 
       return respond({

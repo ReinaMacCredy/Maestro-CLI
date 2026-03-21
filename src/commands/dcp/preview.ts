@@ -44,6 +44,12 @@ export default defineCommand({
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;
 
+      // Load all tasks for dependency-proximity scoring
+      const allTasks = await services.taskPort.list(feature, { includeAll: true });
+      const taskDeps = allTasks.map(t => ({
+        folder: t.folder, status: t.status, dependsOn: t.dependsOn,
+      }));
+
       const { metrics } = pruneContext({
         featureName: feature,
         taskFolder: args.task,
@@ -55,6 +61,7 @@ export default defineCommand({
         workerRules: WORKER_RULES,
         dcpConfig: resolvedDcp,
         featureCreatedAt,
+        allTasks: taskDeps,
       });
 
       output(metrics, (m) => {
