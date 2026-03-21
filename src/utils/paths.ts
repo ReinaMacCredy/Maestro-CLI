@@ -123,3 +123,17 @@ export function getWorkerPromptPath(projectRoot: string, featureName: string, ta
 export function getTaskVerificationPath(projectRoot: string, featureName: string, taskFolder: string): string {
   return path.join(getTaskPath(projectRoot, featureName, taskFolder), VERIFICATION_FILE);
 }
+
+// ============================================================================
+// Doctrine Paths
+// ============================================================================
+
+const DOCTRINE_DIR = 'doctrine';
+
+export function getDoctrinePath(projectRoot: string): string {
+  return path.join(getMaestroPath(projectRoot), DOCTRINE_DIR);
+}
+
+export function getDoctrineItemPath(projectRoot: string, name: string): string {
+  return path.join(getDoctrinePath(projectRoot), `${name}.json`);
+}
