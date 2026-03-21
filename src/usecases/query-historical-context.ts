@@ -1,0 +1,215 @@
+/**
+ * Query cross-feature execution history for plan-time awareness.
+ * Scores exec memories against plan content by tag/keyword overlap,
+ * groups by tag clusters, and surfaces failure patterns as pitfalls.
+ *
+ * Deterministic, no LLM calls.
+ */
+
+import type { FeaturePort } from '../ports/features.ts';
+import type { MemoryPort } from '../ports/memory.ts';
+import type { MemoryFileWithMeta } from '../types.ts';
+import { isExecutionMemory } from '../utils/execution-memory.ts';
+import { parseExecMemory, type ParsedExecMemory } from '../utils/parse-exec-memory.ts';
+import { extractKeywords } from '../utils/relevance.ts';
+
+export interface HistoricalPitfall {
+  pattern: string;
+  metric: string;
+  sourceFeatures: string[];
+  sourceTasks: string[];
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface HistoricalContextResult {
+  pitfalls: HistoricalPitfall[];
+  totalExecMemoriesScanned: number;
+  featuresScanned: number;
+}
+
+interface ScoredMemory {
+  featureName: string;
+  memoryName: string;
+  parsed: ParsedExecMemory;
+  score: number;
+}
+
+const OVERLAP_THRESHOLD = 0.3;
+const DEFAULT_SCAN_LIMIT = 20;
+
+/**
+ * Score a memory's tag+keyword overlap with plan keywords.
+ * Returns 0.0-1.0 (higher = more relevant).
+ */
+function scoreOverlap(memTags: string[], planKeywords: Set<string>): number {
+  if (planKeywords.size === 0) return 0;
+
+  let matches = 0;
+  for (const tag of memTags) {
+    if (planKeywords.has(tag.toLowerCase())) matches++;
+  }
+  const tagScore = memTags.length > 0 ? matches / memTags.length : 0;
+
+  // Weight tag overlap more heavily (0.6) than keyword presence (0.4)
+  const keywordScore = planKeywords.size > 0 ? matches / planKeywords.size : 0;
+
+  return tagScore * 0.6 + keywordScore * 0.4;
+}
+
+/**
+ * Group memories by their primary tag clusters (excluding "execution" tag).
+ * Returns map of cluster key -> memories in that cluster.
+ */
+function groupByTagCluster(memories: ScoredMemory[]): Map<string, ScoredMemory[]> {
+  const clusters = new Map<string, ScoredMemory[]>();
+
+  for (const mem of memories) {
+    // Use sorted non-"execution" tags as cluster key
+    const clusterTags = mem.parsed.tags
+      .filter(t => t !== 'execution')
+      .sort();
+    if (clusterTags.length === 0) continue;
+
+    const key = clusterTags.join('+');
+    const existing = clusters.get(key) ?? [];
+    existing.push(mem);
+    clusters.set(key, existing);
+  }
+
+  return clusters;
+}
+
+export function queryHistoricalContext(
+  planContent: string,
+  featureAdapter: FeaturePort,
+  memoryAdapter: MemoryPort,
+  opts?: { scanLimit?: number },
+): HistoricalContextResult {
+  const scanLimit = opts?.scanLimit ?? DEFAULT_SCAN_LIMIT;
+  const planKeywords = extractKeywords(planContent);
+
+  if (planKeywords.size === 0) {
+    return { pitfalls: [], totalExecMemoriesScanned: 0, featuresScanned: 0 };
+  }
+
+  // Enumerate features, sort by createdAt descending, cap at scanLimit
+  const featureNames = featureAdapter.list();
+  const featuresWithDate: Array<{ name: string; createdAt: string }> = [];
+
+  for (const name of featureNames) {
+    const info = featureAdapter.get(name);
+    if (!info) continue;
+    featuresWithDate.push({ name, createdAt: info.createdAt ?? '1970-01-01T00:00:00Z' });
+  }
+
+  featuresWithDate.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const scannedFeatures = featuresWithDate.slice(0, scanLimit);
+
+  // Collect and score exec memories across features
+  const scoredMemories: ScoredMemory[] = [];
+  let totalScanned = 0;
+
+  for (const { name: featureName } of scannedFeatures) {
+    let memories: MemoryFileWithMeta[];
+    try {
+      memories = memoryAdapter.listWithMeta(featureName);
+    } catch {
+      continue; // Feature may have been deleted or corrupted
+    }
+
+    const execMemories = memories.filter(m => isExecutionMemory(m.name));
+    totalScanned += execMemories.length;
+
+    for (const mem of execMemories) {
+      const parsed = parseExecMemory(mem.content);
+      const score = scoreOverlap(parsed.tags, planKeywords);
+
+      if (score >= OVERLAP_THRESHOLD) {
+        scoredMemories.push({
+          featureName,
+          memoryName: mem.name,
+          parsed,
+          score,
+        });
+      }
+    }
+  }
+
+  // Group by tag clusters and compute aggregates
+  const clusters = groupByTagCluster(scoredMemories);
+  const pitfalls: HistoricalPitfall[] = [];
+
+  for (const [clusterKey, memories] of clusters) {
+    const uniqueFeatures = [...new Set(memories.map(m => m.featureName))];
+    if (uniqueFeatures.length < 2) continue; // Need cross-feature signal
+
+    const revisions = memories.map(m => m.parsed.revisionCount);
+    const avgRevisions = revisions.reduce((a, b) => a + b, 0) / revisions.length;
+
+    const verificationFailRate = memories.filter(m => !m.parsed.verificationPassed).length / memories.length;
+
+    const durations = memories
+      .map(m => m.parsed.duration)
+      .filter((d): d is string => d !== undefined)
+      .map(parseDurationMinutes)
+      .filter((d): d is number => d !== undefined);
+    const avgDuration = durations.length > 0
+      ? durations.reduce((a, b) => a + b, 0) / durations.length
+      : undefined;
+
+    const tags = clusterKey.split('+');
+    const sourceTasks = memories.map(m => m.memoryName);
+
+    if (avgRevisions > 0.5) {
+      pitfalls.push({
+        pattern: `tasks involving [${tags.join(', ')}]`,
+        metric: `${avgRevisions.toFixed(1)}x average revisions across ${uniqueFeatures.length} features`,
+        sourceFeatures: uniqueFeatures,
+        sourceTasks,
+        severity: 'high',
+      });
+    } else if (verificationFailRate > 0.2) {
+      pitfalls.push({
+        pattern: `tasks involving [${tags.join(', ')}]`,
+        metric: `${(verificationFailRate * 100).toFixed(0)}% verification failure rate across ${uniqueFeatures.length} features`,
+        sourceFeatures: uniqueFeatures,
+        sourceTasks,
+        severity: 'medium',
+      });
+    } else if (avgDuration !== undefined && avgDuration > 120) {
+      pitfalls.push({
+        pattern: `tasks involving [${tags.join(', ')}]`,
+        metric: `${formatMinutes(avgDuration)} average duration across ${uniqueFeatures.length} features`,
+        sourceFeatures: uniqueFeatures,
+        sourceTasks,
+        severity: 'low',
+      });
+    }
+  }
+
+  // Sort by severity (high first)
+  const severityOrder = { high: 0, medium: 1, low: 2 };
+  pitfalls.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+  return {
+    pitfalls,
+    totalExecMemoriesScanned: totalScanned,
+    featuresScanned: scannedFeatures.length,
+  };
+}
+
+function parseDurationMinutes(duration: string): number | undefined {
+  const hoursMatch = duration.match(/(\d+)h/);
+  const minutesMatch = duration.match(/(\d+)m/);
+  const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+  const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+  const total = hours * 60 + minutes;
+  return total > 0 ? total : undefined;
+}
+
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${Math.round(minutes)}m`;
+  const hours = Math.floor(minutes / 60);
+  const rem = Math.round(minutes % 60);
+  return rem > 0 ? `${hours}h${rem}m` : `${hours}h`;
+}
