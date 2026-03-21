@@ -4,6 +4,8 @@
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
+import type { TaskWithDeps } from './task-dependency-graph.ts';
+import { extractSourceTask, scoreDependencyProximity } from './dependency-proximity.ts';
 
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'will', 'are',
@@ -129,6 +131,8 @@ export function scoreRelevance(
   planSection: string | null,
   featureCreatedAt?: string,
   precomputed?: TaskContext,
+  allTasks?: TaskWithDeps[],
+  targetTaskFolder?: string,
 ): number {
   const ctx = precomputed ?? buildTaskContext(task, planSection);
   const tags = memory.metadata.tags ?? [];
@@ -143,11 +147,20 @@ export function scoreRelevance(
     memory.bodyContent, memory.name, ctx.taskKeywords,
   );
 
-  return (
+  let score =
     WEIGHTS.tagOverlap * tagScore +
     WEIGHTS.categoryMatch * categoryScore +
     WEIGHTS.priority * priorityScore +
     WEIGHTS.recency * recencyScore +
-    WEIGHTS.keywordOverlap * keywordScore
-  );
+    WEIGHTS.keywordOverlap * keywordScore;
+
+  // Additive proximity bonus for execution memories from upstream tasks
+  if (allTasks && targetTaskFolder) {
+    const source = extractSourceTask(memory.name);
+    if (source && allTasks.some(t => t.folder === source)) {
+      score = Math.min(1.0, score + scoreDependencyProximity(source, targetTaskFolder, allTasks));
+    }
+  }
+
+  return score;
 }

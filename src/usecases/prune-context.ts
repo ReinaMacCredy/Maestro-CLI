@@ -4,6 +4,7 @@
  */
 
 import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
+import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
@@ -20,6 +21,7 @@ export interface PruneContextParams {
   workerRules: string;
   dcpConfig?: HiveConfig['dcp'];
   featureCreatedAt?: string;
+  allTasks?: TaskWithDeps[];
 }
 
 export interface PruneContextResult {
@@ -46,7 +48,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
   const {
     taskFolder, task, spec, memories, completedTasks = [],
     richContext, graphContext, revisionContext = '', workerRules,
-    dcpConfig, featureCreatedAt,
+    dcpConfig, featureCreatedAt, allTasks,
   } = params;
 
   const cfg = resolveDcpConfig(dcpConfig);
@@ -79,7 +81,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     const selected = selectMemories(
       memories, task, planSection,
       cfg.memoryBudgetBytes, cfg.relevanceThreshold,
-      featureCreatedAt,
+      featureCreatedAt, allTasks,
     );
 
     memorySection = selected.memories.length > 0

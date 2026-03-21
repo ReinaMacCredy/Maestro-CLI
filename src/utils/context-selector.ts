@@ -4,6 +4,7 @@
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
+import type { TaskWithDeps } from './task-dependency-graph.ts';
 import { scoreRelevance, buildTaskContext } from './relevance.ts';
 
 export interface SelectedContext {
@@ -28,6 +29,7 @@ export function selectMemories(
   budgetBytes: number,
   relevanceThreshold: number = 0.1,
   featureCreatedAt?: string,
+  allTasks?: TaskWithDeps[],
 ): SelectedContext {
   if (memories.length === 0) {
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: 0, scores: [] };
@@ -39,16 +41,16 @@ export function selectMemories(
   if (budgetBytes <= 0) {
     const scores = memories.map(m => ({
       name: m.name,
-      score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx),
+      score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, allTasks, task.folder),
       included: false,
     }));
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: memories.length, scores };
   }
 
-  // Score all memories
+  // Score all memories (proximity bonus applied for exec-* memories when allTasks provided)
   const scored = memories.map(m => ({
     memory: m,
-    score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx),
+    score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, allTasks, task.folder),
     bodyBytes: Buffer.byteLength(m.bodyContent),
   }));
 

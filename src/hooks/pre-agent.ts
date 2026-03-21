@@ -188,6 +188,11 @@ async function main(): Promise<void> {
     const featureInfo = services.featureAdapter.get(featureName);
     const featureCreatedAt = featureInfo?.createdAt;
 
+    // Convert task list to TaskWithDeps for dependency-proximity scoring
+    const taskDeps = allTasks.map(t => ({
+      folder: t.folder, status: t.status, dependsOn: t.dependsOn,
+    }));
+
     // Prune and assemble
     const { injection, metrics } = pruneContext({
       featureName, taskFolder, task, spec,
@@ -195,6 +200,7 @@ async function main(): Promise<void> {
       richContext, graphContext, revisionContext,
       workerRules: WORKER_RULES,
       dcpConfig, featureCreatedAt,
+      allTasks: taskDeps,
     });
 
     // Log DCP metrics
