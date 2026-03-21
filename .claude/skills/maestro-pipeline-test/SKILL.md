@@ -1,11 +1,11 @@
 ---
 name: maestro-pipeline-test
-description: Run a full end-to-end smoke test of all 30 maestro MCP tools AND the CLI commands in a single session. Use this skill when testing the maestro pipeline, verifying tool installation, validating a maestro setup, or checking that all tool groups work (feature, plan, task, memory, meta, graph, handoff, search). Trigger on "test maestro", "smoke test", "pipeline test", "verify all tools", "run pipeline test", or whenever the user wants to confirm maestro is functioning correctly -- even if they just say "does it work?" in a maestro context.
+description: Run a full end-to-end smoke test of all 34 maestro MCP tools AND the CLI commands in a single session. Use this skill when testing the maestro pipeline, verifying tool installation, validating a maestro setup, or checking that all tool groups work (feature, plan, task, memory, meta, graph, handoff, search). Trigger on "test maestro", "smoke test", "pipeline test", "verify all tools", "run pipeline test", or whenever the user wants to confirm maestro is functioning correctly -- even if they just say "does it work?" in a maestro context.
 ---
 
 # Maestro Pipeline Smoke Test
 
-This skill exercises all 30 maestro MCP tools AND the CLI commands in a single end-to-end run. It creates a throwaway feature, walks through every pipeline stage, tests every tool group via both MCP and CLI, and produces a pass/fail report.
+This skill exercises all 34 maestro MCP tools AND the CLI commands in a single end-to-end run. It creates a throwaway feature, walks through every pipeline stage, tests every tool group via both MCP and CLI, and produces a pass/fail report.
 
 The test is designed to be fast and non-destructive. The smoke-test feature it creates can be cleaned up afterward.
 
@@ -60,7 +60,7 @@ Use this exact plan content -- it has the required `## Discovery` section and ge
 This is a pipeline smoke test to verify all maestro tools function correctly end-to-end.
 The test creates a minimal feature with two tasks: one creates a test artifact file,
 the other depends on the first and verifies it exists. This exercises dependency ordering,
-task state transitions, and the full feature lifecycle. All 30 MCP tools are called in sequence.
+task state transitions, and the full feature lifecycle. All 34 MCP tools are called in sequence.
 
 ## Implementation
 

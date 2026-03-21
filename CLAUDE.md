@@ -10,8 +10,8 @@ Load recommended skills with `maestro_skill('<name>')`.
 maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
-- **4 task states**: pending, claimed, done, blocked
-- **30 MCP tools** across 8 groups
+- **6 task states**: pending, claimed, done, blocked, review, revision
+- **34 MCP tools** across 8 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Pipeline**: discovery --> research --> planning --> approval --> execution --> done (stages are skippable)
@@ -55,15 +55,15 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (30)
+## MCP Tools (34)
 
 | Group | Tools |
 |-------|-------|
 | Feature (3) | `feature_create`, `feature_list`, `feature_complete` |
 | Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
-| Task (7) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_block`, `task_unblock`, `task_list` |
+| Task (9) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` |
 | Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
-| Meta (4) | `status`, `skill`, `ping`, `init` |
+| Meta (6) | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` |
 | Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
 | Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
 | Search (2) | `search_sessions`, `search_related` |

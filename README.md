@@ -84,11 +84,11 @@ Stages are skippable. Hooks inject pipeline context automatically.
 
 ### Task Model
 
-4 states: `pending` --> `claimed` --> `done` | `blocked`
+6 states: `pending` --> `claimed` --> `done` | `blocked` | `review` --> `revision`
 
 Stale claims expire after a configurable timeout (default 120 min) and auto-reset to `pending` on `task-next`.
 
-## MCP Tools (33)
+## MCP Tools (34)
 
 All tools are prefixed `maestro_` in MCP (e.g., `maestro_task_claim`).
 
@@ -98,7 +98,7 @@ All tools are prefixed `maestro_` in MCP (e.g., `maestro_task_claim`).
 | Plan | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` | 4 |
 | Task | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` | 9 |
 | Memory | `memory_write`, `memory_read`, `memory_list`, `memory_promote` | 4 |
-| Meta | `status`, `skill`, `ping`, `init`, `dcp_preview` | 5 |
+| Meta | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` | 6 |
 | Graph | `graph_insights`, `graph_next`, `graph_plan` | 3 |
 | Handoff | `handoff_send`, `handoff_receive`, `handoff_ack` | 3 |
 | Search | `search_sessions`, `search_related` | 2 |
