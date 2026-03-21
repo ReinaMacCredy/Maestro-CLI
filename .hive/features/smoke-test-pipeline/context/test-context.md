@@ -1,0 +1,1 @@
+This is a test context file created during the smoke test to verify context_write works.

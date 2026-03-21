@@ -32,6 +32,11 @@ export default defineCommand({
         if (r.removed.length > 0) lines.push(`  removed: ${r.removed.join(', ')}`);
         if (r.kept.length > 0) lines.push(`  kept: ${r.kept.join(', ')}`);
         if (r.manual.length > 0) lines.push(`  manual (untouched): ${r.manual.join(', ')}`);
+        if (r.warnings && r.warnings.length > 0) {
+          for (const w of r.warnings) {
+            lines.push(`  [!] ${w}`);
+          }
+        }
         return lines.join('\n');
       });
     } catch (err) {

@@ -11,23 +11,39 @@
 
 ## Phase 1: {phase title}
 
-### Task 1.1: {task title}
-- [ ] Write failing tests for {task}
-- [ ] Implement {task} to pass tests
-- [ ] Refactor {task} (if needed)
+### 1. {task title}
 
-### Task 1.2: {task title}
-- [ ] Write failing tests for {task}
-- [ ] Implement {task} to pass tests
-- [ ] Refactor {task} (if needed)
+{Description -- what this task does and why}
 
-### Phase 1 Completion Verification
-- [ ] Run test suite for Phase 1 scope
-- [ ] Verify coverage >= {threshold}%
-- [ ] Manual verification: {step-by-step check}
+#### Design
+{Approach, architecture decisions, key implementation details}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
+
+### 2. {task title}
+[depends: 1]
+
+{Description}
+
+#### Design
+{Approach}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
 
 ## Phase 2: {phase title}
-...
+
+### 3. {task title}
+[depends: 1, 2]
+
+{Description}
+
+#### Design
+{Approach}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
 ```
 
 ---

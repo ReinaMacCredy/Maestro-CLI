@@ -110,7 +110,7 @@ function buildBeadDescription(
  * Looks for ## Design, ## Architecture, ## Approach subsections or
  * paragraphs mentioning design decisions.
  */
-function extractDesignNotes(planSection: string): string | undefined {
+export function extractDesignNotes(planSection: string): string | undefined {
   if (!planSection) return undefined;
 
   const designMatch = planSection.match(DESIGN_SECTION_RE);
@@ -127,7 +127,7 @@ function extractDesignNotes(planSection: string): string | undefined {
  * Looks for ## Acceptance Criteria, ## AC, ## Done When subsections,
  * or checklist-style items.
  */
-function extractAcceptanceCriteria(planSection: string): string | undefined {
+export function extractAcceptanceCriteria(planSection: string): string | undefined {
   if (!planSection) return undefined;
 
   const acMatch = planSection.match(AC_SECTION_RE);

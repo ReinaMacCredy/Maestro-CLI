@@ -93,7 +93,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       openQuestions: [],
       nextSteps: [],
       criticalContext: '',
-      cassPointer: `Search CASS for prior work: cass search "${task?.name ?? taskId}" --robot --limit 5`,
+      cassPointer: `Search prior sessions: maestro search-sessions --query "${task?.name ?? taskId}"`,
     };
   }
 
@@ -165,7 +165,8 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   async sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult> {
-    const body = this.formatHandoffMessage(handoff);
+    const taskBackend = this.configAdapter.get().taskBackend ?? 'fs';
+    const body = this.formatHandoffMessage(handoff, feature, taskBackend);
 
     // 1. Write to local file (primary artifact)
     const filePath = getHandoffPath(this.projectRoot, feature, handoff.beadId);
@@ -186,12 +187,12 @@ export class AgentMailHandoffAdapter implements HandoffPort {
         const result = await this.rpc('send_message', {
           project_key: this.projectRoot,
           sender_name: id.agentName,
-          to: [],
+          to: targetAgent ? [targetAgent] : [],
           subject,
           body_md: body,
           thread_id: threadId,
           importance: 'high',
-          broadcast: true,
+          broadcast: !targetAgent,
         });
         agentMailSent = !result.isError;
         if (agentMailSent && result.text) {
@@ -209,12 +210,18 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     return { filePath, threadId, agentMailSent };
   }
 
-  async receiveHandoffs(feature: string | undefined, _agentId?: string): Promise<HandoffDocument[]> {
+  async receiveHandoffs(feature: string | undefined, agentId?: string): Promise<HandoffDocument[]> {
     const handoffs: HandoffDocument[] = [];
+    const seenBeadIds = new Set<string>();
 
     if (!feature) return handoffs;
 
-    // Read local handoff files
+    // Kick off identity resolution concurrently with the file scan
+    const identityPromise = agentId
+      ? this.ensureIdentity().catch(() => undefined)
+      : Promise.resolve(undefined);
+
+    // 1. Read local handoff files (primary source, seeds dedup set)
     const handoffsDir = getHandoffsPath(this.projectRoot, feature);
     try {
       const files = fs.readdirSync(handoffsDir).filter(f => f.endsWith('.md'));
@@ -222,6 +229,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
         const content = readText(path.join(handoffsDir, file));
         if (!content) continue;
         const beadId = file.replace(/\.md$/, '');
+        seenBeadIds.add(beadId);
         handoffs.push({
           beadId,
           beadState: {
@@ -238,6 +246,40 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       }
     } catch {
       // No handoffs directory yet
+    }
+
+    // 2. Fetch Agent Mail inbox (best-effort, deduped against local)
+    if (agentId) {
+      try {
+        const id = await identityPromise;
+        if (id) {
+          const result = await this.rpc('fetch_inbox', {
+            project_key: this.projectRoot,
+            agent_name: agentId,
+          });
+          if (!result.isError && result.text) {
+            const parsed = JSON.parse(result.text);
+            const messages = Array.isArray(parsed) ? parsed : parsed.messages ?? [];
+            for (const msg of messages) {
+              const beadMatch = msg.subject?.match(/^\[([^\]]+)\]\s*Handoff/);
+              const beadId = beadMatch?.[1] ?? `mail-${msg.id}`;
+              if (seenBeadIds.has(beadId)) continue;
+              seenBeadIds.add(beadId);
+              handoffs.push({
+                beadId,
+                beadState: { title: msg.subject ?? 'Unknown', status: 'unknown' },
+                decisions: [],
+                modifiedFiles: [],
+                blockers: [],
+                openQuestions: [],
+                nextSteps: [],
+                criticalContext: msg.body_md ?? '',
+                agentMailThread: String(msg.thread_id ?? msg.id),
+              });
+            }
+          }
+        }
+      } catch { /* Agent Mail unreachable -- local files still returned */ }
     }
 
     return handoffs;
@@ -275,7 +317,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     }
   }
 
-  private formatHandoffMessage(handoff: HandoffDocument): string {
+  private formatHandoffMessage(handoff: HandoffDocument, feature: string, taskBackend: string): string {
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const sections: string[] = [];
 
@@ -283,7 +325,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     sections.push('');
 
     sections.push('### Current Task State');
-    sections.push(`Bead: \`${handoff.beadId}\` | Status: ${handoff.beadState.status}`);
+    sections.push(`Task: \`${handoff.beadId}\` | Status: ${handoff.beadState.status}`);
     sections.push(`Title: ${handoff.beadState.title}`);
     sections.push('');
 
@@ -343,18 +385,19 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       sections.push('');
     }
 
-    // CASS pointer for session continuity
-    if (handoff.cassPointer) {
-      sections.push('### Prior Context');
-      sections.push(handoff.cassPointer);
-      sections.push('');
-    }
-
     // Handoff instructions for receiving agent
     sections.push('### Handoff Context (for next session)');
-    sections.push(`1. Read this handoff file for full context on bead \`${handoff.beadId}\`.`);
-    sections.push(`2. Run: \`br show ${handoff.beadId} --json\` for current bead state.`);
-    sections.push(`3. ${handoff.cassPointer ?? 'Search CASS for prior work on this task.'}`);
+    sections.push(`1. Read this handoff file for full context on task \`${handoff.beadId}\`.`);
+    if (taskBackend === 'br') {
+      sections.push(`2. Run: \`br show ${handoff.beadId} --json\` for current bead state.`);
+    } else {
+      sections.push(`2. Run: \`maestro task-info --feature ${feature} --task ${handoff.beadId}\` for current task state.`);
+    }
+    if (handoff.cassPointer) {
+      sections.push(`3. ${handoff.cassPointer}`);
+    } else {
+      sections.push(`3. Run: \`maestro search-related --task ${handoff.beadId}\` for related context.`);
+    }
     sections.push('');
 
     return sections.join('\n');

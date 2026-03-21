@@ -25,10 +25,21 @@ export default defineCommand({
       type: 'string',
       description: 'Read plan content from file',
     },
+    scaffold: {
+      type: 'boolean',
+      description: 'Write a plan template scaffold instead of real content',
+      default: false,
+    },
   },
   async run({ args }) {
     try {
       const services = getServices();
+
+      if (args.scaffold) {
+        const result = await writePlan(services, args.feature, '', { scaffold: true });
+        output(result, (r) => `[ok] plan scaffold written for '${r.feature}' -- edit ${r.path} then run plan-write with content`);
+        return;
+      }
 
       let content = args.content;
       if (!content && args.file) {
@@ -36,7 +47,7 @@ export default defineCommand({
       }
       if (!content) {
         throw new MaestroError('No content provided', [
-          'Pass --content "..." or --file path/to/plan.md',
+          'Pass --content "..." or --file path/to/plan.md or --scaffold',
         ]);
       }
 

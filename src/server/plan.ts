@@ -16,17 +16,24 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
     {
       description:
         'Write or update the plan for a feature. Plan must include a ## Discovery section (min 100 chars). ' +
-        'Also include ## Non-Goals and ## Ghost Diffs sections.',
+        'Also include ## Non-Goals and ## Ghost Diffs sections. ' +
+        'Pass scaffold: true to write a plan template instead of real content.',
       inputSchema: {
         feature: featureParam(),
-        content: z.string().describe('Full plan content in markdown'),
+        content: z.string().optional().describe('Full plan content in markdown (not required when scaffold is true)'),
+        scaffold: z.boolean().optional().default(false).describe('Write a plan template scaffold instead of real content'),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const result = await writePlan(services, feature, input.content);
+      if (!input.scaffold && !input.content) {
+        throw new MaestroError('content is required when scaffold is false', [
+          'Provide content or set scaffold: true',
+        ]);
+      }
+      const result = await writePlan(services, feature, input.content ?? '', { scaffold: input.scaffold });
       return respond({ ...result });
     }),
   );

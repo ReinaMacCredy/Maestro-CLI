@@ -11,32 +11,49 @@ Enhanced plan template with FR traceability. Same TDD structure as a standard fe
 
 ## Phase 1: {phase title}
 
-### Task 1.1: {task title}
+### 1. {task title}
 **Addresses:** FR-1, FR-3
-- [ ] Write failing tests for {task}
-- [ ] Implement {task} to pass tests
-- [ ] Refactor {task} (if needed)
 
-### Task 1.2: {task title}
+{Description -- what this task does and why}
+
+#### Design
+{Approach, architecture decisions, key implementation details}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
+
+### 2. {task title}
+[depends: 1]
 **Addresses:** FR-2
-- [ ] Write failing tests for {task}
-- [ ] Implement {task} to pass tests
-- [ ] Refactor {task} (if needed)
 
-### Phase 1 Completion Verification
-- [ ] Run test suite for Phase 1 scope
-- [ ] Verify coverage >= {threshold}%
-- [ ] Manual verification: {step-by-step check}
+{Description}
+
+#### Design
+{Approach}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
 
 ## Phase 2: {phase title}
-...
+
+### 3. {task title}
+[depends: 1, 2]
+**Addresses:** FR-3
+
+{Description}
+
+#### Design
+{Approach}
+
+#### Acceptance Criteria
+- [ ] {verifiable condition}
 
 ## Requirements Coverage Matrix
 
 | FR | Description | Task(s) | Status |
 |----|------------|---------|--------|
-| FR-1 | {description} | 1.1, 2.3 | Covered |
-| FR-2 | {description} | 1.2 | Covered |
+| FR-1 | {description} | 1, 3 | Covered |
+| FR-2 | {description} | 2 | Covered |
 | FR-3 | {description} | -- | [!] ORPHANED |
 ```
 

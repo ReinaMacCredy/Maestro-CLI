@@ -68,11 +68,11 @@ export function extractPlanSection(
   if (!planContent) return null;
 
   const escapedTitle = task.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const titleRegex = new RegExp(`###\\s*\\d+\\.\\s*${escapedTitle}[\\s\\S]*?(?=###|$)`, 'i');
+  const titleRegex = new RegExp(`###\\s*\\d+\\.\\s*${escapedTitle}[\\s\\S]*?(?=\\n###[^#]|$)`, 'i');
   let taskMatch = planContent.match(titleRegex);
 
   if (!taskMatch && task.order > 0) {
-    const orderRegex = new RegExp(`###\\s*${task.order}\\.\\s*[^\\n]+[\\s\\S]*?(?=###|$)`, 'i');
+    const orderRegex = new RegExp(`###\\s*${task.order}\\.\\s*[^\\n]+[\\s\\S]*?(?=\\n###[^#]|$)`, 'i');
     taskMatch = planContent.match(orderRegex);
   }
 
