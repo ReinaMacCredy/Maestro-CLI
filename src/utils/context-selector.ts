@@ -5,7 +5,8 @@
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
 import type { TaskWithDeps } from './task-dependency-graph.ts';
-import { scoreRelevance, buildTaskContext } from './relevance.ts';
+import { scoreRelevance, buildTaskContext, type ProximityContext } from './relevance.ts';
+import { buildDownstreamMap } from './dependency-proximity.ts';
 
 export interface SelectedContext {
   memories: MemoryFileWithMeta[];  // ordered by score desc, within budget
@@ -35,22 +36,23 @@ export function selectMemories(
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: 0, scores: [] };
   }
 
-  // Pre-compute task context once for all memories
   const taskCtx = buildTaskContext(task, planSection);
+  const proximityCtx: ProximityContext | undefined = allTasks
+    ? { downstreamMap: buildDownstreamMap(allTasks), taskFolders: new Set(allTasks.map(t => t.folder)) }
+    : undefined;
 
   if (budgetBytes <= 0) {
     const scores = memories.map(m => ({
       name: m.name,
-      score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, allTasks, task.folder),
+      score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, proximityCtx),
       included: false,
     }));
     return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: memories.length, scores };
   }
 
-  // Score all memories (proximity bonus applied for exec-* memories when allTasks provided)
   const scored = memories.map(m => ({
     memory: m,
-    score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, allTasks, task.folder),
+    score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, proximityCtx),
     bodyBytes: Buffer.byteLength(m.bodyContent),
   }));
 

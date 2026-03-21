@@ -4,7 +4,6 @@
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
-import type { TaskWithDeps } from './task-dependency-graph.ts';
 import { extractSourceTask, scoreDependencyProximity } from './dependency-proximity.ts';
 
 const STOPWORDS = new Set([
@@ -114,6 +113,12 @@ export interface TaskContext {
   taskKeywords: Set<string>;
 }
 
+/** Pre-computed proximity context for dependency-based scoring. */
+export interface ProximityContext {
+  downstreamMap: Map<string, string[]>;
+  taskFolders: Set<string>;
+}
+
 /** Build task context once, pass to scoreRelevance for each memory. */
 export function buildTaskContext(task: TaskInfo, planSection: string | null): TaskContext {
   const tagContext = [task.name, task.folder, planSection ?? ''].join(' ');
@@ -131,8 +136,7 @@ export function scoreRelevance(
   planSection: string | null,
   featureCreatedAt?: string,
   precomputed?: TaskContext,
-  allTasks?: TaskWithDeps[],
-  targetTaskFolder?: string,
+  proximityCtx?: ProximityContext,
 ): number {
   const ctx = precomputed ?? buildTaskContext(task, planSection);
   const tags = memory.metadata.tags ?? [];
@@ -142,7 +146,7 @@ export function scoreRelevance(
   const priorityScore = scorePriority(memory.metadata.priority);
   const recencyScore = featureCreatedAt
     ? scoreRecency(memory.updatedAt, featureCreatedAt)
-    : 0.5; // default when feature creation time unknown
+    : 0.5;
   const keywordScore = scoreKeywordOverlap(
     memory.bodyContent, memory.name, ctx.taskKeywords,
   );
@@ -154,11 +158,10 @@ export function scoreRelevance(
     WEIGHTS.recency * recencyScore +
     WEIGHTS.keywordOverlap * keywordScore;
 
-  // Additive proximity bonus for execution memories from upstream tasks
-  if (allTasks && targetTaskFolder) {
+  if (proximityCtx) {
     const source = extractSourceTask(memory.name);
-    if (source && allTasks.some(t => t.folder === source)) {
-      score = Math.min(1.0, score + scoreDependencyProximity(source, targetTaskFolder, allTasks));
+    if (source && proximityCtx.taskFolders.has(source)) {
+      score = Math.min(1.0, score + scoreDependencyProximity(source, task.folder, proximityCtx.downstreamMap));
     }
   }
 

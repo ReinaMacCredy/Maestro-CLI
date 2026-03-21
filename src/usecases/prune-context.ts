@@ -6,6 +6,7 @@
 import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { selectMemories } from '../utils/context-selector.ts';
+import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
 export interface PruneContextParams {
@@ -79,7 +80,6 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     memoryBytes = Buffer.byteLength(memorySection);
     scores = memories.map(m => ({ name: m.name, score: 0, included: true }));
   } else {
-    // DCP: score and select (single pool -- proximity scoring handles balance)
     const planSection = task.planTitle ?? null;
     const selected = selectMemories(
       memories, task, planSection,
@@ -87,9 +87,8 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       featureCreatedAt, allTasks,
     );
 
-    // Partition selected memories for rendering: execution vs user
-    const execMemories = selected.memories.filter(m => m.name.startsWith('exec-'));
-    const userMemories = selected.memories.filter(m => !m.name.startsWith('exec-'));
+    const execMemories = selected.memories.filter(m => isExecutionMemory(m.name));
+    const userMemories = selected.memories.filter(m => !isExecutionMemory(m.name));
 
     const execSection = execMemories.length > 0
       ? '\n## Upstream Context (from completed tasks)\n\n' + execMemories.map(m => `### ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n')

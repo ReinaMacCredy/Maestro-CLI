@@ -4,8 +4,17 @@
  */
 
 import type { VerificationReport } from '../ports/verification.ts';
+import type { MemoryPort } from '../ports/memory.ts';
+import type { TaskInfo } from '../types.ts';
 import { extractKeywords } from './relevance.ts';
 import { prependMetadataFrontmatter } from './frontmatter.ts';
+import { getChangedFilesSince } from './git.ts';
+
+export const EXEC_MEMORY_PREFIX = 'exec-';
+
+export function isExecutionMemory(name: string): boolean {
+  return name.startsWith(EXEC_MEMORY_PREFIX);
+}
 
 export interface ExecutionMemoryParams {
   taskFolder: string;
@@ -157,8 +166,46 @@ export function buildExecutionMemory(params: ExecutionMemoryParams): ExecutionMe
   });
 
   return {
-    fileName: `exec-${taskFolder}`,
+    fileName: `${EXEC_MEMORY_PREFIX}${taskFolder}`,
     content,
     tags,
   };
+}
+
+export interface WriteExecutionMemoryParams {
+  memoryAdapter: MemoryPort | undefined;
+  featureName: string;
+  taskFolder: string;
+  task: TaskInfo;
+  summary: string;
+  projectRoot: string;
+  verificationReport: VerificationReport | null;
+  specContent?: string;
+  featureCreatedAt?: string;
+}
+
+/** Write execution memory before task transitions to done. Best-effort, never throws. */
+export async function writeExecutionMemory(params: WriteExecutionMemoryParams): Promise<void> {
+  const { memoryAdapter, featureName, taskFolder, task, summary,
+    projectRoot, verificationReport, specContent, featureCreatedAt } = params;
+  if (!memoryAdapter) return;
+  try {
+    const sinceISO = task.claimedAt ?? featureCreatedAt;
+    const changedFiles = await getChangedFilesSince(projectRoot, sinceISO);
+    const result = buildExecutionMemory({
+      taskFolder,
+      taskName: task.name ?? taskFolder,
+      summary,
+      verificationReport,
+      claimedAt: task.claimedAt,
+      completedAt: new Date().toISOString(),
+      revisionCount: task.revisionCount,
+      dependsOn: task.dependsOn,
+      changedFiles,
+      specContent,
+    });
+    memoryAdapter.write(featureName, result.fileName, result.content);
+  } catch {
+    // Best-effort -- never block task completion
+  }
 }

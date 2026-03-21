@@ -72,80 +72,62 @@ describe('buildDownstreamMap', () => {
 
 describe('scoreDependencyProximity', () => {
   test('direct downstream (1 hop) returns 0.35', () => {
-    const tasks = makeTasks(
-      ['01-first', []],
-      ['02-second', ['01-first']],
-    );
-    expect(scoreDependencyProximity('01-first', '02-second', tasks)).toBe(0.35);
+    const tasks = makeTasks(['01-first', []], ['02-second', ['01-first']]);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0.35);
   });
 
   test('transitive 2-hop returns 0.15', () => {
-    const tasks = makeTasks(
-      ['01-first', []],
-      ['02-second', ['01-first']],
-      ['03-third', ['02-second']],
-    );
-    expect(scoreDependencyProximity('01-first', '03-third', tasks)).toBe(0.15);
+    const tasks = makeTasks(['01-first', []], ['02-second', ['01-first']], ['03-third', ['02-second']]);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '03-third', ds)).toBe(0.15);
   });
 
   test('transitive 3-hop returns 0.05', () => {
-    const tasks = makeTasks(
-      ['01-first', []],
-      ['02-second', ['01-first']],
-      ['03-third', ['02-second']],
-      ['04-fourth', ['03-third']],
-    );
-    expect(scoreDependencyProximity('01-first', '04-fourth', tasks)).toBe(0.05);
+    const tasks = makeTasks(['01-first', []], ['02-second', ['01-first']], ['03-third', ['02-second']], ['04-fourth', ['03-third']]);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '04-fourth', ds)).toBe(0.05);
   });
 
   test('reverse direction (target upstream of source) returns 0', () => {
-    const tasks = makeTasks(
-      ['01-first', []],
-      ['02-second', ['01-first']],
-    );
-    // Source is 02 (downstream), target is 01 (upstream) -- not reachable downstream
-    expect(scoreDependencyProximity('02-second', '01-first', tasks)).toBe(0);
+    const tasks = makeTasks(['01-first', []], ['02-second', ['01-first']]);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('02-second', '01-first', ds)).toBe(0);
   });
 
   test('same task returns 0', () => {
     const tasks = makeTasks(['01-first', []]);
-    expect(scoreDependencyProximity('01-first', '01-first', tasks)).toBe(0);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '01-first', ds)).toBe(0);
   });
 
   test('no relationship (explicit no-deps) returns 0', () => {
-    // Explicit empty deps = no dependency relationship
     const tasks: TaskWithDeps[] = [
       { folder: '01-first', status: 'done', dependsOn: [] },
       { folder: '02-second', status: 'done', dependsOn: [] },
     ];
-    expect(scoreDependencyProximity('01-first', '02-second', tasks)).toBe(0);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0);
   });
 
   test('empty task list returns 0', () => {
-    expect(scoreDependencyProximity('01-first', '02-second', [])).toBe(0);
+    const ds = buildDownstreamMap([]);
+    expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0);
   });
 
   test('multiple paths takes shortest hop count', () => {
-    // T1 -> T2 -> T4 (2 hops) and T1 -> T3 -> T4 (2 hops) and T1 -> T4 (1 hop direct)
     const tasks = makeTasks(
-      ['01-root', []],
-      ['02-left', ['01-root']],
-      ['03-right', ['01-root']],
-      ['04-merge', ['02-left', '03-right', '01-root']], // also directly depends on root
+      ['01-root', []], ['02-left', ['01-root']], ['03-right', ['01-root']],
+      ['04-merge', ['02-left', '03-right', '01-root']],
     );
-    // Direct dependency (1 hop) should win
-    expect(scoreDependencyProximity('01-root', '04-merge', tasks)).toBe(0.35);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-root', '04-merge', ds)).toBe(0.35);
   });
 
   test('implicit sequential dependencies (no explicit dependsOn)', () => {
-    // Tasks without explicit deps: buildEffectiveDependencies infers sequential order
-    const tasks = makeTasks(
-      ['01-first', null],  // null = no explicit dependsOn, infer from order
-      ['02-second', null], // inferred: depends on 01
-      ['03-third', null],  // inferred: depends on 02
-    );
-    // With implicit deps, 01 -> 02 -> 03
-    expect(scoreDependencyProximity('01-first', '02-second', tasks)).toBe(0.35);
-    expect(scoreDependencyProximity('01-first', '03-third', tasks)).toBe(0.15);
+    const tasks = makeTasks(['01-first', null], ['02-second', null], ['03-third', null]);
+    const ds = buildDownstreamMap(tasks);
+    expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0.35);
+    expect(scoreDependencyProximity('01-first', '03-third', ds)).toBe(0.15);
   });
 });

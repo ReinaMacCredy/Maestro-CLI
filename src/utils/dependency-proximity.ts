@@ -6,14 +6,15 @@
  */
 
 import { buildEffectiveDependencies, type TaskWithDeps } from './task-dependency-graph.ts';
+import { EXEC_MEMORY_PREFIX } from './execution-memory.ts';
 
 /**
  * Extract the source task folder from an execution memory name.
  * Returns null for non-execution memories.
  */
 export function extractSourceTask(memoryName: string): string | null {
-  if (!memoryName.startsWith('exec-')) return null;
-  return memoryName.slice('exec-'.length);
+  if (!memoryName.startsWith(EXEC_MEMORY_PREFIX)) return null;
+  return memoryName.slice(EXEC_MEMORY_PREFIX.length);
 }
 
 /**
@@ -38,7 +39,7 @@ export function buildDownstreamMap(tasks: TaskWithDeps[]): Map<string, string[]>
 
 /**
  * Score the dependency proximity from a source task to a target task.
- * BFS through the downstream adjacency map.
+ * BFS through a prebuilt downstream adjacency map.
  *
  * Returns:
  *   0.0  -- same task or unreachable
@@ -49,11 +50,9 @@ export function buildDownstreamMap(tasks: TaskWithDeps[]): Map<string, string[]>
 export function scoreDependencyProximity(
   sourceTaskFolder: string,
   targetTaskFolder: string,
-  tasks: TaskWithDeps[],
+  downstream: Map<string, string[]>,
 ): number {
   if (sourceTaskFolder === targetTaskFolder) return 0;
-
-  const downstream = buildDownstreamMap(tasks);
 
   // BFS from source through downstream edges
   const visited = new Set<string>([sourceTaskFolder]);

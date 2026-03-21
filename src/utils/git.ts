@@ -48,25 +48,24 @@ export async function getChangedFilesSince(
         // git log may fail on shallow clones or missing refs -- fall through to status
       }
 
-      // Alternative: use diff with --name-only for committed changes
-      try {
-        const diffOutput = await git.diff(['--name-only', `--diff-filter=ACDMRT`, `HEAD@{${sinceISO}}..HEAD`]);
-        for (const f of parseNameOnly(diffOutput)) files.add(f);
-      } catch {
-        // Reflog may not have the timestamp -- acceptable
+      // Fallback: reflog-based diff when git log returned nothing
+      if (files.size === 0) {
+        try {
+          const diffOutput = await git.diff(['--name-only', `--diff-filter=ACDMRT`, `HEAD@{${sinceISO}}..HEAD`]);
+          for (const f of parseNameOnly(diffOutput)) files.add(f);
+        } catch {
+          // Reflog may not have the timestamp -- acceptable
+        }
       }
     }
 
-    // Uncommitted + staged files
+    // Uncommitted + staged files (status covers both)
     const status = await git.status();
     for (const f of status.not_added) files.add(f);
     for (const f of status.modified) files.add(f);
     for (const f of status.created) files.add(f);
     for (const f of status.renamed.map(r => r.to)) files.add(f);
-    const stagedDiff = parseNameOnly(await git.diff(['--cached', '--name-only']));
-    for (const f of stagedDiff) files.add(f);
-    const unstaged = parseNameOnly(await git.diff(['--name-only']));
-    for (const f of unstaged) files.add(f);
+    for (const f of status.staged) files.add(f);
 
     return Array.from(files).filter(Boolean);
   } catch {

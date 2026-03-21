@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test';
-import { scoreRelevance } from '../../utils/relevance.ts';
+import { scoreRelevance, type ProximityContext } from '../../utils/relevance.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
+import { buildDownstreamMap } from '../../utils/dependency-proximity.ts';
 import type { MemoryFileWithMeta, TaskInfo } from '../../types.ts';
 import type { TaskWithDeps } from '../../utils/task-dependency-graph.ts';
 
@@ -35,28 +36,31 @@ function makeTaskDeps(): TaskWithDeps[] {
   ];
 }
 
+function makeProximityCtx(tasks: TaskWithDeps[]): ProximityContext {
+  return { downstreamMap: buildDownstreamMap(tasks), taskFolders: new Set(tasks.map(t => t.folder)) };
+}
+
 describe('scoreRelevance with proximity', () => {
-  test('execution memory from direct upstream scores higher than without allTasks', () => {
+  test('execution memory from direct upstream scores higher without proximity context', () => {
     const mem = makeMemory('exec-01-setup-auth');
     const task = makeTask({ folder: '02-add-endpoints' });
-    const allTasks = makeTaskDeps();
+    const pCtx = makeProximityCtx(makeTaskDeps());
 
-    const scoreWithProximity = scoreRelevance(mem, task, null, undefined, undefined, allTasks, task.folder);
+    const scoreWithProximity = scoreRelevance(mem, task, null, undefined, undefined, pCtx);
     const scoreWithoutProximity = scoreRelevance(mem, task, null);
 
     expect(scoreWithProximity).toBeGreaterThan(scoreWithoutProximity);
-    // Proximity bonus for 1-hop should be +0.35
     expect(scoreWithProximity - scoreWithoutProximity).toBeCloseTo(0.35, 2);
   });
 
-  test('non-execution memory is unaffected by allTasks', () => {
+  test('non-execution memory is unaffected by proximity context', () => {
     const mem = makeMemory('architecture-notes', {
       metadata: { tags: ['auth'], priority: 1, category: 'architecture' },
     });
     const task = makeTask();
-    const allTasks = makeTaskDeps();
+    const pCtx = makeProximityCtx(makeTaskDeps());
 
-    const scoreWith = scoreRelevance(mem, task, null, undefined, undefined, allTasks, task.folder);
+    const scoreWith = scoreRelevance(mem, task, null, undefined, undefined, pCtx);
     const scoreWithout = scoreRelevance(mem, task, null);
 
     expect(scoreWith).toBe(scoreWithout);
@@ -65,17 +69,15 @@ describe('scoreRelevance with proximity', () => {
   test('execution memory from unrelated task gets no bonus', () => {
     const mem = makeMemory('exec-99-unrelated');
     const task = makeTask({ folder: '02-add-endpoints' });
-    const allTasks = makeTaskDeps();
+    const pCtx = makeProximityCtx(makeTaskDeps());
 
-    const scoreWith = scoreRelevance(mem, task, null, undefined, undefined, allTasks, task.folder);
+    const scoreWith = scoreRelevance(mem, task, null, undefined, undefined, pCtx);
     const scoreWithout = scoreRelevance(mem, task, null);
 
-    // exec-99-unrelated is not in allTasks, so no bonus
     expect(scoreWith).toBe(scoreWithout);
   });
 
   test('score clamps at 1.0', () => {
-    // Create a memory that would score very high (perfect tags + category + priority)
     const mem = makeMemory('exec-01-setup-auth', {
       metadata: { tags: ['execution', 'auth', 'setup', 'endpoints'], priority: 0, category: 'architecture' },
       bodyContent: 'setup auth endpoints api configuration',
@@ -84,9 +86,9 @@ describe('scoreRelevance with proximity', () => {
       folder: '02-add-endpoints',
       name: 'Setup auth endpoints api configuration',
     });
-    const allTasks = makeTaskDeps();
+    const pCtx = makeProximityCtx(makeTaskDeps());
 
-    const score = scoreRelevance(mem, task, null, undefined, undefined, allTasks, task.folder);
+    const score = scoreRelevance(mem, task, null, undefined, undefined, pCtx);
     expect(score).toBeLessThanOrEqual(1.0);
   });
 });

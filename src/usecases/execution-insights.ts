@@ -7,8 +7,8 @@ import type { TaskPort } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import { buildDownstreamMap, extractSourceTask, scoreDependencyProximity } from '../utils/dependency-proximity.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
-import { parseFrontmatterRich } from '../utils/frontmatter.ts';
-import { stripFrontmatter } from '../utils/frontmatter.ts';
+import { parseFrontmatterRich, stripFrontmatter } from '../utils/frontmatter.ts';
+import { isExecutionMemory } from '../utils/execution-memory.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;
@@ -65,7 +65,7 @@ export async function executionInsights(
 ): Promise<ExecutionInsightsResult> {
   // List all memories and filter to exec-*
   const allMemories = memoryAdapter.listWithMeta(featureName);
-  const execMemories = allMemories.filter(m => m.name.startsWith('exec-'));
+  const execMemories = allMemories.filter(m => isExecutionMemory(m.name));
 
   // List all tasks
   const allTasks = await taskPort.list(featureName, { includeAll: true });
@@ -113,7 +113,7 @@ export async function executionInsights(
   for (const sourceTask of execTaskFolders) {
     for (const target of taskFolders) {
       if (target === sourceTask) continue;
-      const proximity = scoreDependencyProximity(sourceTask, target, taskDeps);
+      const proximity = scoreDependencyProximity(sourceTask, target, downstream);
       if (proximity > 0) {
         knowledgeFlow.push({ from: sourceTask, to: target, proximity });
       }
