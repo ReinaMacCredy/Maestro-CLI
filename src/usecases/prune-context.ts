@@ -32,6 +32,7 @@ export interface PruneContextResult {
     memoriesIncluded: number;
     memoriesDropped: number;
     memoriesTotal: number;
+    executionMemoriesIncluded: number;
     scores: Array<{ name: string; score: number; included: boolean }>;
   };
 }
@@ -58,6 +59,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
   let memoriesIncluded: number;
   let memoriesDropped: number;
   let memoryBytes: number;
+  let executionMemoriesIncluded: number;
   let scores: Array<{ name: string; score: number; included: boolean }>;
 
   if (!cfg.enabled) {
@@ -73,10 +75,11 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     }
     memoriesIncluded = memories.length;
     memoriesDropped = 0;
+    executionMemoriesIncluded = 0;
     memoryBytes = Buffer.byteLength(memorySection);
     scores = memories.map(m => ({ name: m.name, score: 0, included: true }));
   } else {
-    // DCP: score and select
+    // DCP: score and select (single pool -- proximity scoring handles balance)
     const planSection = task.planTitle ?? null;
     const selected = selectMemories(
       memories, task, planSection,
@@ -84,12 +87,22 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       featureCreatedAt, allTasks,
     );
 
-    memorySection = selected.memories.length > 0
-      ? '\n## Feature Memories (DCP-selected)\n\n' + selected.memories.map(m => `### ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n')
+    // Partition selected memories for rendering: execution vs user
+    const execMemories = selected.memories.filter(m => m.name.startsWith('exec-'));
+    const userMemories = selected.memories.filter(m => !m.name.startsWith('exec-'));
+
+    const execSection = execMemories.length > 0
+      ? '\n## Upstream Context (from completed tasks)\n\n' + execMemories.map(m => `### ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n')
       : '';
+    const userSection = userMemories.length > 0
+      ? '\n## Feature Memories (DCP-selected)\n\n' + userMemories.map(m => `### ${m.name}\n\n${m.bodyContent}`).join('\n\n---\n\n')
+      : '';
+    memorySection = execSection + userSection;
+
     memoriesIncluded = selected.includedCount;
     memoriesDropped = selected.droppedCount;
-    memoryBytes = selected.totalBytes;
+    executionMemoriesIncluded = execMemories.length;
+    memoryBytes = Buffer.byteLength(memorySection);
     scores = selected.scores;
   }
 
@@ -158,6 +171,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       memoriesIncluded,
       memoriesDropped,
       memoriesTotal: memories.length,
+      executionMemoriesIncluded,
       scores,
     },
   };
