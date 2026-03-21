@@ -2,12 +2,13 @@
  * Resolve taskBackend config ('auto' | 'fs' | 'br') to a concrete backend.
  */
 
+import type { HiveConfig } from '../types.ts';
 import { checkCli } from './cli-detect.ts';
-import { existsSync } from 'fs';
+import { fileExists } from '../utils/fs-io.ts';
 import { join } from 'path';
 
-export type ConfigBackend = 'fs' | 'br' | 'auto';
-export type ResolvedBackend = 'fs' | 'br';
+export type ConfigBackend = NonNullable<HiveConfig['taskBackend']>;
+export type ResolvedBackend = Exclude<ConfigBackend, 'auto'>;
 
 /**
  * Resolve 'auto' to a concrete backend. Checks both:
@@ -19,5 +20,5 @@ export function resolveTaskBackend(configured: ConfigBackend | undefined, projec
   if (configured === 'fs' || configured === 'br') return configured;
   if (!checkCli('br')) return 'fs';
   if (!projectRoot) return 'br';
-  return existsSync(join(projectRoot, '.beads')) ? 'br' : 'fs';
+  return fileExists(join(projectRoot, '.beads')) ? 'br' : 'fs';
 }

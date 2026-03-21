@@ -20,6 +20,7 @@ import { AgentsMdAdapter } from './adapters/agents-md.ts';
 import { MaestroError } from './lib/errors.ts';
 import { checkCli } from './lib/cli-detect.ts';
 import { resolveTaskBackend } from './lib/resolve-backend.ts';
+import type { ConfigBackend, ResolvedBackend } from './lib/resolve-backend.ts';
 import { FsVerificationAdapter } from './adapters/verification.ts';
 import { resolveVerificationConfig } from './utils/verification-config.ts';
 import type { TaskPort } from './ports/tasks.ts';
@@ -47,14 +48,16 @@ export interface MaestroServices {
 }
 
 let _services: MaestroServices | undefined;
-let _taskBackend: string | undefined;
+let _taskBackend: ResolvedBackend | undefined;
+let _configuredBackend: ConfigBackend | undefined;
 
 export function initServices(directory: string): MaestroServices {
   const memoryAdapter = new FsMemoryAdapter(directory);
 
   const configAdapter = new FsConfigAdapter();
   const config = configAdapter.get();
-  _taskBackend = resolveTaskBackend(config.taskBackend, directory);
+  _configuredBackend = config.taskBackend;
+  _taskBackend = resolveTaskBackend(_configuredBackend, directory);
   const taskPort: TaskPort = _taskBackend === 'br'
     ? new BrTaskAdapter(directory)
     : new FsTaskAdapter(directory, config.claimExpiresMinutes);
@@ -102,14 +105,17 @@ export function getServices(): MaestroServices {
     );
   }
 
-  // Hot-swap taskPort if taskBackend config changed mid-session
+  // Hot-swap taskPort only when the config value itself changes
   const config = _services.configAdapter.get();
-  const currentBackend = resolveTaskBackend(config.taskBackend, _services.directory);
-  if (currentBackend !== _taskBackend) {
-    _taskBackend = currentBackend;
-    _services.taskPort = currentBackend === 'br'
-      ? new BrTaskAdapter(_services.directory)
-      : new FsTaskAdapter(_services.directory, config.claimExpiresMinutes);
+  if (config.taskBackend !== _configuredBackend) {
+    _configuredBackend = config.taskBackend;
+    const currentBackend = resolveTaskBackend(config.taskBackend, _services.directory);
+    if (currentBackend !== _taskBackend) {
+      _taskBackend = currentBackend;
+      _services.taskPort = currentBackend === 'br'
+        ? new BrTaskAdapter(_services.directory)
+        : new FsTaskAdapter(_services.directory, config.claimExpiresMinutes);
+    }
   }
 
   return _services;

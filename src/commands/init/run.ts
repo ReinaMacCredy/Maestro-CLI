@@ -9,6 +9,7 @@ import { getMaestroPath } from '../../utils/paths.ts';
 import { ensureDir } from '../../utils/fs-io.ts';
 import { findProjectRoot } from '../../utils/detection.ts';
 import { resolveTaskBackend } from '../../lib/resolve-backend.ts';
+import { FsConfigAdapter } from '../../adapters/fs/config.ts';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -41,7 +42,9 @@ export default defineCommand({
         brInitialized = true;
       }
 
-      const resolvedBackend = resolveTaskBackend('auto', projectRoot);
+      const configAdapter = new FsConfigAdapter();
+      const configured = configAdapter.get().taskBackend;
+      const resolvedBackend = resolveTaskBackend(configured, projectRoot);
 
       const result = {
         projectRoot,
@@ -49,6 +52,7 @@ export default defineCommand({
         brInitialized,
         existing: !!existing,
         taskBackend: resolvedBackend,
+        wasAutoDetected: (!configured || configured === 'auto') && resolvedBackend === 'br',
       };
 
       output(result, (r) => {
@@ -56,7 +60,7 @@ export default defineCommand({
           `[ok] maestro initialized at ${r.projectRoot}`,
           `  .maestro/ ${r.existing ? 'already existed' : 'created'}`,
           `  br: ${r.brInitialized ? 'ready' : 'not available (install br for task tracking)'}`,
-          `  task backend: ${r.taskBackend}${r.taskBackend === 'br' ? ' (auto-detected)' : ''}`,
+          `  task backend: ${r.taskBackend}${r.wasAutoDetected ? ' (auto-detected)' : ''}`,
         ];
         return lines.join('\n');
       });
