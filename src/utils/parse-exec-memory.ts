@@ -1,8 +1,9 @@
 /**
  * Parse structured fields from execution memory body.
- * Shared utility -- used by execution-insights and query-historical-context.
+ * Shared utility -- used by execution-insights, query-historical-context, suggest-doctrine.
  */
 
+import type { FeaturePort } from '../ports/features.ts';
 import { parseFrontmatterRich, stripFrontmatter } from './frontmatter.ts';
 
 export interface ParsedExecMemory {
@@ -36,4 +37,42 @@ export function parseExecMemory(content: string): ParsedExecMemory {
   const duration = durationMatch?.[1]?.trim();
 
   return { summary, filesChanged, verificationPassed, tags, revisionCount, duration: duration === 'unknown' ? undefined : duration };
+}
+
+/**
+ * Group memories by their primary tag clusters (excluding "execution" tag).
+ * Returns map of cluster key (sorted tags joined with '+') -> memories.
+ */
+export function groupByTagCluster<T extends { parsed: ParsedExecMemory }>(
+  memories: T[],
+): Map<string, T[]> {
+  const clusters = new Map<string, T[]>();
+  for (const mem of memories) {
+    const clusterTags = mem.parsed.tags.filter(t => t !== 'execution').sort();
+    if (clusterTags.length === 0) continue;
+    const key = clusterTags.join('+');
+    const existing = clusters.get(key) ?? [];
+    existing.push(mem);
+    clusters.set(key, existing);
+  }
+  return clusters;
+}
+
+/**
+ * Enumerate features sorted by createdAt descending, capped at limit.
+ * Shared between query-historical-context and suggest-doctrine.
+ */
+export function listRecentFeatures(
+  featureAdapter: FeaturePort,
+  limit: number,
+): Array<{ name: string; createdAt: string }> {
+  const featureNames = featureAdapter.list();
+  const withDate: Array<{ name: string; createdAt: string }> = [];
+  for (const name of featureNames) {
+    const info = featureAdapter.get(name);
+    if (!info) continue;
+    withDate.push({ name, createdAt: info.createdAt ?? '1970-01-01T00:00:00Z' });
+  }
+  withDate.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return withDate.slice(0, limit);
 }

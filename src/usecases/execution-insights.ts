@@ -11,6 +11,7 @@ import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory } from '../utils/parse-exec-memory.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
+import type { HiveConfig } from '../types.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;
@@ -41,17 +42,19 @@ export interface ExecutionInsightsResult {
   doctrineEffectiveness?: DoctrineEffectivenessInsight[];
 }
 
+/** Grace period for never-injected doctrine before marking stale (30 days). */
+const NEVER_INJECTED_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+
 export async function executionInsights(
   featureName: string,
   taskPort: TaskPort,
   memoryAdapter: MemoryPort,
   doctrinePort?: DoctrinePort,
+  doctrineConfig?: HiveConfig['doctrine'],
 ): Promise<ExecutionInsightsResult> {
-  // List all memories and filter to exec-*
   const allMemories = memoryAdapter.listWithMeta(featureName);
   const execMemories = allMemories.filter(m => isExecutionMemory(m.name));
 
-  // List all tasks
   const allTasks = await taskPort.list(featureName, { includeAll: true });
   const taskDeps: TaskWithDeps[] = allTasks.map(t => ({
     folder: t.folder,
@@ -59,10 +62,8 @@ export async function executionInsights(
     dependsOn: t.dependsOn,
   }));
 
-  // Build downstream map for knowledge flow
   const downstream = buildDownstreamMap(taskDeps);
 
-  // Build insights for each execution memory
   const taskFolders = new Set(allTasks.map(t => t.folder));
   const execTaskFolders = new Set<string>();
   const insights: ExecutionInsight[] = [];
@@ -74,7 +75,6 @@ export async function executionInsights(
     execTaskFolders.add(sourceTask);
     const parsed = parseExecMemory(mem.content);
 
-    // Find downstream tasks
     const downstreamTasks = downstream.get(sourceTask) ?? [];
 
     insights.push({
@@ -87,12 +87,10 @@ export async function executionInsights(
     });
   }
 
-  // Coverage
   const totalTasks = allTasks.length;
   const withExecMemory = execTaskFolders.size;
   const percent = totalTasks > 0 ? Math.round((withExecMemory / totalTasks) * 100) : 0;
 
-  // Knowledge flow: all edges with proximity scores
   const knowledgeFlow: Array<{ from: string; to: string; proximity: number }> = [];
   for (const sourceTask of execTaskFolders) {
     for (const target of taskFolders) {
@@ -104,14 +102,12 @@ export async function executionInsights(
     }
   }
 
-  // Sort flow by proximity descending
   knowledgeFlow.sort((a, b) => b.proximity - a.proximity);
 
-  // Doctrine effectiveness (Phase 4)
   let doctrineEffectiveness: DoctrineEffectivenessInsight[] | undefined;
   if (doctrinePort) {
     try {
-      const cfg = resolveDoctrineConfig();
+      const cfg = resolveDoctrineConfig(doctrineConfig);
       const now = Date.now();
       const staleMs = cfg.staleThresholdDays * 24 * 60 * 60 * 1000;
       const activeItems = doctrinePort.list({ status: 'active' });
@@ -123,7 +119,7 @@ export async function executionInsights(
         const neverInjected = item.effectiveness.injectionCount === 0;
         const created = new Date(item.createdAt).getTime();
         const stale = neverInjected
-          ? (now - created > 30 * 24 * 60 * 60 * 1000) // 30 days for never-injected
+          ? (now - created > NEVER_INJECTED_GRACE_MS)
           : (now - lastInjected > staleMs);
 
         return {

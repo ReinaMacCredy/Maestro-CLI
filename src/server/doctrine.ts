@@ -3,15 +3,12 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { requireDoctrinePort as requireDoctrinePortShared } from '../lib/resolve.ts';
 import type { DoctrineItem } from '../ports/doctrine.ts';
+import { CURRENT_SCHEMA_VERSION } from '../adapters/fs/doctrine.ts';
 
 function requireDoctrinePort(thunk: ServicesThunk) {
-  const services = thunk.get();
-  if (!services.doctrinePort) {
-    throw new MaestroError('Doctrine port not available', ['Run maestro init or check your .maestro/ directory']);
-  }
-  return services.doctrinePort;
+  return requireDoctrinePortShared(thunk.get());
 }
 
 export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): void {
@@ -98,7 +95,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
         status: input.status ?? 'active',
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
-        schemaVersion: 1,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
       };
 
       const path = port.write(item);
@@ -155,7 +152,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
         status: 'active',
         createdAt: now,
         updatedAt: now,
-        schemaVersion: 1,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
       };
 
       const path = port.write(item);

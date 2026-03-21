@@ -163,37 +163,32 @@ async function main(): Promise<void> {
       revisionContext = parts.join('\n');
     }
 
-    // Parallelize independent async reads (rich fields + graph insights)
-    const [richResult, insightsResult] = await Promise.allSettled([
+    // Parallelize independent async reads
+    const [richResult, insightsResult, allTasksResult] = await Promise.allSettled([
       services.taskPort.getRichFields?.(featureName, taskFolder) ?? Promise.resolve(null),
       services.graphPort?.getInsights() ?? Promise.resolve(null),
+      services.taskPort.list(featureName, { includeAll: true }),
     ]);
 
-    // Format context sections
     const richContext = formatRichContext(richResult as PromiseSettledResult<RichTaskFields | null>);
     const graphContext = formatGraphContext(
       insightsResult as PromiseSettledResult<GraphInsightsSubset | null>,
       taskFolder, task,
     );
 
-    // Read memories with metadata for DCP scoring
     const memories = services.memoryAdapter.listWithMeta(featureName);
 
-    // Doctrine lookup (separate from memory DCP scoring)
     let doctrineItems: DoctrineItem[] = [];
-    let doctrineInjected = false;
     try {
       if (services.doctrinePort) {
         const derivedTags = deriveFolderTags(taskFolder);
         const specKeywords = extractKeywords(spec);
         doctrineItems = services.doctrinePort.findRelevant(derivedTags, specKeywords);
-        doctrineInjected = doctrineItems.length > 0;
       }
     } catch (err) {
       logHookError(projectDir, 'pre-agent:doctrine', err);
     }
 
-    // Write doctrine trace for effectiveness tracking (Phase 4)
     if (doctrineItems.length > 0) {
       appendDoctrineTrace(
         projectDir, featureName, taskFolder,
@@ -202,8 +197,7 @@ async function main(): Promise<void> {
       );
     }
 
-    // Get completed tasks for observation masking
-    const allTasks = await services.taskPort.list(featureName, { includeAll: true });
+    const allTasks = allTasksResult.status === 'fulfilled' ? (allTasksResult.value ?? []) : [];
     const completedTasks = allTasks
       .filter(t => t.status === 'done' && t.summary)
       .map(t => ({ name: t.name, summary: t.summary! }));
@@ -233,10 +227,9 @@ async function main(): Promise<void> {
       allTasks: taskDeps,
     });
 
-    // Log DCP metrics (includes doctrine observability)
     logDcpMetrics(projectDir, featureName, taskFolder, {
       ...metrics,
-      doctrineInjected,
+      doctrineInjected: doctrineItems.length > 0,
       doctrineNames: doctrineItems.map(d => d.name),
     });
 

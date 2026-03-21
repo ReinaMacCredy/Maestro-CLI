@@ -10,7 +10,7 @@ import type { FeaturePort } from '../ports/features.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { MemoryFileWithMeta } from '../types.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
-import { parseExecMemory, type ParsedExecMemory } from '../utils/parse-exec-memory.ts';
+import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
 
 export interface HistoricalPitfall {
@@ -56,29 +56,6 @@ function scoreOverlap(memTags: string[], planKeywords: Set<string>): number {
   return tagScore * 0.6 + keywordScore * 0.4;
 }
 
-/**
- * Group memories by their primary tag clusters (excluding "execution" tag).
- * Returns map of cluster key -> memories in that cluster.
- */
-function groupByTagCluster(memories: ScoredMemory[]): Map<string, ScoredMemory[]> {
-  const clusters = new Map<string, ScoredMemory[]>();
-
-  for (const mem of memories) {
-    // Use sorted non-"execution" tags as cluster key
-    const clusterTags = mem.parsed.tags
-      .filter(t => t !== 'execution')
-      .sort();
-    if (clusterTags.length === 0) continue;
-
-    const key = clusterTags.join('+');
-    const existing = clusters.get(key) ?? [];
-    existing.push(mem);
-    clusters.set(key, existing);
-  }
-
-  return clusters;
-}
-
 export function queryHistoricalContext(
   planContent: string,
   featureAdapter: FeaturePort,
@@ -92,18 +69,7 @@ export function queryHistoricalContext(
     return { pitfalls: [], totalExecMemoriesScanned: 0, featuresScanned: 0 };
   }
 
-  // Enumerate features, sort by createdAt descending, cap at scanLimit
-  const featureNames = featureAdapter.list();
-  const featuresWithDate: Array<{ name: string; createdAt: string }> = [];
-
-  for (const name of featureNames) {
-    const info = featureAdapter.get(name);
-    if (!info) continue;
-    featuresWithDate.push({ name, createdAt: info.createdAt ?? '1970-01-01T00:00:00Z' });
-  }
-
-  featuresWithDate.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const scannedFeatures = featuresWithDate.slice(0, scanLimit);
+  const scannedFeatures = listRecentFeatures(featureAdapter, scanLimit);
 
   // Collect and score exec memories across features
   const scoredMemories: ScoredMemory[] = [];

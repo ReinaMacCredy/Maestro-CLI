@@ -7,7 +7,7 @@ import type { FeaturePort } from '../ports/features.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { DoctrineItem, DoctrineConditions } from '../ports/doctrine.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
-import { parseExecMemory, type ParsedExecMemory } from '../utils/parse-exec-memory.ts';
+import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import type { HiveConfig } from '../types.ts';
@@ -37,35 +37,36 @@ interface TaggedMemory {
   parsed: ParsedExecMemory;
 }
 
-function groupByTagCluster(memories: TaggedMemory[]): Map<string, TaggedMemory[]> {
-  const clusters = new Map<string, TaggedMemory[]>();
-  for (const mem of memories) {
-    const clusterTags = mem.parsed.tags.filter(t => t !== 'execution').sort();
-    if (clusterTags.length === 0) continue;
-    const key = clusterTags.join('+');
-    const existing = clusters.get(key) ?? [];
-    existing.push(mem);
-    clusters.set(key, existing);
-  }
-  return clusters;
-}
-
 function slugify(tags: string[], category: string): string {
   return `${category}-${tags.slice(0, 3).join('-')}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 }
 
-function isDuplicate(suggestion: DoctrineSuggestion, existing: DoctrineItem[]): boolean {
+/** Pre-computed keyword sets for existing doctrine items (avoids re-extracting per candidate). */
+interface DoctrineWithKeywords {
+  item: DoctrineItem;
+  tagSet: Set<string>;
+  keywords: Set<string>;
+}
+
+function precomputeExisting(existing: DoctrineItem[]): DoctrineWithKeywords[] {
+  return existing.map(item => ({
+    item,
+    tagSet: new Set(item.tags.map(t => t.toLowerCase())),
+    keywords: extractKeywords(item.rule),
+  }));
+}
+
+function isDuplicate(suggestion: DoctrineSuggestion, existing: DoctrineWithKeywords[]): boolean {
+  const suggTags = suggestion.tags.map(t => t.toLowerCase());
+  const suggKeywords = extractKeywords(suggestion.rule);
+
   for (const doc of existing) {
-    const docTags = new Set(doc.tags.map(t => t.toLowerCase()));
-    const suggTags = suggestion.tags.map(t => t.toLowerCase());
-    const tagOverlap = suggTags.filter(t => docTags.has(t)).length / Math.max(suggTags.length, 1);
+    const tagOverlap = suggTags.filter(t => doc.tagSet.has(t)).length / Math.max(suggTags.length, 1);
     if (tagOverlap <= 0.7) continue;
 
-    const docKeywords = extractKeywords(doc.rule);
-    const suggKeywords = extractKeywords(suggestion.rule);
     let keywordMatches = 0;
     for (const kw of suggKeywords) {
-      if (docKeywords.has(kw)) keywordMatches++;
+      if (doc.keywords.has(kw)) keywordMatches++;
     }
     const keywordOverlap = suggKeywords.size > 0 ? keywordMatches / suggKeywords.size : 0;
     if (keywordOverlap > 0.5) return true;
@@ -82,16 +83,7 @@ export function suggestDoctrine(
   const cfg = resolveDoctrineConfig(doctrineConfig);
   const { minSampleSize, maxSuggestionsPerFeature, crossFeatureScanLimit } = cfg;
 
-  // Collect exec memories across all features
-  const featureNames = featureAdapter.list();
-  const featuresWithDate: Array<{ name: string; createdAt: string }> = [];
-  for (const name of featureNames) {
-    const info = featureAdapter.get(name);
-    if (!info) continue;
-    featuresWithDate.push({ name, createdAt: info.createdAt ?? '1970-01-01T00:00:00Z' });
-  }
-  featuresWithDate.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const scanned = featuresWithDate.slice(0, crossFeatureScanLimit);
+  const scanned = listRecentFeatures(featureAdapter, crossFeatureScanLimit);
 
   const allMemories: TaggedMemory[] = [];
   for (const { name } of scanned) {
@@ -109,6 +101,7 @@ export function suggestDoctrine(
   // Group by tag clusters and analyze patterns
   const clusters = groupByTagCluster(allMemories);
   const suggestions: DoctrineSuggestion[] = [];
+  const existingPrecomputed = precomputeExisting(existingDoctrine);
 
   for (const [clusterKey, memories] of clusters) {
     const uniqueFeatures = [...new Set(memories.map(m => m.featureName))];
@@ -129,7 +122,7 @@ export function suggestDoctrine(
         confidence: 'high',
         category: 'failure-prevention',
       };
-      if (!isDuplicate(suggestion, existingDoctrine)) suggestions.push(suggestion);
+      if (!isDuplicate(suggestion, existingPrecomputed)) suggestions.push(suggestion);
     }
 
     // Testing pitfall: verification failures
@@ -145,7 +138,7 @@ export function suggestDoctrine(
         confidence: 'medium',
         category: 'testing',
       };
-      if (!isDuplicate(suggestion, existingDoctrine)) suggestions.push(suggestion);
+      if (!isDuplicate(suggestion, existingPrecomputed)) suggestions.push(suggestion);
     }
 
     // Positive pattern: consistent success
@@ -161,7 +154,7 @@ export function suggestDoctrine(
         confidence: 'medium',
         category: 'positive-pattern',
       };
-      if (!isDuplicate(suggestion, existingDoctrine)) suggestions.push(suggestion);
+      if (!isDuplicate(suggestion, existingPrecomputed)) suggestions.push(suggestion);
     }
   }
 

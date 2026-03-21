@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { requireDoctrinePort } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-read', description: 'Read a doctrine item' },
@@ -18,11 +19,8 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { doctrinePort } = getServices();
-      if (!doctrinePort) {
-        console.error('[!] Doctrine port not available');
-        process.exit(1);
-      }
+      const services = getServices();
+      const doctrinePort = requireDoctrinePort(services);
       const item = doctrinePort.read(args.name);
       if (!item) {
         console.error(formatError('doctrine-read', `doctrine '${args.name}' not found`));

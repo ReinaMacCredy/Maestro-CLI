@@ -26,7 +26,7 @@ export function registerExecutionInsightsTools(server: McpServer, thunk: Service
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const result = await executionInsights(feature, services.taskPort, services.memoryAdapter);
+      const result = await executionInsights(feature, services.taskPort, services.memoryAdapter, services.doctrinePort);
       return respond(result);
     }),
   );

@@ -37,6 +37,9 @@ export function appendDoctrineTrace(
     const tracePath = getTracePath(projectRoot, featureName, taskFolder);
     const existing = readJson<DoctrineTrace>(tracePath) ?? { entries: [] };
 
+    // Skip if this revision was already traced (guard against hook re-runs)
+    if (existing.entries.some(e => e.revision === revision)) return;
+
     existing.entries.push({
       revision,
       doctrines: doctrineNames,

@@ -1,9 +1,10 @@
 /**
- * Shared feature resolution helpers.
+ * Shared resolution helpers.
  * Used by both CLI commands and MCP server tools.
  */
 
 import type { MaestroServices } from '../services.ts';
+import type { DoctrinePort } from '../ports/doctrine.ts';
 import { MaestroError } from './errors.ts';
 
 /**
@@ -33,4 +34,19 @@ export function requireFeature(
     );
   }
   return feature;
+}
+
+/**
+ * Require doctrine port or throw MaestroError.
+ */
+export function requireDoctrinePort(services: MaestroServices): DoctrinePort {
+  if (!services.doctrinePort) {
+    throw new MaestroError('Doctrine port not available', ['Run maestro init or check your .maestro/ directory']);
+  }
+  return services.doctrinePort;
+}
+
+/** Parse comma-separated tags string into trimmed array. */
+export function parseTags(raw?: string): string[] {
+  return raw ? raw.split(',').map(t => t.trim()).filter(Boolean) : [];
 }

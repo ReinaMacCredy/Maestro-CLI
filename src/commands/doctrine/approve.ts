@@ -6,6 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import { requireDoctrinePort, parseTags } from '../../lib/resolve.ts';
+import { CURRENT_SCHEMA_VERSION } from '../../adapters/fs/doctrine.ts';
 import type { DoctrineItem } from '../../ports/doctrine.ts';
 
 export default defineCommand({
@@ -18,25 +20,23 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { doctrinePort } = getServices();
-      if (!doctrinePort) {
-        console.error('[!] Doctrine port not available');
-        process.exit(1);
-      }
+      const services = getServices();
+      const doctrinePort = requireDoctrinePort(services);
 
       const now = new Date().toISOString();
+      const tags = parseTags(args.tags);
       const item: DoctrineItem = {
         name: args.name,
         rule: args.rule,
         rationale: args.rationale,
-        conditions: { tags: args.tags ? args.tags.split(',').map(t => t.trim()) : undefined },
-        tags: args.tags ? args.tags.split(',').map(t => t.trim()) : [],
+        conditions: { tags: tags.length > 0 ? tags : undefined },
+        tags,
         source: { features: [], memories: [] },
         effectiveness: { injectionCount: 0, associatedSuccessRate: 0, overrideCount: 0 },
         status: 'active',
         createdAt: now,
         updatedAt: now,
-        schemaVersion: 1,
+        schemaVersion: CURRENT_SCHEMA_VERSION,
       };
 
       const path = doctrinePort.write(item);

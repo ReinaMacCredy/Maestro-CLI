@@ -5,17 +5,22 @@
  */
 
 import * as fs from 'fs';
+import * as path from 'path';
 import type { DoctrineItem, DoctrinePort, DoctrineStatus } from '../../ports/doctrine.ts';
 import { getDoctrinePath, getDoctrineItemPath } from '../../utils/paths.ts';
-import { ensureDir, readJson, writeJsonAtomic } from '../../utils/fs-io.ts';
+import { readJson, writeJsonAtomic } from '../../utils/fs-io.ts';
 import { acquireLockSync } from '../../utils/locking.ts';
 import { extractKeywords } from '../../utils/relevance.ts';
 
-const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 1;
 const RELEVANCE_THRESHOLD = 0.2;
+const TAG_WEIGHT = 0.6;
+const KEYWORD_WEIGHT = 0.4;
 
 export class FsDoctrineAdapter implements DoctrinePort {
   private readonly projectRoot: string;
+  /** In-process cache for active items. Invalidated on write/deprecate. */
+  private activeCache: DoctrineItem[] | undefined;
 
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
@@ -23,9 +28,9 @@ export class FsDoctrineAdapter implements DoctrinePort {
 
   write(item: DoctrineItem): string {
     const filePath = getDoctrineItemPath(this.projectRoot, item.name);
-    ensureDir(getDoctrinePath(this.projectRoot));
     const toWrite = { ...item, schemaVersion: CURRENT_SCHEMA_VERSION, updatedAt: new Date().toISOString() };
     writeJsonAtomic(filePath, toWrite);
+    this.activeCache = undefined;
     return filePath;
   }
 
@@ -49,14 +54,11 @@ export class FsDoctrineAdapter implements DoctrinePort {
 
     const items: DoctrineItem[] = [];
     for (const entry of entries) {
-      try {
-        const content = fs.readFileSync(`${dirPath}/${entry}`, 'utf-8');
-        const item = JSON.parse(content) as DoctrineItem;
-        if (opts?.status && item.status !== opts.status) continue;
-        items.push(item);
-      } catch {
-        // Skip malformed files
-      }
+      const name = entry.replace(/\.json$/, '');
+      const item = this.read(name);
+      if (!item) continue;
+      if (opts?.status && item.status !== opts.status) continue;
+      items.push(item);
     }
 
     return items;
@@ -72,13 +74,18 @@ export class FsDoctrineAdapter implements DoctrinePort {
   }
 
   findRelevant(tags: string[], keywords: Set<string>): DoctrineItem[] {
-    const activeItems = this.list({ status: 'active' });
+    // Use cache if available; otherwise populate from list()
+    if (!this.activeCache) {
+      this.activeCache = this.list({ status: 'active' });
+    }
+    const activeItems = this.activeCache;
     if (activeItems.length === 0) return [];
 
     const scored: Array<{ item: DoctrineItem; score: number }> = [];
+    const taskTagSet = new Set(tags.map(t => t.toLowerCase()));
 
     for (const item of activeItems) {
-      const score = this.scoreRelevance(item, tags, keywords);
+      const score = this.scoreRelevance(item, taskTagSet, keywords);
       if (score >= RELEVANCE_THRESHOLD) {
         scored.push({ item, score });
       }
@@ -118,19 +125,16 @@ export class FsDoctrineAdapter implements DoctrinePort {
     }
   }
 
-  private scoreRelevance(item: DoctrineItem, taskTags: string[], taskKeywords: Set<string>): number {
+  private scoreRelevance(item: DoctrineItem, taskTagSet: Set<string>, taskKeywords: Set<string>): number {
     const conditionTags = item.conditions.tags ?? [];
     const itemTags = [...new Set([...item.tags, ...conditionTags])];
 
-    // Tag overlap: what fraction of doctrine tags match task tags
     let tagMatches = 0;
-    const taskTagSet = new Set(taskTags.map(t => t.toLowerCase()));
     for (const tag of itemTags) {
       if (taskTagSet.has(tag.toLowerCase())) tagMatches++;
     }
     const tagScore = itemTags.length > 0 ? tagMatches / itemTags.length : 0;
 
-    // Keyword overlap: extract keywords from rule+rationale, check overlap with task keywords
     const docKeywords = extractKeywords(`${item.rule} ${item.rationale}`);
     let keywordMatches = 0;
     for (const kw of docKeywords) {
@@ -138,6 +142,6 @@ export class FsDoctrineAdapter implements DoctrinePort {
     }
     const keywordScore = docKeywords.size > 0 ? keywordMatches / docKeywords.size : 0;
 
-    return tagScore * 0.6 + keywordScore * 0.4;
+    return tagScore * TAG_WEIGHT + keywordScore * KEYWORD_WEIGHT;
   }
 }

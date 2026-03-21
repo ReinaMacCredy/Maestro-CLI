@@ -6,6 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import { requireDoctrinePort } from '../../lib/resolve.ts';
+import type { DoctrineStatus } from '../../ports/doctrine.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-list', description: 'List doctrine items' },
@@ -17,12 +19,9 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { doctrinePort } = getServices();
-      if (!doctrinePort) {
-        console.error('[!] Doctrine port not available');
-        process.exit(1);
-      }
-      const items = doctrinePort.list(args.status ? { status: args.status as 'active' | 'deprecated' | 'proposed' } : undefined);
+      const services = getServices();
+      const doctrinePort = requireDoctrinePort(services);
+      const items = doctrinePort.list(args.status ? { status: args.status as DoctrineStatus } : undefined);
       output(items, (list) => {
         if (list.length === 0) return 'No doctrine items found.';
         return list.map(i =>

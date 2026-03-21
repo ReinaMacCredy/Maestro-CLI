@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import { requireDoctrinePort } from '../../lib/resolve.ts';
 import { suggestDoctrine } from '../../usecases/suggest-doctrine.ts';
 
 export default defineCommand({
@@ -14,12 +15,9 @@ export default defineCommand({
   async run() {
     try {
       const services = getServices();
-      if (!services.doctrinePort) {
-        console.error('[!] Doctrine port not available');
-        process.exit(1);
-      }
+      const doctrinePort = requireDoctrinePort(services);
 
-      const existing = services.doctrinePort.list({ status: 'active' });
+      const existing = doctrinePort.list({ status: 'active' });
       const config = services.configAdapter.get().doctrine;
       const result = suggestDoctrine(services.featureAdapter, services.memoryAdapter, existing, config);
 
