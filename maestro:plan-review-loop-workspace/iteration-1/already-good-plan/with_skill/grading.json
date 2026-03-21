@@ -1,8 +1,0 @@
-{
-  "eval_id": 1,
-  "config": "with_skill",
-  "expectations": [
-    {"text": "passes-quickly", "passed": true, "evidence": "Passed in round 1 with zero actionable issues. No unnecessary looping."},
-    {"text": "no-unnecessary-changes", "passed": true, "evidence": "Made zero changes to the plan. Recognized it was well-formed and passed it as-is."}
-  ]
-}

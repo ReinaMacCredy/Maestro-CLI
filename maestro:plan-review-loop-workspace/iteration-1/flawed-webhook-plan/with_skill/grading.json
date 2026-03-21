@@ -1,9 +1,0 @@
-{
-  "eval_id": 0,
-  "config": "with_skill",
-  "expectations": [
-    {"text": "identifies-vague-tasks", "passed": true, "evidence": "Round 1 found 13 issues including 6 blockers. Identified all 4 original tasks as lacking acceptance criteria, payload format, retry params."},
-    {"text": "multi-round-review", "passed": true, "evidence": "Took 3 rounds (13 -> 3 -> 0 issues). Healthy convergence pattern."},
-    {"text": "improved-plan-quality", "passed": true, "evidence": "Final plan has 9 tasks with explicit acceptance criteria, defined payload schema with HMAC signing, retry config, error handling, risk table, rollback strategy."}
-  ]
-}

@@ -1,9 +1,0 @@
-{
-  "eval_id": 0,
-  "config": "without_skill",
-  "expectations": [
-    {"text": "identifies-vague-tasks", "passed": true, "evidence": "Found 7 issues including underspecified tasks, missing error handling, missing non-goals."},
-    {"text": "multi-round-review", "passed": false, "evidence": "Single pass only. Fixed issues in one shot without re-reviewing to verify fixes are complete."},
-    {"text": "improved-plan-quality", "passed": true, "evidence": "Added acceptance criteria, HMAC signing, SSRF prevention, task dependencies. Good quality output."}
-  ]
-}

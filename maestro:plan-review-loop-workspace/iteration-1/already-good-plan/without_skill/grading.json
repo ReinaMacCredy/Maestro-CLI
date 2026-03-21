@@ -1,8 +1,0 @@
-{
-  "eval_id": 1,
-  "config": "without_skill",
-  "expectations": [
-    {"text": "passes-quickly", "passed": true, "evidence": "Single pass review. Quick."},
-    {"text": "no-unnecessary-changes", "passed": false, "evidence": "Made changes to a well-formed plan: added Discovery section, changed test file path. These are additions, not corrections -- the plan was already complete for its scope."}
-  ]
-}
