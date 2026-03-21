@@ -1,8 +1,8 @@
 # maestro
 
-Agent-optimized development orchestrator.
+Agent-optimized development orchestrator -- an MCP plugin that gives AI coding agents structured memory, workflow guardrails, and a plan-first pipeline.
 
-Plan-first workflow for AI coding agents: features are planned, reviewed, approved, then executed by direct worker CLI launches in the main repo checkout with prompt, report, and session tracking persisted under `.maestro/`.
+Features are discovered, researched, planned, approved, then executed by agents with all state persisted under `.maestro/`.
 
 ## Quick Start
 
@@ -12,22 +12,29 @@ maestro feature-create my-feature               # create feature
 maestro plan-write --feature my-feature \
   --content "## Discovery\n..."                 # write plan
 maestro plan-approve --feature my-feature       # approve plan
-maestro task-sync --feature my-feature          # generate tasks
-maestro task-start --feature my-feature --task 01-example
-```
-
-Workers finish with:
-
-```bash
-maestro task-finish --feature my-feature --task 01-example --status completed --summary "What changed and how it was verified"
+maestro task-sync --feature my-feature          # generate tasks from plan
+maestro task-next --feature my-feature          # find next runnable task
+maestro task-claim --feature my-feature \
+  --task 01-example                             # claim task for an agent
+maestro task-done --feature my-feature \
+  --task 01-example --summary "What changed"    # mark task complete
 ```
 
 ## Prerequisites
 
 - [bun](https://bun.sh) (runtime and package manager)
 - [git](https://git-scm.com) (repo state and audit capture)
-- [br](https://github.com/anthropics/beads_rust) (optional task tracking backend)
-- a supported worker CLI on `PATH`: `codex` or `claude`
+
+### Optional integrations
+
+The following tools from [Dicklesworthstone](https://github.com/Dicklesworthstone) power optional adapters. maestro degrades gracefully when any are absent.
+
+| Tool | Adapter | Purpose |
+|------|---------|---------|
+| [br](https://github.com/Dicklesworthstone/beads_rust) (beads_rust) | sync backend | Task tracking and bead persistence |
+| [bv](https://github.com/Dicklesworthstone/beads_viewer) (beads viewer) | `bv-graph` | Dependency graph insights, next-task recommendations, execution plans |
+| [cass](https://github.com/Dicklesworthstone/coding_agent_session_search) (Coding Agent Session Search) | `cass-search` | Full-text search across coding agent sessions (Claude Code, Codex, Cursor, Gemini) |
+| [agent-mail](https://github.com/Dicklesworthstone/mcp_agent_mail) (MCP Agent Mail) | `agent-mail-handoff` | Cross-agent handoff notifications via HTTP API |
 
 ## Building
 
@@ -36,54 +43,94 @@ bun install
 bun run build
 ```
 
-Produces `./dist/maestro`, a self-contained binary. Development mode: `bun src/cli.ts <command>`.
+Produces `./dist/cli.js` (CLI) and `./dist/server.bundle.mjs` (MCP server). Development mode: `bun src/cli.ts <command>`.
 
 ## Architecture
+
+maestro is a **pure MCP plugin** -- Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 ```text
 commands/  -->  usecases/  -->  ports/  <--  adapters/
 (CLI I/O)       (rules)        (interfaces)  (implementations)
-```
 
-Directory layout:
+server/    -->  usecases/  -->  ports/  <--  adapters/
+(MCP tools)     (rules)        (interfaces)  (implementations)
+```
 
 ```text
 src/
-  adapters/     # Filesystem, br, worker runner, sandbox
-  commands/     # One file per CLI command
-  lib/          # Output, errors, signals
-  plugins/      # Plugin registry and loader
-  ports/        # Interfaces (TaskPort)
+  adapters/     # Filesystem, br, graph, search, verification
+  commands/     # CLI commands organized by domain
+  hooks/        # Claude Code hooks (session-start, pre-agent, pre-compact)
+  lib/          # Output, errors, signals, truncation
+  plugins/      # Plugin registry and loader (built-in: br, git, rg, tilth)
+  ports/        # Interfaces (tasks, plans, features, memory, search, graph, handoff)
+  server/       # MCP tool registration (one file per domain)
   skills/       # Skill loader and registry generator
+  templates/    # Plan scaffolding
   usecases/     # Business rules
-  utils/        # Paths, detection, prompt/session helpers
+  utils/        # Paths, git, plan parser, spec builder
 skills/         # Bundled SKILL.md workflow guides
+hooks/          # Installable Claude Code hooks
 ```
 
-## Command Groups
+### Pipeline
+
+```text
+discovery --> research --> planning --> approval --> execution --> done
+```
+
+Stages are skippable. Hooks inject pipeline context automatically.
+
+### Task Model
+
+4 states: `pending` --> `claimed` --> `done` | `blocked`
+
+Stale claims expire after a configurable timeout (default 120 min) and auto-reset to `pending` on `task-next`.
+
+## MCP Tools (33)
+
+All tools are prefixed `maestro_` in MCP (e.g., `maestro_task_claim`).
+
+| Group | Tools | Count |
+|-------|-------|-------|
+| Feature | `feature_create`, `feature_list`, `feature_complete` | 3 |
+| Plan | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` | 4 |
+| Task | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` | 9 |
+| Memory | `memory_write`, `memory_read`, `memory_list`, `memory_promote` | 4 |
+| Meta | `status`, `skill`, `ping`, `init`, `dcp_preview` | 5 |
+| Graph | `graph_insights`, `graph_next`, `graph_plan` | 3 |
+| Handoff | `handoff_send`, `handoff_receive`, `handoff_ack` | 3 |
+| Search | `search_sessions`, `search_related` | 2 |
+
+## CLI Commands (53)
+
+All commands accept `--json` for machine-readable output. Use `maestro <command> --help` for full usage.
 
 | Domain | Commands | Count |
 |--------|----------|-------|
 | Feature | create, list, info, active, complete | 5 |
 | Plan | write, read, approve, revoke, comment, comments-clear | 6 |
-| Task | sync, create, update, list, info, start, finish, spec-read/write, report-read/write | 11 |
-| Subtask | create, update, list, info, delete, spec-read/write, report-read/write | 9 |
-| Context | write, read, list, delete, compile, archive, stats | 7 |
-| Session | track, list, master, fork, fresh, end, info | 7 |
-| Ask | create, answer, list, cleanup | 4 |
+| Task | sync, list, next, info, claim, done, block, unblock, spec-read, spec-write, report-read, report-write | 12 |
+| Memory | write, read, list, delete, compile, archive, stats, promote | 8 |
+| Graph | insights, next, plan | 3 |
+| Handoff | send, receive, ack | 3 |
+| Search | sessions, related | 2 |
 | Config | get, set, agent | 3 |
-| Other | init, status, agents-md, sandbox-status, sandbox-wrap, skill, skill-list, self-update, update | 9 |
-| **Total** | | **61** |
+| Other | init, install, ping, status, agents-md, skill, skill-list, dcp-preview, self-update, update | 10 |
 
-All commands accept `--json` for machine-readable output.
+## Hooks
 
-## Direct Worker Execution
+Installable Claude Code hooks that integrate maestro into the agent lifecycle:
 
-- `task-start` launches the configured worker CLI in the main project checkout.
-- Live worker state is tracked in `.maestro/features/<feature>/tasks/<task>/session.json`.
-- `task-finish` writes the durable task report and git audit summary.
-- Only one task may be `in_progress` at a time.
-- Stale `in_progress` tasks are surfaced by `maestro status` and can be recovered with `task-start --force`.
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| SessionStart | Session begins | Inject pipeline state and recommended skills |
+| PreToolUse:Agent | Before agent spawn | Inject task spec into worker prompt |
+| PostToolUse | After tool execution | Track tool usage and state changes |
+| PreCompact | Before context compaction | Preserve critical maestro state |
+
+Install with `maestro install`.
 
 ## Skills
 
@@ -101,12 +148,12 @@ All commands accept `--json` for machine-readable output.
 - `maestro:agents-md` -- AGENTS.md quality discipline and generation
 - `maestro:docker` -- Docker container workflows
 - `maestro:prompt-leverage` -- prompt engineering for AI agents
-- `maestro:new-track` -- create feature/bug tracks with spec and plan
+- `maestro:new-feature` -- create feature/bug tracks with spec and plan
 - `maestro:note` -- capture decisions and context to persistent notepad
+- `maestro:plan-review-loop` -- iterative adversarial plan review
 - `maestro:revert` -- git-aware undo of track implementation
 - `maestro:setup` -- scaffold project context
 - `maestro:status` -- track progress overview
-- `maestro:symphony-setup` -- extended setup with codex skills
 
 Load with `maestro skill <name>`, list with `maestro skill-list`.
 
@@ -117,4 +164,24 @@ maestro skill maestro:design --ref steps/step-01-init.md
 
 Old skill names (e.g., `writing-plans`) are aliased with deprecation warnings.
 
-Note: Colon-prefixed directory names are not supported on Windows/NTFS.
+## Data Layout
+
+```text
+.maestro/
+  config.json                           # Project configuration
+  features/
+    <feature>/
+      feature.json                      # Feature metadata and state
+      plan.md                           # Implementation plan
+      comments.json                     # Plan review comments
+      memory/                           # Feature-scoped memory files
+      tasks/
+        <task>/
+          task.json                     # Task state, claims, summaries
+          spec.md                       # Compiled task specification
+          report.md                     # Task completion report
+```
+
+## License
+
+MIT

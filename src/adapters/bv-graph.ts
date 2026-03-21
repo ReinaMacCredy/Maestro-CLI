@@ -15,7 +15,7 @@ export class BvGraphAdapter implements GraphPort {
     this.cli = new CliRunner('bv', {
       cwd: projectRoot,
       toolName: 'bv',
-      installHint: 'bv (beads viewer) is required. See: https://github.com/Dicklesworthstone/mcp_agent_mail',
+      installHint: 'bv (beads viewer) is required. See: https://github.com/Dicklesworthstone/beads_viewer',
     });
   }
 
