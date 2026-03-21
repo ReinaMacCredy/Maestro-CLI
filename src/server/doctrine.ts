@@ -121,4 +121,45 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
       return respond({ name: item.name, status: item.status });
     }),
   );
+
+  server.registerTool(
+    'maestro_doctrine_approve',
+    {
+      description: 'Approve a doctrine suggestion, writing it as an active doctrine item.',
+      inputSchema: {
+        name: z.string().describe('Doctrine item name (kebab-case)'),
+        rule: z.string().describe('The operating rule (optionally edited from suggestion)'),
+        rationale: z.string().describe('Why this rule exists'),
+        tags: z.array(z.string()).optional().describe('Tags for relevance matching'),
+        conditionTags: z.array(z.string()).optional().describe('Tags that trigger this doctrine'),
+        sourceFeatures: z.array(z.string()).optional().describe('Features that informed this doctrine'),
+        sourceMemories: z.array(z.string()).optional().describe('Execution memories that informed this doctrine'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const port = requireDoctrinePort(thunk);
+      const now = new Date().toISOString();
+
+      const item: DoctrineItem = {
+        name: input.name,
+        rule: input.rule,
+        rationale: input.rationale,
+        conditions: { tags: input.conditionTags },
+        tags: input.tags ?? [],
+        source: {
+          features: input.sourceFeatures ?? [],
+          memories: input.sourceMemories ?? [],
+        },
+        effectiveness: { injectionCount: 0, associatedSuccessRate: 0, overrideCount: 0 },
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        schemaVersion: 1,
+      };
+
+      const path = port.write(item);
+      return respond({ name: item.name, path, approved: true });
+    }),
+  );
 }

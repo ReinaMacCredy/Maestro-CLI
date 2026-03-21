@@ -1,19 +1,24 @@
 import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import type { DoctrinePort } from '../ports/doctrine.ts';
 import { MaestroError } from '../lib/errors.ts';
-import type { FeatureJson } from '../types.ts';
+import type { FeatureJson, HiveConfig } from '../types.ts';
+import { suggestDoctrine, type DoctrineSuggestion } from './suggest-doctrine.ts';
 
 export interface CompleteFeatureServices {
   taskPort: TaskPort;
   featureAdapter: FeaturePort;
   memoryAdapter: MemoryPort;
+  doctrinePort?: DoctrinePort;
+  doctrineConfig?: HiveConfig['doctrine'];
 }
 
 export interface CompleteFeatureResult {
   feature: FeatureJson;
   tasksSummary: { total: number; done: number };
   suggestPromote: string[];
+  doctrineSuggestions?: DoctrineSuggestion[];
 }
 
 export async function completeFeature(
@@ -56,5 +61,20 @@ export async function completeFeature(
   const suggestPromote = featureMemories.map(m => m.name);
 
   const updated = featureAdapter.complete(featureName);
-  return { feature: updated, tasksSummary: { total: tasks.length, done }, suggestPromote };
+
+  // Suggest doctrine candidates from cross-feature patterns (advisory, never blocking)
+  let doctrineSuggestions: DoctrineSuggestion[] | undefined;
+  if (services.doctrinePort) {
+    try {
+      const existing = services.doctrinePort.list({ status: 'active' });
+      const result = suggestDoctrine(featureAdapter, memoryAdapter, existing, services.doctrineConfig);
+      if (result.suggestions.length > 0) {
+        doctrineSuggestions = result.suggestions;
+      }
+    } catch {
+      // Best-effort -- never block feature completion
+    }
+  }
+
+  return { feature: updated, tasksSummary: { total: tasks.length, done }, suggestPromote, doctrineSuggestions };
 }
