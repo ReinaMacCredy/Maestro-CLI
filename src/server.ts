@@ -19,6 +19,7 @@ import { registerSearchTools } from './server/search.ts';
 import { registerPingTools } from './server/ping.ts';
 import { registerDcpTools } from './server/dcp.ts';
 import { registerExecutionInsightsTools } from './server/execution-insights.ts';
+import { registerDoctrineTools } from './server/doctrine.ts';
 import { VERSION } from './version.ts';
 import { checkCli } from './lib/cli-detect.ts';
 
@@ -41,6 +42,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerPingTools(server, thunk);
   registerDcpTools(server, thunk);
   registerExecutionInsightsTools(server, thunk);
+  registerDoctrineTools(server, thunk);
 
   // Conditional: only register graph/search tools when CLIs are available
   if (checkCli('bv')) registerGraphTools(server, thunk);

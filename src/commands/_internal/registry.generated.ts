@@ -4,6 +4,10 @@ import cmdConfigAgent from '../config/agent.ts';
 import cmdConfigGet from '../config/get.ts';
 import cmdConfigSet from '../config/set.ts';
 import cmdDcpPreview from '../dcp/preview.ts';
+import cmdDoctrineDeprecate from '../doctrine/deprecate.ts';
+import cmdDoctrineList from '../doctrine/list.ts';
+import cmdDoctrineRead from '../doctrine/read.ts';
+import cmdDoctrineWrite from '../doctrine/write.ts';
 import cmdFeatureActive from '../feature/active.ts';
 import cmdFeatureComplete from '../feature/complete.ts';
 import cmdFeatureCreate from '../feature/create.ts';
@@ -58,6 +62,10 @@ export const subCommands = {
   'config-get': cmdConfigGet,
   'config-set': cmdConfigSet,
   'dcp-preview': cmdDcpPreview,
+  'doctrine-deprecate': cmdDoctrineDeprecate,
+  'doctrine-list': cmdDoctrineList,
+  'doctrine-read': cmdDoctrineRead,
+  'doctrine-write': cmdDoctrineWrite,
   'feature-active': cmdFeatureActive,
   'feature-complete': cmdFeatureComplete,
   'feature-create': cmdFeatureCreate,
