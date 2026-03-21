@@ -5,10 +5,12 @@
 
 import type { TaskPort } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import type { DoctrinePort } from '../ports/doctrine.ts';
 import { buildDownstreamMap, extractSourceTask, scoreDependencyProximity } from '../utils/dependency-proximity.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory } from '../utils/parse-exec-memory.ts';
+import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;
@@ -17,6 +19,14 @@ export interface ExecutionInsight {
   verificationPassed: boolean;
   tags: string[];
   downstreamTasks: string[];
+}
+
+export interface DoctrineEffectivenessInsight {
+  name: string;
+  injectionCount: number;
+  successRate: number;
+  overrideCount: number;
+  stale: boolean;
 }
 
 export interface ExecutionInsightsResult {
@@ -28,12 +38,14 @@ export interface ExecutionInsightsResult {
     percent: number;
   };
   knowledgeFlow: Array<{ from: string; to: string; proximity: number }>;
+  doctrineEffectiveness?: DoctrineEffectivenessInsight[];
 }
 
 export async function executionInsights(
   featureName: string,
   taskPort: TaskPort,
   memoryAdapter: MemoryPort,
+  doctrinePort?: DoctrinePort,
 ): Promise<ExecutionInsightsResult> {
   // List all memories and filter to exec-*
   const allMemories = memoryAdapter.listWithMeta(featureName);
@@ -95,10 +107,43 @@ export async function executionInsights(
   // Sort flow by proximity descending
   knowledgeFlow.sort((a, b) => b.proximity - a.proximity);
 
+  // Doctrine effectiveness (Phase 4)
+  let doctrineEffectiveness: DoctrineEffectivenessInsight[] | undefined;
+  if (doctrinePort) {
+    try {
+      const cfg = resolveDoctrineConfig();
+      const now = Date.now();
+      const staleMs = cfg.staleThresholdDays * 24 * 60 * 60 * 1000;
+      const activeItems = doctrinePort.list({ status: 'active' });
+
+      doctrineEffectiveness = activeItems.map(item => {
+        const lastInjected = item.effectiveness.lastInjectedAt
+          ? new Date(item.effectiveness.lastInjectedAt).getTime()
+          : 0;
+        const neverInjected = item.effectiveness.injectionCount === 0;
+        const created = new Date(item.createdAt).getTime();
+        const stale = neverInjected
+          ? (now - created > 30 * 24 * 60 * 60 * 1000) // 30 days for never-injected
+          : (now - lastInjected > staleMs);
+
+        return {
+          name: item.name,
+          injectionCount: item.effectiveness.injectionCount,
+          successRate: item.effectiveness.associatedSuccessRate,
+          overrideCount: item.effectiveness.overrideCount,
+          stale,
+        };
+      });
+    } catch {
+      // Best-effort
+    }
+  }
+
   return {
     feature: featureName,
     insights,
     coverage: { totalTasks, withExecMemory, percent },
     knowledgeFlow,
+    doctrineEffectiveness,
   };
 }

@@ -18,6 +18,7 @@ import { pruneContext, type PruneContextResult } from '../usecases/prune-context
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 import { deriveFolderTags } from '../utils/execution-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
+import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
 import type { DoctrineItem } from '../ports/doctrine.ts';
 import type { TaskInfo } from '../types.ts';
 import type { RichTaskFields } from '../ports/tasks.ts';
@@ -190,6 +191,15 @@ async function main(): Promise<void> {
       }
     } catch (err) {
       logHookError(projectDir, 'pre-agent:doctrine', err);
+    }
+
+    // Write doctrine trace for effectiveness tracking (Phase 4)
+    if (doctrineItems.length > 0) {
+      appendDoctrineTrace(
+        projectDir, featureName, taskFolder,
+        task.revisionCount ?? 0,
+        doctrineItems.map(d => d.name),
+      );
     }
 
     // Get completed tasks for observation masking

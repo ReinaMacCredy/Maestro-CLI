@@ -5,10 +5,12 @@
 
 import type { VerificationReport } from '../ports/verification.ts';
 import type { MemoryPort } from '../ports/memory.ts';
+import type { DoctrinePort } from '../ports/doctrine.ts';
 import type { TaskInfo } from '../types.ts';
 import { extractKeywords } from './relevance.ts';
 import { prependMetadataFrontmatter } from './frontmatter.ts';
 import { getChangedFilesSince } from './git.ts';
+import { readDoctrineTrace, collectDoctrineNames } from './doctrine-trace.ts';
 
 export const EXEC_MEMORY_PREFIX = 'exec-';
 
@@ -174,6 +176,7 @@ export function buildExecutionMemory(params: ExecutionMemoryParams): ExecutionMe
 
 export interface WriteExecutionMemoryParams {
   memoryAdapter: MemoryPort | undefined;
+  doctrinePort?: DoctrinePort;
   featureName: string;
   taskFolder: string;
   task: TaskInfo;
@@ -186,7 +189,7 @@ export interface WriteExecutionMemoryParams {
 
 /** Write execution memory before task transitions to done. Best-effort, never throws. */
 export async function writeExecutionMemory(params: WriteExecutionMemoryParams): Promise<void> {
-  const { memoryAdapter, featureName, taskFolder, task, summary,
+  const { memoryAdapter, doctrinePort, featureName, taskFolder, task, summary,
     projectRoot, verificationReport, specContent, featureCreatedAt } = params;
   if (!memoryAdapter) return;
   try {
@@ -207,5 +210,21 @@ export async function writeExecutionMemory(params: WriteExecutionMemoryParams): 
     memoryAdapter.write(featureName, result.fileName, result.content);
   } catch {
     // Best-effort -- never block task completion
+  }
+
+  // Record doctrine effectiveness from trace file (Phase 4)
+  if (doctrinePort) {
+    try {
+      const trace = readDoctrineTrace(projectRoot, featureName, taskFolder);
+      if (trace && trace.entries.length > 0) {
+        const doctrineNames = collectDoctrineNames(trace);
+        const taskSucceeded = (task.revisionCount ?? 0) === 0 && (verificationReport?.passed ?? true);
+        for (const name of doctrineNames) {
+          doctrinePort.recordInjection(name, taskSucceeded);
+        }
+      }
+    } catch {
+      // Best-effort -- never block task completion
+    }
   }
 }
