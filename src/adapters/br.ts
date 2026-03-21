@@ -293,7 +293,7 @@ export class BrTaskAdapter implements TaskPort {
     const brId = this.resolveBrId(feature, id);
     await this.requireTransition(feature, id, 'review');
     // br maps review -> in_progress with label
-    await this.exec(['update', String(brId), '-l', 'review', '--notes', summary]);
+    await this.exec(['update', String(brId), '--add-label', 'review', '--notes', summary]);
     const result = await this.get(feature, id);
     if (!result) throw new MaestroError(`Task '${id}' not found after review`);
     return result;
@@ -303,7 +303,7 @@ export class BrTaskAdapter implements TaskPort {
     const brId = this.resolveBrId(feature, id);
     await this.requireTransition(feature, id, 'revision');
     // br maps revision -> deferred with label
-    await this.exec(['update', String(brId), '-s', 'deferred', '-l', 'revision',
+    await this.exec(['update', String(brId), '-s', 'deferred', '--add-label', 'revision',
       '--notes', `Revision ${revisionCount}: ${feedback}`]);
     const result = await this.get(feature, id);
     if (!result) throw new MaestroError(`Task '${id}' not found after revision`);
