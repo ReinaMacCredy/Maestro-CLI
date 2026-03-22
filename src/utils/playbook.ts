@@ -76,6 +76,7 @@ const PLAYBOOKS = {
     tools: [
       'task_next', 'task_claim', 'task_done',
       'task_block', 'task_unblock', 'task_accept', 'task_reject', 'task_list',
+      'visual', 'debug_visual',
     ],
     skills: ['maestro:implement', 'maestro:dispatching', 'maestro:tdd'],
     nextMilestone: 'All tasks done',
@@ -87,7 +88,7 @@ const PLAYBOOKS = {
   done: {
     stage: 'done',
     objective: 'Complete feature, promote memories, review doctrine',
-    tools: ['feature_complete', 'memory_promote', 'doctrine_list'],
+    tools: ['feature_complete', 'memory_promote', 'doctrine_list', 'visual'],
     skills: [],
     nextMilestone: 'Call feature_complete',
     antiPatterns: [
