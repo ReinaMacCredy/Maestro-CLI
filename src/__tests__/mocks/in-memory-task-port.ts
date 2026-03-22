@@ -190,15 +190,19 @@ export class InMemoryTaskPort implements TaskPort {
   }
 
   /** Seed a task with an exact folder name */
-  seed(feature: string, folder: string, overrides: { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {}): void {
+  seed(feature: string, folder: string, overrides: Partial<TaskInfo> & { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {}): void {
     const map = this.getFeatureTasks(feature);
     map.set(folder, {
       folder,
-      name: folder,
+      name: overrides.name ?? folder,
       status: overrides.status ?? 'pending',
       origin: overrides.origin ?? 'plan',
-      planTitle: folder,
+      planTitle: overrides.planTitle ?? folder,
       dependsOn: overrides.dependsOn ?? [],
+      summary: overrides.summary,
+      revisionCount: overrides.revisionCount,
+      revisionFeedback: overrides.revisionFeedback,
+      completedAt: overrides.completedAt,
     });
   }
 }
