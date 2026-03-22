@@ -6,6 +6,8 @@ import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations
 import { requireDoctrinePort as requireDoctrinePortShared } from '../lib/resolve.ts';
 import type { DoctrineItem } from '../ports/doctrine.ts';
 import { CURRENT_SCHEMA_VERSION } from '../adapters/fs/doctrine.ts';
+import { MaestroError } from '../lib/errors.ts';
+import { suggestDoctrine } from '../usecases/suggest-doctrine.ts';
 
 function requireDoctrinePort(thunk: ServicesThunk) {
   return requireDoctrinePortShared(thunk.get());
@@ -157,6 +159,23 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
 
       const path = port.write(item);
       return respond({ name: item.name, path, approved: true });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_doctrine_suggest',
+    {
+      description: 'Suggest doctrine candidates from cross-feature execution patterns. Analyzes execution memories across features to find recurring patterns worth codifying.',
+      inputSchema: {},
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async () => {
+      const services = thunk.get();
+      const port = requireDoctrinePort(thunk);
+      const existing = port.list({ status: 'active' });
+      const config = services.configAdapter.get().doctrine;
+      const result = suggestDoctrine(services.featureAdapter, services.memoryAdapter, existing, config);
+      return respond(result);
     }),
   );
 }
