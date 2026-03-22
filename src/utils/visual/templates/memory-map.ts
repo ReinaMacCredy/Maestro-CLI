@@ -1,8 +1,3 @@
-/**
- * Memory Map: Grid of memories color-coded by category.
- * Visual weight by priority, Mermaid pie for category distribution.
- */
-
 import type { TemplateRenderer, MemoryMapData, MemoryMapEntry } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
 import { MERMAID_CDN } from '../css.ts';

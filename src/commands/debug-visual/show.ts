@@ -1,7 +1,3 @@
-/**
- * maestro debug-visual -- render debug data as interactive HTML.
- */
-
 import * as fs from 'fs';
 import { defineCommand } from 'citty';
 import { debugVisualize } from '../../usecases/debug-visualize.ts';

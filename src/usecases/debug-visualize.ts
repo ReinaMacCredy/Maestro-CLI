@@ -1,8 +1,3 @@
-/**
- * Debug Visualize use case: validate agent-provided data and render.
- * No service dependencies -- data comes directly from the caller.
- */
-
 import { z } from 'zod';
 import type { DebugVisualType, VisualResult, TemplateRenderer } from '../utils/visual/types.ts';
 import { renderPage, writeVisual } from '../utils/visual/renderer.ts';

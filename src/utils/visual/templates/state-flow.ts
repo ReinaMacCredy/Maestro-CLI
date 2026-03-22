@@ -1,7 +1,3 @@
-/**
- * State Flow: Vertical timeline of state mutations with inline JSON diff.
- */
-
 import type { TemplateRenderer, StateFlowData } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

@@ -1,8 +1,3 @@
-/**
- * Core rendering engine for maestro visual system.
- * Assembles HTML pages, writes files, manages rotation, opens browser.
- */
-
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';

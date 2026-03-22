@@ -1,8 +1,3 @@
-/**
- * Error Cascade: Tree of errors with boundary annotations.
- * Caught vs uncaught distinction, collapsible stack traces.
- */
-
 import type { TemplateRenderer, ErrorCascadeData, ErrorCascadeEntry } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

@@ -1,8 +1,3 @@
-/**
- * Execution Timeline: Task completion events + knowledge flow graph.
- * Uses Mermaid for knowledge flow, CSS timeline for events.
- */
-
 import type { TemplateRenderer, ExecutionTimelineData } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
 import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT, ZOOM_CONTROLS_HTML } from '../css.ts';

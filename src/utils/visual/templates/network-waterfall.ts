@@ -1,8 +1,3 @@
-/**
- * Network Waterfall: Horizontal bars showing request timing.
- * Pure CSS with calc() positioning.
- */
-
 import type { TemplateRenderer, NetworkWaterfallData, NetworkRequest } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

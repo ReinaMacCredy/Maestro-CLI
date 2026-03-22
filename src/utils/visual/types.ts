@@ -1,8 +1,3 @@
-/**
- * Type definitions for maestro visual system.
- * 11 visualization types: 5 maestro state + 6 debug.
- */
-
 import type { TaskStatusType, FeatureStatusType, MemoryCategory } from '../../types.ts';
 import type { ExecutionInsight, DoctrineEffectivenessInsight } from '../../usecases/execution-insights.ts';
 import type { DoctrineItem } from '../../ports/doctrine.ts';

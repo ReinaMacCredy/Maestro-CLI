@@ -1,8 +1,3 @@
-/**
- * Component Tree: Recursive tree with expand/collapse.
- * Error boundaries highlighted, props on click.
- */
-
 import type { TemplateRenderer, ComponentTreeData, ComponentTreeNode } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

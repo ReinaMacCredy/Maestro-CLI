@@ -1,7 +1,3 @@
-/**
- * Visualize use case: gather maestro state data and render as interactive HTML.
- */
-
 import type { MaestroServices } from '../services.ts';
 import type {
   MaestroVisualType,

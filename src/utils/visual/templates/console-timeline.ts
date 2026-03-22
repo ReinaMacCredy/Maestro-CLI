@@ -1,7 +1,3 @@
-/**
- * Console Timeline: Log entries with severity coloring and level filters.
- */
-
 import type { TemplateRenderer, ConsoleTimelineData } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

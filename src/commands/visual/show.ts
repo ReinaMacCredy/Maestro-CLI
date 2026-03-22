@@ -1,7 +1,3 @@
-/**
- * maestro visual -- render maestro state as interactive HTML.
- */
-
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { visualize } from '../../usecases/visualize.ts';

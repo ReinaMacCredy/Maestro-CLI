@@ -1,8 +1,3 @@
-/**
- * DOM Diff: Side-by-side panels with line-by-line diff highlighting.
- * No external diff library -- inline comparison.
- */
-
 import type { TemplateRenderer, DomDiffData } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

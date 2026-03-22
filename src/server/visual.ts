@@ -1,9 +1,3 @@
-/**
- * MCP tools for maestro visual system.
- * maestro_visual: render maestro state as interactive HTML.
- * maestro_debug_visual: render debug data as interactive HTML.
- */
-
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';

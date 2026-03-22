@@ -1,9 +1,3 @@
-/**
- * Shared CSS for maestro visual system.
- * References visual-explainer patterns (custom property naming, depth tiers).
- * Single inline stylesheet -- no external CSS files.
- */
-
 export const MAESTRO_CSS = `
 /* ========================================================================
    Theme: Custom Properties (light default, dark via media query)

@@ -1,8 +1,3 @@
-/**
- * Plan Graph: Mermaid flowchart of task dependencies.
- * Node shapes encode task status, edges encode dependsOn.
- */
-
 import type { TemplateRenderer, PlanGraphData } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
 import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT, ZOOM_CONTROLS_HTML } from '../css.ts';

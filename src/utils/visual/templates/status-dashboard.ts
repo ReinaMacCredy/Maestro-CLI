@@ -1,8 +1,3 @@
-/**
- * Status Dashboard: KPI cards, progress bar, task breakdown.
- * Pure CSS -- no external CDN.
- */
-
 import type { TemplateRenderer, StatusDashboardData } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 

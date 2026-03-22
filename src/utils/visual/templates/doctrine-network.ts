@@ -1,8 +1,3 @@
-/**
- * Doctrine Network: Mermaid graph of doctrine items connected by shared tags.
- * Color by status, detail table with effectiveness metrics.
- */
-
 import type { TemplateRenderer, DoctrineNetworkData } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
 import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT, ZOOM_CONTROLS_HTML } from '../css.ts';
