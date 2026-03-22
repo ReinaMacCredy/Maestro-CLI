@@ -13,7 +13,8 @@ import { join } from 'path';
 import { parseFrontmatterRich } from '../utils/frontmatter.ts';
 import type { SkillEntry, SkillSource } from './registry.ts';
 
-const EXTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
+/** Directories to scan for external skills, in priority order. Shared with registry.ts. */
+export const EXTERNAL_SOURCES: ReadonlyArray<{ dir: string; source: SkillSource }> = [
   { dir: 'skills/external', source: 'external' },
   { dir: '.maestro/skills', source: 'maestro' },
   { dir: '.claude/skills', source: 'claude' },

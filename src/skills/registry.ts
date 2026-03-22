@@ -29,12 +29,7 @@ export function getBuiltinSkillsByStage(stage: string): SkillEntry[] {
     }));
 }
 
-/** Directories to scan for external skills, in priority order. */
-const EXTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
-  { dir: 'skills/external', source: 'external' },
-  { dir: '.maestro/skills', source: 'maestro' },
-  { dir: '.claude/skills', source: 'claude' },
-];
+import { EXTERNAL_SOURCES } from './external-discovery.ts';
 
 interface ExternalSkill {
   slug: string;
