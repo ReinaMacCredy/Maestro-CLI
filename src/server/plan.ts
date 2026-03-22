@@ -114,4 +114,59 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       return respond({ feature, comment });
     }),
   );
+
+  server.registerTool(
+    'maestro_plan_revoke',
+    {
+      description: 'Revoke plan approval, returning the feature to planning stage. Fails if any tasks are actively being worked (claimed, review, or revision).',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+
+      if (!services.planAdapter.isApproved(feature)) {
+        throw new MaestroError(`Plan for '${feature}' is not approved`, [
+          'Only approved plans can be revoked',
+        ]);
+      }
+
+      // Block revocation if any tasks are actively being worked
+      const allTasks = await services.taskPort.list(feature, { includeAll: true });
+      const activeTasks = allTasks.filter(t =>
+        t.status === 'claimed' || t.status === 'review' || t.status === 'revision',
+      );
+      if (activeTasks.length > 0) {
+        const activeList = activeTasks.map(t => `${t.folder} [${t.status}]`).join(', ');
+        throw new MaestroError(
+          `Cannot revoke: ${activeTasks.length} task(s) are actively being worked`,
+          [`Active tasks: ${activeList}`, 'Wait for active tasks to complete or block them first'],
+        );
+      }
+
+      services.planAdapter.revokeApproval(feature);
+      services.featureAdapter.updateStatus(feature, 'planning');
+      return respond({ feature, revoked: true });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_plan_comments_clear',
+    {
+      description: 'Clear all review comments from a plan. Useful after addressing all feedback.',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      services.planAdapter.clearComments(feature);
+      return respond({ feature, cleared: true });
+    }),
+  );
 }
