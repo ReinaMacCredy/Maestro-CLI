@@ -8,6 +8,7 @@ import { featureParam } from './_utils/params.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { MaestroError } from '../lib/errors.ts';
+import { buildTransitionHint } from '../utils/playbook.ts';
 import { extractPlanOutline } from '../utils/plan-parser.ts';
 
 export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void {
@@ -85,7 +86,8 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const result = await approvePlan(services, feature);
-      return respond({ ...result });
+      const hint = buildTransitionHint('plan_approve');
+      return respond({ ...result, ...(hint && { transition: hint }) });
     }),
   );
 

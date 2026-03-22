@@ -18,7 +18,7 @@ export function derivePipelineStage(opts: {
     return opts.contextCount > 0 ? 'research' : 'discovery';
   }
   if (opts.planExists && !opts.planApproved) return 'planning';
-  if (opts.planApproved && opts.taskTotal === 0) return 'planning';
+  if (opts.planApproved && opts.taskTotal === 0) return 'approval';
   if (opts.taskTotal > 0 && opts.taskDone < opts.taskTotal) return 'execution';
   if (opts.taskTotal > 0 && opts.taskDone === opts.taskTotal) return 'done';
   return 'discovery';

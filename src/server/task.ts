@@ -9,10 +9,19 @@ import { syncPlan } from '../usecases/sync-plan.ts';
 import { translatePlan } from '../usecases/translate-plan.ts';
 import { verifyTask } from '../usecases/verify-task.ts';
 import { resolveVerificationConfig } from '../utils/verification-config.ts';
-import type { ListOpts } from '../ports/tasks.ts';
+import type { ListOpts, TaskPort } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 import { writeExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveTaskBackend } from '../lib/resolve-backend.ts';
+import { buildTransitionHint, type TransitionHint } from '../utils/playbook.ts';
+
+async function maybeFinalTaskHint(
+  taskPort: TaskPort, feature: string, tool: 'task_done' | 'task_accept',
+): Promise<TransitionHint | undefined> {
+  const allTasks = await taskPort.list(feature, { includeAll: true });
+  const doneCount = allTasks.filter(t => t.status === 'done').length;
+  return buildTransitionHint(tool, { taskDone: doneCount, taskTotal: allTasks.length });
+}
 
 export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -32,7 +41,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const result = resolveTaskBackend(config.taskBackend, services.directory) === 'br'
         ? await translatePlan(services, feature)
         : await syncPlan(services, feature);
-      return respond({ ...result });
+      const hint = buildTransitionHint('tasks_sync', { created: result.created.length });
+      return respond({ ...result, ...(hint && { transition: hint }) });
     }),
   );
 
@@ -110,7 +120,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       });
 
       if (result.newStatus === 'done') {
-        return respond({ feature, task: result.task, verification: result.report });
+        const hint = await maybeFinalTaskHint(services.taskPort, feature, 'task_done');
+        return respond({ feature, task: result.task, verification: result.report, ...(hint && { transition: hint }) });
       }
 
       // Verification failed -- task is in 'review' state
@@ -130,9 +141,11 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
           services.memoryAdapter.write(feature, `verification-auto-accept-${input.task}`,
             prependMetadataFrontmatter(body, { tags: ['verification', 'auto-accept'], category: 'debug', priority: 1 }));
         } catch { /* best-effort */ }
+        const autoHint = await maybeFinalTaskHint(services.taskPort, feature, 'task_done');
         return respond({
           feature, task: acceptedTask, verification: result.report,
           warning: `Auto-accepted after ${vConfig.maxRevisions} revision(s) with score ${result.report.score.toFixed(2)}`,
+          ...(autoHint && { transition: autoHint }),
         });
       }
 
@@ -183,7 +196,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
         projectRoot: services.directory, verificationReport: report,
       });
       const task = await services.taskPort.done(feature, input.task, summary);
-      return respond({ feature, task, message: 'Task accepted (verification override)' });
+      const hint = await maybeFinalTaskHint(services.taskPort, feature, 'task_accept');
+      return respond({ feature, task, message: 'Task accepted (verification override)', ...(hint && { transition: hint }) });
     }),
   );
 

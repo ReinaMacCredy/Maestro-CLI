@@ -3,6 +3,7 @@ import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
 import { derivePipelineStage, type PipelineStage } from '../utils/workflow.ts';
+import { buildPlaybook } from '../utils/playbook.ts';
 
 const HOOK_NAME = 'sessionstart';
 
@@ -22,20 +23,8 @@ function buildResearchGuidance(tools: string[]): string[] {
 }
 
 function buildPipelineGuidance(stage: PipelineStage): string {
-  switch (stage) {
-    case 'discovery':
-      return 'Pipeline: discovery --> research --> planning --> execution. Start by exploring the feature scope with memory_write to capture findings.';
-    case 'research':
-      return 'Pipeline: discovery --> [research] --> planning --> execution. Continue research, then write the plan with plan_write.';
-    case 'planning':
-      return 'Pipeline: discovery --> research --> [planning] --> execution. Refine the plan and get approval with plan_approve.';
-    case 'execution':
-      return 'Pipeline: discovery --> research --> planning --> [execution]. Claim and complete tasks. Use task_next to find work.';
-    case 'done':
-      return 'Pipeline: complete. Review the feature and mark done with feature_complete.';
-    default:
-      return 'Use maestro_status for current state.';
-  }
+  const pb = buildPlaybook(stage);
+  return `Pipeline: [${stage}] ${pb.objective}. Next: ${pb.nextMilestone}`;
 }
 
 async function main(): Promise<void> {
@@ -80,10 +69,12 @@ async function main(): Promise<void> {
   const isCompact = source === 'compact' || source === 'resume';
 
   if (isCompact) {
+    const pb = buildPlaybook(stage);
     const lines = [
       `[maestro] Feature: ${featureName} [${stage}]`,
       `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} claimed, ${status.tasks.done} done (${status.tasks.total} total)`,
       `Next: ${status.nextAction}`,
+      ...(pb.skills.length > 0 ? [`Skills: ${pb.skills.join(', ')}`] : []),
     ];
     writeOutput({
       hookSpecificOutput: {
@@ -128,18 +119,10 @@ async function main(): Promise<void> {
   lines.push('');
   lines.push(`Next: ${status.nextAction}`);
 
-  // Recommend skills based on phase
-  const skills: string[] = [];
-  if (stage === 'discovery' || stage === 'research') {
-    skills.push('maestro:brainstorming', 'maestro:parallel-exploration');
-  } else if (stage === 'planning') {
-    skills.push('maestro:design');
-  } else if (stage === 'execution') {
-    skills.push('maestro:implement', 'maestro:dispatching');
-  }
-  if (skills.length > 0) {
+  const pb = buildPlaybook(stage);
+  if (pb.skills.length > 0) {
     lines.push('');
-    lines.push(`Recommended skills: ${skills.join(', ')}`);
+    lines.push(`Recommended skills: ${pb.skills.join(', ')}`);
   }
 
   writeOutput({

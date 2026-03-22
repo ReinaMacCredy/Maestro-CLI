@@ -8,6 +8,7 @@ import { featureParam } from './_utils/params.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
 import { derivePipelineStage } from '../utils/workflow.ts';
+import { buildPlaybook } from '../utils/playbook.ts';
 
 export function registerStatusTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -34,14 +35,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       });
       const researchTools = input.verbose ? detectResearchTools(services.directory) : undefined;
 
-      const skills: { recommended: string[] } = { recommended: [] };
-      if (pipelineStage === 'discovery' || pipelineStage === 'research') {
-        skills.recommended.push('maestro:design', 'maestro:parallel-exploration', 'maestro:brainstorming');
-      } else if (pipelineStage === 'planning') {
-        skills.recommended.push('maestro:design');
-      } else if (pipelineStage === 'execution') {
-        skills.recommended.push('maestro:implement', 'maestro:dispatching');
-      }
+      const playbook = buildPlaybook(pipelineStage);
 
       // Strip heavy fields for MCP -- agents use task_list / plan_read for details
       const { items: _items, ...tasksSummary } = result.tasks;
@@ -53,7 +47,8 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         tasks: tasksSummary,
         pipelineStage,
         ...(input.verbose && { researchTools }),
-        skills,
+        playbook,
+        skills: { recommended: playbook.skills }, // backward compat
       });
     }),
   );

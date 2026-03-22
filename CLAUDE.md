@@ -47,7 +47,9 @@
 ## Getting Started
 
 At the start of every session, call `maestro_status` (MCP) or `maestro status` (CLI).
-Load recommended skills with `maestro_skill('<name>')`.
+The status response includes a `playbook` field with stage-specific tools, skills, objectives, and anti-patterns.
+Load recommended skills from `playbook.skills` with `maestro_skill('<name>')`.
+`skills.recommended` is also present for backward compatibility.
 
 ## Architecture
 
@@ -55,7 +57,7 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **6 task states**: pending, claimed, done, blocked, review, revision
-- **39 MCP tools** across 9 groups
+- **40 MCP tools** across 10 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Doctrine Compiler**: cross-feature learning from execution history, injected into workers via separate budget
@@ -100,13 +102,14 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (39)
+## MCP Tools (40)
 
 | Group | Tools |
 |-------|-------|
 | Feature (3) | `feature_create`, `feature_list`, `feature_complete` |
 | Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
 | Task (9) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` |
+| Brief (1) | `task_brief` -- full agent context for a task (spec, DCP memories, doctrine, graph, revision, worker rules) |
 | Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
 | Doctrine (5) | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve` |
 | Meta (6) | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` |

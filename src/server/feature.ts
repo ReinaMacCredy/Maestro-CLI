@@ -6,6 +6,7 @@ import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { completeFeature } from '../usecases/complete-feature.ts';
+import { buildTransitionHint } from '../utils/playbook.ts';
 
 export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -56,7 +57,8 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
       const result = await completeFeature(services, feature);
-      return respond({ ...result });
+      const hint = buildTransitionHint('feature_complete');
+      return respond({ ...result, ...(hint && { transition: hint }) });
     }),
   );
 }

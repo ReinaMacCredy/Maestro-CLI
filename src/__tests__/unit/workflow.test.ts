@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { countTaskStatuses, getNextAction } from "../../utils/workflow";
+import { countTaskStatuses, derivePipelineStage, getNextAction } from "../../utils/workflow";
 import type { TaskStatusType } from "../../types";
 
 type TaskEntry = { status: TaskStatusType; folder: string };
@@ -163,6 +163,38 @@ describe("getNextAction", () => {
     const action = getNextAction("approved", tasks, []);
     expect(action).toContain("01-needs-review");
     expect(action).toContain("review");
+  });
+});
+
+describe("derivePipelineStage", () => {
+  test("returns discovery when no plan, no tasks, no context", () => {
+    expect(derivePipelineStage({ planExists: false, planApproved: false, taskTotal: 0, taskDone: 0, contextCount: 0 }))
+      .toBe("discovery");
+  });
+
+  test("returns research when no plan but context files exist", () => {
+    expect(derivePipelineStage({ planExists: false, planApproved: false, taskTotal: 0, taskDone: 0, contextCount: 3 }))
+      .toBe("research");
+  });
+
+  test("returns planning when plan exists but not approved", () => {
+    expect(derivePipelineStage({ planExists: true, planApproved: false, taskTotal: 0, taskDone: 0, contextCount: 0 }))
+      .toBe("planning");
+  });
+
+  test("returns approval when plan approved but no tasks synced", () => {
+    expect(derivePipelineStage({ planExists: true, planApproved: true, taskTotal: 0, taskDone: 0, contextCount: 0 }))
+      .toBe("approval");
+  });
+
+  test("returns execution when tasks exist and not all done", () => {
+    expect(derivePipelineStage({ planExists: true, planApproved: true, taskTotal: 5, taskDone: 2, contextCount: 0 }))
+      .toBe("execution");
+  });
+
+  test("returns done when all tasks complete", () => {
+    expect(derivePipelineStage({ planExists: true, planApproved: true, taskTotal: 5, taskDone: 5, contextCount: 0 }))
+      .toBe("done");
   });
 });
 
