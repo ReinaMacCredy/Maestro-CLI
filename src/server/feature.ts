@@ -7,6 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { completeFeature } from '../usecases/complete-feature.ts';
 import { buildTransitionHint } from '../utils/playbook.ts';
+import { MaestroError } from '../lib/errors.ts';
 
 export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -59,6 +60,42 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
       const result = await completeFeature(services, feature);
       const hint = buildTransitionHint('feature_complete');
       return respond({ ...result, ...(hint && { transition: hint }) });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_feature_info',
+    {
+      description: 'Get detailed information about a specific feature: status, plan state, comment count.',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const info = services.featureAdapter.getInfo(feature);
+      if (!info) {
+        throw new MaestroError(`Feature '${feature}' not found`, [
+          'Use maestro_feature_list to see available features',
+        ]);
+      }
+      return respond(info);
+    }),
+  );
+
+  server.registerTool(
+    'maestro_feature_active',
+    {
+      description: 'Get the currently active feature. Returns null if no feature is active.',
+      inputSchema: {},
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async () => {
+      const services = thunk.get();
+      const active = services.featureAdapter.getActive();
+      return respond({ active: active ?? null });
     }),
   );
 }
