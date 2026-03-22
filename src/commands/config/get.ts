@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'config-get', description: 'Get a config value' },
@@ -22,8 +22,7 @@ export default defineCommand({
       const config = configAdapter.get();
       const value = (config as unknown as Record<string, unknown>)[args.key];
       if (value === undefined) {
-        console.error(formatError('config-get', `key '${args.key}' not found`));
-        process.exit(1);
+        throw new MaestroError(`key '${args.key}' not found`);
       }
       output(value, (v) => typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v));
     } catch (err) {

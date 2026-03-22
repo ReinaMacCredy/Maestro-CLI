@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 import { pruneContext } from '../../usecases/prune-context.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { WORKER_RULES } from '../../utils/worker-rules.ts';
@@ -33,8 +33,7 @@ export default defineCommand({
 
       const task = await services.taskPort.get(feature, args.task);
       if (!task) {
-        console.error(`Task '${args.task}' not found in feature '${feature}'`);
-        process.exit(1);
+        throw new MaestroError(`Task '${args.task}' not found in feature '${feature}'`);
       }
 
       const spec = await services.taskPort.readSpec(feature, args.task) ?? '(no spec)';

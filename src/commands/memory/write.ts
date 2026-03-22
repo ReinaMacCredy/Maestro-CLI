@@ -6,6 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
+import { parseTags } from '../../lib/resolve.ts';
 import { prependMetadataFrontmatter } from '../../utils/frontmatter.ts';
 import { MEMORY_CATEGORIES } from '../../types.ts';
 
@@ -50,7 +51,7 @@ export default defineCommand({
       const { memoryAdapter } = getServices();
 
       const finalContent = prependMetadataFrontmatter(args.content, {
-        tags: args.tags ? args.tags.split(',').map(t => t.trim()) : undefined,
+        tags: args.tags ? parseTags(args.tags) : undefined,
         priority: args.priority !== undefined ? Number(args.priority) : undefined,
         category: args.category,
       });

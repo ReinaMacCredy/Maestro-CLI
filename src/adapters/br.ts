@@ -17,7 +17,7 @@ import type { VerificationReport } from '../ports/verification.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../utils/paths.ts';
-import { readJson, writeJson, writeJsonAtomic, ensureDir, readText, writeText } from '../utils/fs-io.ts';
+import { readJson, writeJsonAtomic, ensureDir, readText, writeText } from '../utils/fs-io.ts';
 import { CliRunner } from '../utils/cli-runner.ts';
 import { buildTaskFolder } from '../utils/slug.ts';
 import * as path from 'path';
@@ -399,7 +399,7 @@ export class BrTaskAdapter implements TaskPort {
     const mapping = this.getMapping(feature);
     mapping.folderToId[folder] = brId;
     mapping.idToFolder[String(brId)] = folder;
-    writeJson(mappingPath, mapping);
+    writeJsonAtomic(mappingPath, mapping);
   }
 
   private resolveBrId(feature: string, folderOrId: string): number | string {

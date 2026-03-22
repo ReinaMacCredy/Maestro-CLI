@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 import { writeExecutionMemory } from '../../utils/execution-memory.ts';
 
 export default defineCommand({
@@ -31,7 +31,7 @@ export default defineCommand({
     try {
       const services = getServices();
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       const existing = await services.taskPort.get(featureName, args.task);

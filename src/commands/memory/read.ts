@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'memory-read', description: 'Read a memory file' },
@@ -26,8 +26,7 @@ export default defineCommand({
       const { memoryAdapter } = getServices();
       const content = memoryAdapter.read(args.feature, args.name);
       if (content === null) {
-        console.error(formatError('memory-read', `memory '${args.name}' not found for feature '${args.feature}'`));
-        process.exit(1);
+        throw new MaestroError(`memory '${args.name}' not found for feature '${args.feature}'`);
       }
       output(content, (c) => c);
     } catch (err) {

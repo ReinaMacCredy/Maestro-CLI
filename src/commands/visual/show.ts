@@ -5,7 +5,7 @@ import type { MaestroVisualType, VisualResult } from '../../utils/visual/types.t
 import { MAESTRO_VISUAL_TYPES } from '../../utils/visual/types.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 
 function formatResult(result: VisualResult): string {
   const lines: string[] = [];
@@ -38,7 +38,7 @@ export default defineCommand({
     try {
       const services = getServices();
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       if (!MAESTRO_VISUAL_TYPES.includes(args.type as MaestroVisualType)) {

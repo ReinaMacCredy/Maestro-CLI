@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import { requireDoctrinePort } from '../../lib/resolve.ts';
 
 export default defineCommand({
@@ -23,8 +23,7 @@ export default defineCommand({
       const doctrinePort = requireDoctrinePort(services);
       const item = doctrinePort.read(args.name);
       if (!item) {
-        console.error(formatError('doctrine-read', `doctrine '${args.name}' not found`));
-        process.exit(1);
+        throw new MaestroError(`doctrine '${args.name}' not found`);
       }
       output(item, (i) => [
         `Name: ${i.name}`,

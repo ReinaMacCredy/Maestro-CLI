@@ -63,11 +63,6 @@ describe("getNextAction", () => {
     expect(action).toContain("plan-write");
   });
 
-  test("suggests waiting for approval when plan is in review", () => {
-    const action = getNextAction("review", [], []);
-    expect(action).toContain("approval");
-  });
-
   test("suggests task-sync when approved but no tasks", () => {
     const action = getNextAction("approved", [], []);
     expect(action).toContain("task-sync");

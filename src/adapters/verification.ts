@@ -14,6 +14,7 @@ import { spawn } from 'child_process';
 import simpleGit from 'simple-git';
 import * as fs from 'fs';
 import * as path from 'path';
+import { readJson } from '../utils/fs-io.ts';
 
 const MAX_BUILD_OUTPUT = 2048;
 const MIN_SUMMARY_LENGTH = 20;
@@ -241,7 +242,8 @@ export class FsVerificationAdapter implements VerificationPort {
   private detectBuildCommand(projectRoot: string): string | undefined {
     try {
       const pkgPath = path.join(projectRoot, 'package.json');
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const pkg = readJson<{ scripts?: Record<string, string> }>(pkgPath);
+      if (!pkg) return undefined;
       const scripts = pkg.scripts ?? {};
 
       // Priority: check > typecheck > build

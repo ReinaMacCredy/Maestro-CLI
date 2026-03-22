@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireHandoffPort } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'handoff-ack', description: 'Acknowledge a handoff' },
@@ -20,11 +21,9 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      if (!services.handoffPort) {
-        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
-      }
+      const handoffPort = requireHandoffPort(services);
 
-      await services.handoffPort.acknowledgeHandoff(args.threadId);
+      await handoffPort.acknowledgeHandoff(args.threadId);
 
       output({ threadId: args.threadId }, () =>
         `[ok] acknowledged thread '${args.threadId}'`,

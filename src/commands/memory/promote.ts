@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'memory-promote', description: 'Promote feature memory to global' },
@@ -25,13 +25,12 @@ export default defineCommand({
     try {
       const services = getServices();
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       const content = services.memoryAdapter.read(featureName, args.name);
       if (!content) {
-        console.error(formatError('memory-promote', `memory '${args.name}' not found in feature '${featureName}'`));
-        process.exit(1);
+        throw new MaestroError(`memory '${args.name}' not found in feature '${featureName}'`);
       }
 
       const promotedTo = services.memoryAdapter.writeGlobal(args.name, content);

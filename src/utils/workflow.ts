@@ -44,15 +44,12 @@ export function countTaskStatuses(tasks: Array<{ status: TaskStatusType }>): {
 }
 
 export function getNextAction(
-  planStatus: string | null,
+  planStatus: 'approved' | 'draft' | null,
   tasks: Array<{ status: TaskStatusType; folder: string }>,
   runnableTasks: string[],
 ): string {
   if (!planStatus || planStatus === 'draft') {
     return 'Write or revise plan with maestro plan-write, then get approval';
-  }
-  if (planStatus === 'review') {
-    return 'Wait for plan approval or revise based on comments';
   }
   if (tasks.length === 0) {
     return 'Generate tasks from plan with maestro task-sync';

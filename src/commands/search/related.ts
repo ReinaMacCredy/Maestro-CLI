@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireSearchPort } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'search-related', description: 'Find sessions related to a file' },
@@ -23,12 +24,10 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      if (!services.searchPort) {
-        throw new MaestroError('CASS not available', ['Install cass: https://github.com/Dicklesworthstone/coding_agent_session_search']);
-      }
+      const searchPort = requireSearchPort(services);
 
       const limit = args.limit ? parseInt(args.limit, 10) : undefined;
-      const results = await services.searchPort.findRelatedSessions(args.file, limit);
+      const results = await searchPort.findRelatedSessions(args.file, limit);
 
       output({ results }, () => {
         if (results.length === 0) return 'No sessions found.';

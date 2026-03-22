@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireFeature, requireHandoffPort, FEATURE_HINT } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'handoff-send', description: 'Send handoff to another agent' },
@@ -33,20 +33,18 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      if (!services.handoffPort) {
-        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
-      }
+      const handoffPort = requireHandoffPort(services);
 
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
-      const handoff = await services.handoffPort.buildHandoff(featureName, args.task);
+      const handoff = await handoffPort.buildHandoff(featureName, args.task);
       if (args.context) {
         handoff.criticalContext = args.context;
       }
 
-      const result = await services.handoffPort.sendHandoff(featureName, handoff, args.targetAgent);
+      const result = await handoffPort.sendHandoff(featureName, handoff, args.targetAgent);
 
       const data = {
         feature: featureName,

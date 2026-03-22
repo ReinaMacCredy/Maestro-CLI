@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import { AGENT_NAMES } from '../../types.ts';
 import type { AgentName } from '../../types.ts';
 
@@ -21,8 +21,7 @@ export default defineCommand({
   async run({ args }) {
     try {
       if (!AGENT_NAMES.includes(args.agent as AgentName)) {
-        console.error(formatError('config-agent', `unknown agent '${args.agent}'. Valid: ${AGENT_NAMES.join(', ')}`));
-        process.exit(1);
+        throw new MaestroError(`unknown agent '${args.agent}'`, [`Valid agents: ${AGENT_NAMES.join(', ')}`]);
       }
 
       const { configAdapter } = getServices();

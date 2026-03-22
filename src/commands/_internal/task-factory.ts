@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import type { TaskInfo } from '../../types.ts';
 
 export function makeInfoCommand() {
@@ -20,8 +20,7 @@ export function makeInfoCommand() {
         const { taskPort } = getServices();
         const info = await taskPort.get(args.feature, args.task);
         if (!info) {
-          console.error(formatError('task-info', `Task '${args.task}' not found in feature '${args.feature}'`));
-          process.exit(1);
+          throw new MaestroError(`Task '${args.task}' not found in feature '${args.feature}'`);
         }
         output(info, (t: TaskInfo) =>
           [
@@ -54,8 +53,7 @@ export function makeDocReadCommand(docType: 'spec' | 'report') {
         const { taskPort } = getServices();
         const content = await taskPort[portMethod](args.feature, args.task);
         if (content === null) {
-          console.error(formatError(`task-${docType}-read`, `No ${docType} found for task '${args.task}'`));
-          process.exit(1);
+          throw new MaestroError(`No ${docType} found for task '${args.task}'`);
         }
         output({ content }, () => content);
       } catch (err) {

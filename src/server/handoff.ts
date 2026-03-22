@@ -9,7 +9,11 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature, resolveFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { requireHandoffPort as requireHandoffPortShared } from '../lib/resolve.ts';
+
+function requireHandoffPort(thunk: ServicesThunk) {
+  return requireHandoffPortShared(thunk.get());
+}
 
 export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -25,16 +29,14 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
+      const port = requireHandoffPort(thunk);
       const services = thunk.get();
-      if (!services.handoffPort) {
-        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
-      }
       const feature = requireFeature(services, input.feature);
-      const handoff = await services.handoffPort.buildHandoff(feature, input.task);
+      const handoff = await port.buildHandoff(feature, input.task);
       if (input.additional_context) {
         handoff.criticalContext = input.additional_context;
       }
-      const result = await services.handoffPort.sendHandoff(feature, handoff, input.target_agent);
+      const result = await port.sendHandoff(feature, handoff, input.target_agent);
       return respond({ feature, task: input.task, ...result });
     }),
   );
@@ -51,12 +53,10 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
+      const port = requireHandoffPort(thunk);
       const services = thunk.get();
-      if (!services.handoffPort) {
-        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
-      }
       const feature = resolveFeature(services, input.feature);
-      const handoffs = await services.handoffPort.receiveHandoffs(feature ?? undefined, input.agent_id);
+      const handoffs = await port.receiveHandoffs(feature ?? undefined, input.agent_id);
       return respond({ handoffs });
     }),
   );
@@ -71,11 +71,8 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
-      const services = thunk.get();
-      if (!services.handoffPort) {
-        throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
-      }
-      await services.handoffPort.acknowledgeHandoff(input.thread_id);
+      const port = requireHandoffPort(thunk);
+      await port.acknowledgeHandoff(input.thread_id);
       return respond({ threadId: input.thread_id });
     }),
   );

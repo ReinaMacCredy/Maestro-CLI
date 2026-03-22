@@ -33,10 +33,6 @@ export function readJson<T>(filePath: string): T | null {
   }
 }
 
-export function writeJson<T>(filePath: string, data: T): void {
-  writeJsonAtomic(filePath, data);
-}
-
 export function writeAtomic(filePath: string, content: string): void {
   ensureDir(path.dirname(filePath));
   const tempPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;

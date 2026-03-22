@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { findProjectRoot } from '../utils/detection.ts';
+import { ensureDir } from '../utils/fs-io.ts';
 
 /** Parse JSON from stdin. Returns {} on parse failure. */
 export async function readStdin(): Promise<Record<string, unknown>> {
@@ -57,7 +58,7 @@ export function logHookError(projectDir: string | null, hookName: string, error:
   try {
     if (!projectDir) return;
     const logDir = getSessionsDir(projectDir);
-    fs.mkdirSync(logDir, { recursive: true });
+    ensureDir(logDir);
     const logPath = path.join(logDir, 'hook-errors.log');
     const entry = `[${new Date().toISOString()}] ${hookName}: ${error instanceof Error ? error.message : String(error)}\n`;
     fs.appendFileSync(logPath, entry);

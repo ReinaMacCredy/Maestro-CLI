@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 
 export default defineCommand({
   meta: { name: 'feature-info', description: 'Show feature details' },
@@ -22,8 +22,7 @@ export default defineCommand({
       const info = featureAdapter.getInfo(args.feature);
 
       if (!info) {
-        console.error(formatError('feature-info', `Feature '${args.feature}' not found`));
-        process.exit(1);
+        throw new MaestroError(`Feature '${args.feature}' not found`);
       }
 
       output(info, (i) =>

@@ -130,18 +130,6 @@ export interface MemoryFileWithMeta extends MemoryFile {
 }
 
 // ============================================================================
-// Task Spec
-// ============================================================================
-
-export interface TaskSpec {
-  taskFolder: string;
-  featureName: string;
-  planSection: string;
-  context: string;
-  priorTasks: Array<{ folder: string; summary?: string }>;
-}
-
-// ============================================================================
 // Config Types
 // ============================================================================
 

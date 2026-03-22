@@ -12,7 +12,7 @@ import {
   getPlanPath,
   getCommentsPath,
 } from '../../utils/paths.ts';
-import { ensureDir, readJson, writeJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
+import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
 import { acquireLockSync } from '../../utils/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../../types.ts';
 import { listFeatures } from '../../utils/detection.ts';
@@ -56,7 +56,7 @@ export class FsFeatureAdapter implements FeaturePort {
       createdAt: new Date().toISOString(),
     };
 
-    writeJson(getFeatureJsonPath(this.projectRoot, name), feature);
+    writeJsonAtomic(getFeatureJsonPath(this.projectRoot, name), feature);
 
     return feature;
   }

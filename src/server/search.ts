@@ -8,7 +8,11 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { limitParam } from './_utils/params.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { requireSearchPort as requireSearchPortShared } from '../lib/resolve.ts';
+
+function requireSearchPort(thunk: ServicesThunk) {
+  return requireSearchPortShared(thunk.get());
+}
 
 export function registerSearchTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -24,11 +28,8 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
-      const services = thunk.get();
-      if (!services.searchPort) {
-        throw new MaestroError('CASS not available', ['Install cass: https://github.com/Dicklesworthstone/coding_agent_session_search']);
-      }
-      const results = await services.searchPort.searchSessions(input.query, {
+      const port = requireSearchPort(thunk);
+      const results = await port.searchSessions(input.query, {
         agent: input.agent,
         limit: input.limit,
         days: input.days,
@@ -49,11 +50,8 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
-      const services = thunk.get();
-      if (!services.searchPort) {
-        throw new MaestroError('CASS not available', ['Install cass: https://github.com/Dicklesworthstone/coding_agent_session_search']);
-      }
-      const results = await services.searchPort.findRelatedSessions(input.file_path, input.limit);
+      const port = requireSearchPort(thunk);
+      const results = await port.findRelatedSessions(input.file_path, input.limit);
       return respond({ results });
     }),
   );

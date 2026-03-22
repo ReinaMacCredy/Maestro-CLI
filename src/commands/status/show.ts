@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { checkStatus, type StatusResult } from '../../usecases/check-status.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 import { truncateList, formatTruncation } from '../../lib/truncation.ts';
 
 function formatStatus(result: StatusResult): string {
@@ -68,7 +68,7 @@ export default defineCommand({
       const services = getServices();
 
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       const result = await checkStatus(services, featureName);

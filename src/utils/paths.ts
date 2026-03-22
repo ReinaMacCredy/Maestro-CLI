@@ -16,10 +16,7 @@ const FEATURE_FILE = 'feature.json';
 const STATUS_FILE = 'status.json';
 const REPORT_FILE = 'report.md';
 const APPROVED_FILE = 'APPROVED';
-const SUBTASKS_DIR = 'subtasks';
 const SPEC_FILE = 'spec.md';
-const SESSION_FILE = 'session.json';
-const WORKER_PROMPT_FILE = 'worker-prompt.md';
 const HANDOFFS_DIR = 'handoffs';
 const VERIFICATION_FILE = 'verification.json';
 
@@ -79,32 +76,8 @@ export function getTaskSpecPath(projectRoot: string, featureName: string, taskFo
   return path.join(getTaskPath(projectRoot, featureName, taskFolder), SPEC_FILE);
 }
 
-export function getTaskSessionPath(projectRoot: string, featureName: string, taskFolder: string): string {
-  return path.join(getTaskPath(projectRoot, featureName, taskFolder), SESSION_FILE);
-}
-
 export function getApprovedPath(projectRoot: string, featureName: string): string {
   return path.join(getFeaturePath(projectRoot, featureName), APPROVED_FILE);
-}
-
-export function getSubtasksPath(projectRoot: string, featureName: string, taskFolder: string): string {
-  return path.join(getTaskPath(projectRoot, featureName, taskFolder), SUBTASKS_DIR);
-}
-
-export function getSubtaskPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
-  return path.join(getSubtasksPath(projectRoot, featureName, taskFolder), subtaskFolder);
-}
-
-export function getSubtaskStatusPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
-  return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), STATUS_FILE);
-}
-
-export function getSubtaskSpecPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
-  return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), SPEC_FILE);
-}
-
-export function getSubtaskReportPath(projectRoot: string, featureName: string, taskFolder: string, subtaskFolder: string): string {
-  return path.join(getSubtaskPath(projectRoot, featureName, taskFolder, subtaskFolder), REPORT_FILE);
 }
 
 export function getHandoffsPath(projectRoot: string, featureName: string): string {
@@ -114,10 +87,6 @@ export function getHandoffsPath(projectRoot: string, featureName: string): strin
 export function getHandoffPath(projectRoot: string, featureName: string, beadId: string): string {
   const safeName = beadId.replace(/[^a-z0-9-]/gi, '-');
   return path.join(getHandoffsPath(projectRoot, featureName), `${safeName}.md`);
-}
-
-export function getWorkerPromptPath(projectRoot: string, featureName: string, taskFolder: string): string {
-  return path.join(getTaskPath(projectRoot, featureName, taskFolder), WORKER_PROMPT_FILE);
 }
 
 export function getTaskVerificationPath(projectRoot: string, featureName: string, taskFolder: string): string {

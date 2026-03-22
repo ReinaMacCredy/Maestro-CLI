@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readStdin, resolveProjectDir, logHookError, getSessionsDir, EVENTS_FILE } from './_helpers.ts';
+import { ensureDir } from '../utils/fs-io.ts';
 
 const HOOK_NAME = 'posttooluse';
 
@@ -13,7 +14,7 @@ async function main(): Promise<void> {
   const toolInput = (input.tool_input as Record<string, unknown>) || {};
 
   const sessionsDir = getSessionsDir(projectDir);
-  fs.mkdirSync(sessionsDir, { recursive: true });
+  ensureDir(sessionsDir);
 
   const eventsPath = path.join(sessionsDir, EVENTS_FILE);
   const entry: Record<string, unknown> = { ts: new Date().toISOString(), tool: toolName };

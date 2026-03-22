@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireGraphPort } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'graph-plan', description: 'Show parallel execution tracks' },
@@ -18,11 +19,9 @@ export default defineCommand({
   async run({ args }) {
     try {
       const services = getServices();
-      if (!services.graphPort) {
-        throw new MaestroError('bv not available', ['Install bv (beads viewer) for graph intelligence']);
-      }
+      const graphPort = requireGraphPort(services);
 
-      const plan = await services.graphPort.getExecutionPlan(parseInt(args.agents || '1', 10));
+      const plan = await graphPort.getExecutionPlan(parseInt(args.agents || '1', 10));
 
       output(plan, (data) => {
         const lines = [`Parallelism: ${data.parallelism}`, ''];

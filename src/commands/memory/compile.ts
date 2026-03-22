@@ -6,7 +6,7 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
-import { formatError, handleCommandError } from '../../lib/errors.ts';
+import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { estimateTokens } from '../../utils/tokens.ts';
@@ -15,8 +15,7 @@ import type { MemoryFileWithMeta } from '../../types.ts';
 function parseBudget(raw: string): number {
   const n = parseInt(raw, 10);
   if (Number.isNaN(n) || n <= 0) {
-    console.error(formatError('memory-compile', `--budget must be a positive integer, got '${raw}'`));
-    process.exit(1);
+    throw new MaestroError(`--budget must be a positive integer, got '${raw}'`);
   }
   return n;
 }
@@ -29,8 +28,7 @@ function formatMemories(memories: MemoryFileWithMeta[]): string {
 
 function requireMemories(memories: MemoryFileWithMeta[], feature: string): asserts memories is [MemoryFileWithMeta, ...MemoryFileWithMeta[]] {
   if (memories.length === 0) {
-    console.error(formatError('memory-compile', `no memory files for feature '${feature}'`));
-    process.exit(1);
+    throw new MaestroError(`no memory files for feature '${feature}'`);
   }
 }
 
@@ -61,8 +59,7 @@ export default defineCommand({
         // DCP-scored compile
         const task = await taskPort.get(args.feature, args.task);
         if (!task) {
-          console.error(formatError('memory-compile', `task '${args.task}' not found in feature '${args.feature}'`));
-          process.exit(1);
+          throw new MaestroError(`task '${args.task}' not found in feature '${args.feature}'`);
         }
         const memories = memoryAdapter.listWithMeta(args.feature);
         requireMemories(memories, args.feature);
@@ -100,8 +97,7 @@ export default defineCommand({
       // Legacy: full dump (backward compat)
       const compiled = memoryAdapter.compile(args.feature);
       if (!compiled) {
-        console.error(formatError('memory-compile', `no memory files for feature '${args.feature}'`));
-        process.exit(1);
+        throw new MaestroError(`no memory files for feature '${args.feature}'`);
       }
       output(compiled, (c) => c);
     } catch (err) {

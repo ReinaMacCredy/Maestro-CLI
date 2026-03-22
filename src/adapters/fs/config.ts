@@ -107,37 +107,4 @@ export class FsConfigAdapter {
     };
   }
 
-  getDisabledSkills(): string[] {
-    const config = this.get();
-    return config.disableSkills ?? [];
-  }
-
-  getDisabledMcps(): string[] {
-    const config = this.get();
-    return config.disableMcps ?? [];
-  }
-
-  getHookCadence(hookName: string, options?: { safetyCritical?: boolean }): number {
-    const config = this.get();
-    const configuredCadence = config.hook_cadence?.[hookName];
-
-    if (options?.safetyCritical && configuredCadence && configuredCadence > 1) {
-      console.warn(
-        `[maestro:cadence] Ignoring cadence > 1 for safety-critical hook: ${hookName}`
-      );
-      return 1;
-    }
-
-    if (configuredCadence === undefined || configuredCadence === null) {
-      return 1;
-    }
-    if (configuredCadence <= 0 || !Number.isInteger(configuredCadence)) {
-      console.warn(
-        `[maestro:cadence] Invalid cadence ${configuredCadence} for ${hookName}, using 1`
-      );
-      return 1;
-    }
-
-    return configuredCadence;
-  }
 }

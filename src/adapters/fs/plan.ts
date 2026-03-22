@@ -8,7 +8,7 @@ import {
   getCommentsPath,
   getApprovedPath,
 } from '../../utils/paths.ts';
-import { readJson, writeJson, readText, writeText, fileExists } from '../../utils/fs-io.ts';
+import { readJson, writeJsonAtomic, readText, writeText, fileExists } from '../../utils/fs-io.ts';
 import type { CommentsJson, PlanComment, PlanReadResult } from '../../types.ts';
 import type { PlanPort } from '../../ports/plans.ts';
 import * as fs from 'fs';
@@ -50,7 +50,7 @@ export class FsPlanAdapter implements PlanPort {
 
     const approvedPath = getApprovedPath(this.projectRoot, featureName);
     const timestamp = new Date().toISOString();
-    fs.writeFileSync(approvedPath, `Approved at ${timestamp}\n`);
+    writeText(approvedPath, `Approved at ${timestamp}\n`);
   }
 
   isApproved(featureName: string): boolean {
@@ -83,13 +83,13 @@ export class FsPlanAdapter implements PlanPort {
     };
 
     data.threads.push(newComment);
-    writeJson(commentsPath, data);
+    writeJsonAtomic(commentsPath, data);
 
     return newComment;
   }
 
   clearComments(featureName: string): void {
     const commentsPath = getCommentsPath(this.projectRoot, featureName);
-    writeJson(commentsPath, { threads: [] });
+    writeJsonAtomic(commentsPath, { threads: [] });
   }
 }

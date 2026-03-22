@@ -9,6 +9,7 @@ import type { DoctrineItem, DoctrineConditions } from '../ports/doctrine.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
+import { titleToSlug } from '../utils/slug.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import type { HiveConfig } from '../types.ts';
 
@@ -38,7 +39,7 @@ interface TaggedMemory {
 }
 
 function slugify(tags: string[], category: string): string {
-  return `${category}-${tags.slice(0, 3).join('-')}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  return titleToSlug(`${category}-${tags.slice(0, 3).join('-')}`);
 }
 
 /** Pre-computed keyword sets for existing doctrine items (avoids re-extracting per candidate). */

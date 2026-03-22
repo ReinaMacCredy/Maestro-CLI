@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'task-next', description: 'Show runnable tasks and recommended next' },
@@ -20,7 +20,7 @@ export default defineCommand({
     try {
       const services = getServices();
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       const runnable = await services.taskPort.getRunnable(featureName);

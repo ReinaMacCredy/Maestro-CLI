@@ -5,7 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { handleCommandError } from '../../lib/errors.ts';
+import { requireGraphPort } from '../../lib/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'graph-insights', description: 'Show dependency graph metrics' },
@@ -13,11 +14,9 @@ export default defineCommand({
   async run() {
     try {
       const services = getServices();
-      if (!services.graphPort) {
-        throw new MaestroError('bv not available', ['Install bv (beads viewer) for graph intelligence']);
-      }
+      const graphPort = requireGraphPort(services);
 
-      const insights = await services.graphPort.getInsights();
+      const insights = await graphPort.getInsights();
 
       output(insights, (data) => {
         const lines: string[] = [

@@ -5,6 +5,9 @@
 
 import type { MaestroServices } from '../services.ts';
 import type { DoctrinePort } from '../ports/doctrine.ts';
+import type { GraphPort } from '../ports/graph.ts';
+import type { HandoffPort } from '../ports/handoff.ts';
+import type { SearchPort } from '../ports/search.ts';
 import { MaestroError } from './errors.ts';
 
 /**
@@ -45,6 +48,39 @@ export function requireDoctrinePort(services: MaestroServices): DoctrinePort {
   }
   return services.doctrinePort;
 }
+
+/**
+ * Require graph port or throw MaestroError.
+ */
+export function requireGraphPort(services: MaestroServices): GraphPort {
+  if (!services.graphPort) {
+    throw new MaestroError('bv not available', ['Install bv (beads viewer) for graph intelligence']);
+  }
+  return services.graphPort;
+}
+
+/**
+ * Require handoff port or throw MaestroError.
+ */
+export function requireHandoffPort(services: MaestroServices): HandoffPort {
+  if (!services.handoffPort) {
+    throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
+  }
+  return services.handoffPort;
+}
+
+/**
+ * Require search port or throw MaestroError.
+ */
+export function requireSearchPort(services: MaestroServices): SearchPort {
+  if (!services.searchPort) {
+    throw new MaestroError('CASS not available', ['Install cass: https://github.com/Dicklesworthstone/coding_agent_session_search']);
+  }
+  return services.searchPort;
+}
+
+/** Standard hint for missing feature argument in CLI commands. */
+export const FEATURE_HINT = 'Specify --feature <name> or set active: maestro feature-active <name>';
 
 /** Parse comma-separated tags string into trimmed array. */
 export function parseTags(raw?: string): string[] {

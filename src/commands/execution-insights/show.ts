@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { executionInsights, type ExecutionInsightsResult } from '../../usecases/execution-insights.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
 
 function formatInsights(result: ExecutionInsightsResult): string {
   const lines: string[] = [];
@@ -67,7 +67,7 @@ export default defineCommand({
       const services = getServices();
 
       const featureName = requireFeature(services, args.feature, [
-        'Specify --feature <name> or set active: maestro feature-active <name>',
+        FEATURE_HINT,
       ]);
 
       const result = await executionInsights(

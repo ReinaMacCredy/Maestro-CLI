@@ -4,8 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireDoctrinePort as requireDoctrinePortShared } from '../lib/resolve.ts';
-import type { DoctrineItem } from '../ports/doctrine.ts';
-import { CURRENT_SCHEMA_VERSION } from '../adapters/fs/doctrine.ts';
+import { buildDoctrineItem } from '../utils/doctrine-factory.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { suggestDoctrine } from '../usecases/suggest-doctrine.ts';
 
@@ -77,28 +76,20 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
     },
     withErrorHandling(async (input) => {
       const port = requireDoctrinePort(thunk);
-      const existing = port.read(input.name);
-      const now = new Date().toISOString();
+      const existing = port.read(input.name) ?? undefined;
 
-      const item: DoctrineItem = {
+      const item = buildDoctrineItem({
         name: input.name,
         rule: input.rule,
         rationale: input.rationale,
-        conditions: {
-          tags: input.conditionTags,
-          filePatterns: input.conditionFilePatterns,
-        },
-        tags: input.tags ?? [],
-        source: {
-          features: input.sourceFeatures ?? [],
-          memories: input.sourceMemories ?? [],
-        },
-        effectiveness: existing?.effectiveness ?? { injectionCount: 0, associatedSuccessRate: 0, overrideCount: 0 },
-        status: input.status ?? 'active',
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
-        schemaVersion: CURRENT_SCHEMA_VERSION,
-      };
+        tags: input.tags,
+        conditionTags: input.conditionTags,
+        conditionFilePatterns: input.conditionFilePatterns,
+        sourceFeatures: input.sourceFeatures,
+        sourceMemories: input.sourceMemories,
+        status: input.status,
+        existing,
+      });
 
       const path = port.write(item);
       return respond({ name: item.name, path, created: !existing });
@@ -138,24 +129,16 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
     },
     withErrorHandling(async (input) => {
       const port = requireDoctrinePort(thunk);
-      const now = new Date().toISOString();
 
-      const item: DoctrineItem = {
+      const item = buildDoctrineItem({
         name: input.name,
         rule: input.rule,
         rationale: input.rationale,
-        conditions: { tags: input.conditionTags },
-        tags: input.tags ?? [],
-        source: {
-          features: input.sourceFeatures ?? [],
-          memories: input.sourceMemories ?? [],
-        },
-        effectiveness: { injectionCount: 0, associatedSuccessRate: 0, overrideCount: 0 },
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-        schemaVersion: CURRENT_SCHEMA_VERSION,
-      };
+        tags: input.tags,
+        conditionTags: input.conditionTags,
+        sourceFeatures: input.sourceFeatures,
+        sourceMemories: input.sourceMemories,
+      });
 
       const path = port.write(item);
       return respond({ name: item.name, path, approved: true });
