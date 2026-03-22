@@ -1,6 +1,7 @@
 ---
 name: maestro:plan-review-loop
 description: "Deep-review any plan (maestro, Codex, Claude Code plan mode, or plain markdown) using iterative subagent review loops with BMAD-inspired adversarial edge-case discovery. Spawns reviewer subagents that find issues using pre-mortem, inversion, and red-team techniques, auto-fixes them with structured fix strategies, and re-reviews until the plan passes with zero actionable issues. Use when the user says 'review the plan', 'deep review', 'check the plan thoroughly', 'review loop', 'validate before approving', or wants rigorous plan validation before execution. Also use proactively before plan-approve when the plan is complex or high-risk."
+stage: planning
 ---
 
 # Plan Review Loop

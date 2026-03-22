@@ -8,7 +8,7 @@ import { featureParam } from './_utils/params.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
 import { derivePipelineStage } from '../utils/workflow.ts';
-import { buildPlaybook } from '../utils/playbook.ts';
+import { buildPlaybookWithExternalSkills } from '../utils/playbook.ts';
 
 export function registerStatusTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -35,7 +35,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       });
       const researchTools = input.verbose ? detectResearchTools(services.directory) : undefined;
 
-      const playbook = buildPlaybook(pipelineStage);
+      const playbook = buildPlaybookWithExternalSkills(pipelineStage, services.directory);
 
       // Strip heavy fields for MCP -- agents use task_list / plan_read for details
       const { items: _items, ...tasksSummary } = result.tasks;

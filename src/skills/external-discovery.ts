@@ -1,0 +1,77 @@
+/**
+ * Sync external skill discovery for playbook integration.
+ *
+ * Deliberately uses readdirSync/readFileSync (not async) because callers
+ * (buildPlaybookWithExternalSkills, sessionstart hook) are synchronous.
+ * External skill directories are small (0-5 skills typically), sub-millisecond scan.
+ *
+ * This file MUST NOT import from registry.generated.ts.
+ */
+
+import { readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { parseFrontmatterRich } from '../utils/frontmatter.ts';
+import type { SkillEntry, SkillSource } from './registry.ts';
+
+const EXTERNAL_SOURCES: Array<{ dir: string; source: SkillSource }> = [
+  { dir: 'skills/external', source: 'external' },
+  { dir: '.maestro/skills', source: 'maestro' },
+  { dir: '.claude/skills', source: 'claude' },
+];
+
+/** Per-projectRoot cache -- skills don't change mid-session. */
+const _cache = new Map<string, SkillEntry[]>();
+
+/** Discover external skills from project directories (sync). */
+export function discoverExternalSkills(projectRoot: string): SkillEntry[] {
+  const cached = _cache.get(projectRoot);
+  if (cached) return cached;
+
+  const results: SkillEntry[] = [];
+
+  for (const { dir, source } of EXTERNAL_SOURCES) {
+    const base = join(projectRoot, dir);
+    let entries: ReturnType<typeof readdirSync>;
+    try {
+      entries = readdirSync(base, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+
+    for (const slug of dirs) {
+      const mdPath = join(base, slug, 'SKILL.md');
+      let raw: string;
+      try {
+        raw = readFileSync(mdPath, 'utf-8');
+      } catch {
+        continue;
+      }
+
+      const fm = parseFrontmatterRich(raw);
+      if (!fm?.name || !fm?.description) continue;
+
+      let stage: string[] | undefined;
+      if (fm.stage) {
+        stage = Array.isArray(fm.stage) ? fm.stage.map(String) : [String(fm.stage)];
+      }
+
+      results.push({
+        name: String(fm.name),
+        description: String(fm.description),
+        source,
+        argumentHint: fm['argument-hint'] ? String(fm['argument-hint']) : undefined,
+        stage,
+      });
+    }
+  }
+
+  _cache.set(projectRoot, results);
+  return results;
+}
+
+/** Return external skills tagged for a specific pipeline stage (sync). */
+export function discoverExternalSkillsByStage(projectRoot: string, stage: string): SkillEntry[] {
+  return discoverExternalSkills(projectRoot).filter(s => s.stage?.includes(stage));
+}

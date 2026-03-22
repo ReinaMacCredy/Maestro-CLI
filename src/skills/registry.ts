@@ -13,6 +13,20 @@ export interface SkillEntry {
   description: string;
   source: SkillSource;
   argumentHint?: string;
+  stage?: string[];
+}
+
+/** Return built-in skills tagged for a specific pipeline stage. */
+export function getBuiltinSkillsByStage(stage: string): SkillEntry[] {
+  return BUILTIN_SKILL_NAMES
+    .filter(name => BUILTIN_SKILLS[name].stage?.includes(stage))
+    .map(name => ({
+      name,
+      description: BUILTIN_SKILLS[name].description,
+      source: 'builtin' as SkillSource,
+      argumentHint: BUILTIN_SKILLS[name].argumentHint,
+      stage: BUILTIN_SKILLS[name].stage,
+    }));
 }
 
 /** Directories to scan for external skills, in priority order. */

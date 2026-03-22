@@ -3,7 +3,7 @@ import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 import { detectResearchTools } from '../utils/research-tools.ts';
 import { derivePipelineStage, type PipelineStage } from '../utils/workflow.ts';
-import { buildPlaybook } from '../utils/playbook.ts';
+import { buildPlaybook, buildPlaybookWithExternalSkills } from '../utils/playbook.ts';
 
 const HOOK_NAME = 'sessionstart';
 
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   const isCompact = source === 'compact' || source === 'resume';
 
   if (isCompact) {
-    const pb = buildPlaybook(stage);
+    const pb = buildPlaybookWithExternalSkills(stage, projectDir);
     const lines = [
       `[maestro] Feature: ${featureName} [${stage}]`,
       `Tasks: ${status.tasks.pending} pending, ${status.tasks.inProgress} claimed, ${status.tasks.done} done (${status.tasks.total} total)`,
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
   lines.push('');
   lines.push(`Next: ${status.nextAction}`);
 
-  const pb = buildPlaybook(stage);
+  const pb = buildPlaybookWithExternalSkills(stage, projectDir);
   if (pb.skills.length > 0) {
     lines.push('');
     lines.push(`Recommended skills: ${pb.skills.join(', ')}`);

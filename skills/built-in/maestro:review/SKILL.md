@@ -2,6 +2,7 @@
 name: maestro:review
 description: "Code review for a feature against its spec and plan. Verifies implementation matches requirements, checks code quality and security."
 argument-hint: "[<feature-name>] [--current]"
+stage: execution
 ---
 
 # Review -- Feature Code Review

@@ -2,6 +2,7 @@
 name: maestro:note
 description: "Capture decisions, constraints, and context to persistent memory. Global memory is injected into every session and implementation run. Per-feature memory tracks working context."
 argument-hint: "<content> [--global|--show|--prune|--clear <scope>]"
+stage: [discovery, research, planning, execution]
 ---
 
 # Note -- Persistent Working Memory

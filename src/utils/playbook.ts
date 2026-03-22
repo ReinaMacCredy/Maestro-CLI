@@ -10,6 +10,7 @@
  */
 
 import type { PipelineStage } from './workflow.ts';
+import { discoverExternalSkillsByStage } from '../skills/external-discovery.ts';
 
 export interface Playbook {
   stage: PipelineStage;
@@ -97,6 +98,20 @@ const PLAYBOOKS = {
 
 export function buildPlaybook(stage: PipelineStage): Playbook {
   return PLAYBOOKS[stage];
+}
+
+/**
+ * Build playbook with external skills merged in.
+ * Discovers skills from external directories tagged for this stage
+ * and appends them to the built-in skill list.
+ */
+export function buildPlaybookWithExternalSkills(stage: PipelineStage, projectRoot: string): Playbook {
+  const base = buildPlaybook(stage);
+  const external = discoverExternalSkillsByStage(projectRoot, stage);
+  if (external.length === 0) return base;
+  const extraNames = external.map(s => s.name).filter(n => !base.skills.includes(n));
+  if (extraNames.length === 0) return base;
+  return { ...base, skills: [...base.skills, ...extraNames] };
 }
 
 const allTasksCompleteHint = (ctx?: TransitionContext): TransitionHint | undefined => {
