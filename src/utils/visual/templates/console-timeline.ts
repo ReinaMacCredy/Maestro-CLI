@@ -22,17 +22,15 @@ export const renderConsoleTimeline: TemplateRenderer<ConsoleTimelineData> = (inp
     };
   }
 
-  const levels = [...new Set(data.entries.map(e => e.level))];
-  const levelCounts = levels.map(l => ({
-    level: l,
-    count: data.entries.filter(e => e.level === l).length,
-  }));
+  const counts: Record<string, number> = {};
+  for (const e of data.entries) counts[e.level] = (counts[e.level] ?? 0) + 1;
+  const levels = Object.keys(counts);
 
-  const filterCheckboxes = levelCounts.map(({ level, count }) => `
+  const filterCheckboxes = levels.map(level => `
     <label style="display: inline-flex; align-items: center; gap: 0.25rem; margin: 0.125rem 0.5rem 0.125rem 0; cursor: pointer; font-size: 0.8125rem">
-      <input type="checkbox" checked onchange="toggleLevel('${level}', this.checked)">
+      <input type="checkbox" checked data-filter-level="${escapeHtml(level)}">
       <span style="color: ${LEVEL_COLORS[level] ?? 'var(--text)'}">${level}</span>
-      <span style="color: var(--text-dim); font-size: 0.75rem">(${count})</span>
+      <span style="color: var(--text-dim); font-size: 0.75rem">(${counts[level]})</span>
     </label>
   `).join('');
 
@@ -76,13 +74,17 @@ export const renderConsoleTimeline: TemplateRenderer<ConsoleTimelineData> = (inp
   `;
 
   const filterScript = `
-    function toggleLevel(level, show) {
-      document.querySelectorAll('#console-container .console-entry').forEach(function(el) {
-        if (el.dataset.level === level) {
-          el.style.display = show ? '' : 'none';
-        }
+    document.querySelectorAll('[data-filter-level]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var level = cb.dataset.filterLevel;
+        var show = cb.checked;
+        document.querySelectorAll('#console-container .console-entry').forEach(function(el) {
+          if (el.dataset.level === level) {
+            el.style.display = show ? '' : 'none';
+          }
+        });
       });
-    }
+    });
   `;
 
   return { bodyHtml, extraScripts: filterScript };

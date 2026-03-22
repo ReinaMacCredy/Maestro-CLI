@@ -88,7 +88,7 @@ async function gatherStatusDashboard(feature: string, services: MaestroServices)
       pending: status.tasks.pending,
       claimed: status.tasks.inProgress,
       done: status.tasks.done,
-      blocked: status.tasks.items.filter(t => t.status === 'blocked').length,
+      blocked: status.blocked.length,
       review: status.tasks.review,
       revision: status.tasks.revision,
     },

@@ -1,4 +1,4 @@
-import type { TemplateRenderer, NetworkWaterfallData, NetworkRequest } from '../types.ts';
+import type { TemplateRenderer, NetworkWaterfallData } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 
 function safeNum(n: number): number {
