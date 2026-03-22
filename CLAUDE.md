@@ -57,11 +57,13 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **6 task states**: pending, claimed, done, blocked, review, revision
-- **40 MCP tools** across 10 groups
+- **53 MCP tools** across 13 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Doctrine Compiler**: cross-feature learning from execution history, injected into workers via separate budget
 - **Pipeline**: discovery --> research --> planning --> approval --> execution --> done (stages are skippable)
+- **DCP budgets**: token-based (chars/4 estimation). Config supports both `*BudgetTokens` (preferred) and `*BudgetBytes` (backward compat, auto-derives tokens)
+- **Skill stages**: built-in and external skills declare their pipeline stage via `stage:` frontmatter. Playbook auto-discovers external skills tagged for the current stage.
 
 ## Workflow Phases
 
@@ -102,17 +104,20 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (40)
+## MCP Tools (53)
 
 | Group | Tools |
 |-------|-------|
-| Feature (3) | `feature_create`, `feature_list`, `feature_complete` |
-| Plan (4) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment` |
-| Task (9) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list` |
+| Feature (5) | `feature_create`, `feature_list`, `feature_complete`, `feature_info`, `feature_active` |
+| Plan (6) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment`, `plan_revoke`, `plan_comments_clear` |
+| Task (12) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list`, `task_info`, `task_spec_read`, `task_report_read` |
 | Brief (1) | `task_brief` -- full agent context for a task (spec, DCP memories, doctrine, graph, revision, worker rules) |
-| Memory (4) | `memory_write`, `memory_read`, `memory_list`, `memory_promote` |
-| Doctrine (5) | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve` |
-| Meta (6) | `status`, `skill`, `ping`, `init`, `dcp_preview`, `execution_insights` |
+| Memory (7) | `memory_write`, `memory_read`, `memory_list`, `memory_promote`, `memory_delete`, `memory_stats`, `memory_compile` |
+| Doctrine (6) | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve`, `doctrine_suggest` |
+| Skill (2) | `skill`, `skill_list` |
+| Config (1) | `config_get` |
+| Meta (4) | `status`, `ping`, `init`, `dcp_preview` |
+| Execution (1) | `execution_insights` |
 | Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
 | Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
 | Search (2) | `search_sessions`, `search_related` |
