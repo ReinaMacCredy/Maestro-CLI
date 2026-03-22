@@ -61,7 +61,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     if (cfg.enabled && task) {
       const allMemories = this.memoryAdapter.listWithMeta(feature);
       const selected = selectMemories(
-        allMemories, task, null, cfg.handoffDecisionBudgetBytes,
+        allMemories, task, null, cfg.handoffDecisionBudgetTokens,
         cfg.relevanceThreshold,
       );
       decisions = selected.memories.map(m => ({

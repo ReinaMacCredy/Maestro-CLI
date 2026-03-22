@@ -10,6 +10,7 @@ import { selectMemories } from '../utils/context-selector.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
+import { estimateTokens } from '../utils/tokens.ts';
 
 export interface PruneContextParams {
   featureName: string;
@@ -33,6 +34,7 @@ export interface PruneContextResult {
   injection: string;
   metrics: {
     totalBytes: number;
+    totalTokens: number;
     sections: { spec: number; memories: number; completed: number; rich: number; graph: number; rules: number; doctrine: number };
     memoriesIncluded: number;
     memoriesDropped: number;
@@ -89,7 +91,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     const planSection = task.planTitle ?? null;
     const selected = selectMemories(
       memories, task, planSection,
-      cfg.memoryBudgetBytes, cfg.relevanceThreshold,
+      cfg.memoryBudgetTokens, cfg.relevanceThreshold,
       featureCreatedAt, allTasks,
     );
 
@@ -122,10 +124,10 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       let used = 0;
       for (const ct of items) {
         const line = `- ${ct.name}: ${ct.summary}`;
-        const lineBytes = Buffer.byteLength(line);
-        if (used + lineBytes > cfg.completedTaskBudgetBytes) break;
+        const lineTokens = estimateTokens(line);
+        if (used + lineTokens > cfg.completedTaskBudgetTokens) break;
         parts.push(line);
-        used += lineBytes;
+        used += lineTokens;
       }
       if (parts.length > 0) {
         completedSection = '\n## Completed Tasks\n\n' + parts.join('\n');
@@ -149,10 +151,10 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     let used = 0;
     for (const item of doctrineItems) {
       const block = `### ${item.name}\n**Rule**: ${item.rule}\n**Rationale**: ${item.rationale}`;
-      const blockBytes = Buffer.byteLength(block);
-      if (used + blockBytes > doctrineCfg.doctrineBudgetBytes) break;
+      const blockTokens = estimateTokens(block);
+      if (used + blockTokens > doctrineCfg.doctrineBudgetTokens) break;
       parts.push(block);
-      used += blockBytes;
+      used += blockTokens;
       doctrineItemsIncluded++;
     }
     if (parts.length > 0) {
@@ -188,6 +190,7 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
     injection,
     metrics: {
       totalBytes: Buffer.byteLength(injection),
+      totalTokens: estimateTokens(injection),
       sections: {
         spec: specBytes,
         memories: memoryBytes,

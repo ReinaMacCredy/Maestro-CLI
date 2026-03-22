@@ -17,6 +17,7 @@ import { WORKER_RULES } from '../utils/worker-rules.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import { MaestroError } from '../lib/errors.ts';
+import { estimateTokens } from '../utils/tokens.ts';
 
 export interface TaskBriefParams {
   taskPort: TaskPort;
@@ -45,6 +46,7 @@ export interface TaskBriefResult {
   richFields?: { design?: string; acceptanceCriteria?: string };
   workerRules: string;
   dcp: {
+    totalTokens: number;
     totalBytes: number;
     memoriesIncluded: number;
     memoriesDropped: number;
@@ -140,7 +142,7 @@ export async function taskBrief(
   const planSection = task.planTitle ?? null;
   const selected: SelectedContext = selectMemories(
     rawMemories, task, planSection,
-    dcpConfig.memoryBudgetBytes, dcpConfig.relevanceThreshold,
+    dcpConfig.memoryBudgetTokens, dcpConfig.relevanceThreshold,
     featureCreatedAt, allTasks,
   );
 
@@ -159,13 +161,13 @@ export async function taskBrief(
     const doneTasks = allTasksResult.value
       .filter(t => t.status === 'done' && t.summary)
       .reverse(); // newest-first (list returns creation order)
-    const budgetBytes = dcpConfig.completedTaskBudgetBytes ?? 2048;
-    let usedBytes = 0;
+    const budgetTokens = dcpConfig.completedTaskBudgetTokens ?? 512;
+    let usedTokens = 0;
     for (const t of doneTasks) {
       const entry = { folder: t.folder, name: t.name ?? t.folder, summary: t.summary! };
-      const entryBytes = Buffer.byteLength(JSON.stringify(entry));
-      if (usedBytes + entryBytes > budgetBytes) break;
-      usedBytes += entryBytes;
+      const entryTokens = estimateTokens(JSON.stringify(entry));
+      if (usedTokens + entryTokens > budgetTokens) break;
+      usedTokens += entryTokens;
       completedTasks.push(entry);
     }
   }
@@ -181,13 +183,13 @@ export async function taskBrief(
         const items = params.doctrinePort.findRelevant(derivedTags, specKeywords);
 
         // Budget-cap doctrine items
-        const doctrineBudget = doctrineConfig.doctrineBudgetBytes ?? 1024;
-        let usedBytes = 0;
+        const doctrineBudgetTokens = doctrineConfig.doctrineBudgetTokens ?? 256;
+        let usedTokens = 0;
         for (const item of items) {
           const entry = { name: item.name, rule: item.rule, rationale: item.rationale };
-          const entryBytes = Buffer.byteLength(JSON.stringify(entry));
-          if (usedBytes + entryBytes > doctrineBudget) break;
-          usedBytes += entryBytes;
+          const entryTokens = estimateTokens(JSON.stringify(entry));
+          if (usedTokens + entryTokens > doctrineBudgetTokens) break;
+          usedTokens += entryTokens;
           doctrine.push(entry);
         }
 
@@ -216,6 +218,7 @@ export async function taskBrief(
     richFields,
     workerRules: WORKER_RULES,
     dcp: {
+      totalTokens: selected.totalTokens,
       totalBytes: selected.totalBytes,
       memoriesIncluded: selected.includedCount,
       memoriesDropped: selected.droppedCount,

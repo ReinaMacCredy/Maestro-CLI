@@ -9,6 +9,7 @@ import { output } from '../../lib/output.ts';
 import { formatError, handleCommandError } from '../../lib/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
+import { estimateTokens } from '../../utils/tokens.ts';
 import type { MemoryFileWithMeta } from '../../types.ts';
 
 function parseBudget(raw: string): number {
@@ -66,7 +67,7 @@ export default defineCommand({
         const memories = memoryAdapter.listWithMeta(args.feature);
         requireMemories(memories, args.feature);
         const cfg = resolveDcpConfig(configAdapter.get().dcp);
-        const budget = args.budget ? parseBudget(args.budget) : cfg.memoryBudgetBytes;
+        const budget = args.budget ? parseBudget(args.budget) : cfg.memoryBudgetTokens;
         const featureCreatedAt = featureAdapter.get(args.feature)?.createdAt;
         const selected = selectMemories(
           memories, task, task.planTitle ?? null, budget,
@@ -85,12 +86,12 @@ export default defineCommand({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
         const included: typeof sorted = [];
-        let usedBytes = 0;
+        let usedTokens = 0;
         for (const m of sorted) {
-          const mBytes = Buffer.byteLength(m.bodyContent);
-          if (usedBytes + mBytes > budget) break;
+          const mTokens = estimateTokens(m.bodyContent);
+          if (usedTokens + mTokens > budget) break;
           included.push(m);
-          usedBytes += mBytes;
+          usedTokens += mTokens;
         }
         output(formatMemories(included), (c) => c);
         return;

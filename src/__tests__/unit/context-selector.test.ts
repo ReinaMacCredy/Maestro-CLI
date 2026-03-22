@@ -31,7 +31,7 @@ describe('selectMemories', () => {
     expect(result.memories).toHaveLength(0);
     expect(result.includedCount).toBe(0);
     expect(result.droppedCount).toBe(0);
-    expect(result.totalBytes).toBe(0);
+    expect(result.totalTokens).toBe(0);
     expect(result.scores).toEqual([]);
   });
 
@@ -59,11 +59,11 @@ describe('selectMemories', () => {
       makeMemory('big1', bigContent),
       makeMemory('big2', bigContent),
     ];
-    // Budget only fits one
-    const result = selectMemories(memories, makeTask(), null, 3500);
+    // Budget only fits one (3000 chars / 4 = 750 tokens each, budget 800 fits one)
+    const result = selectMemories(memories, makeTask(), null, 800);
     expect(result.includedCount).toBe(1);
     expect(result.droppedCount).toBe(1);
-    expect(result.totalBytes).toBeLessThanOrEqual(3500);
+    expect(result.totalTokens).toBeLessThanOrEqual(800);
   });
 
   test('orders by relevance score descending', () => {
