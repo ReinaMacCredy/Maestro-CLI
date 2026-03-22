@@ -300,4 +300,61 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       return respond({ feature, tasks });
     }),
   );
+
+  server.registerTool(
+    'maestro_task_info',
+    {
+      description: 'Get detailed information about a specific task: status, dependencies, claim info, summary.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const task = await services.taskPort.get(feature, input.task);
+      if (!task) {
+        return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
+      }
+      return respond({ feature, task });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_spec_read',
+    {
+      description: 'Read the compiled spec for a task. Contains implementation details, acceptance criteria, and injected context.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const spec = await services.taskPort.readSpec(feature, input.task);
+      return respond({ feature, task: input.task, spec: spec ?? null });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_report_read',
+    {
+      description: 'Read the completion report for a task. Contains the worker summary and verification results.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const report = await services.taskPort.readReport(feature, input.task);
+      return respond({ feature, task: input.task, report: report ?? null });
+    }),
+  );
 }
