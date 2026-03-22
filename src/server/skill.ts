@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { textResponse, withErrorHandling } from './_utils/respond.ts';
+import { respond, textResponse, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
-import { loadSkill, loadSkillReference } from '../skills/registry.ts';
+import { loadSkill, loadSkillReference, listSkills } from '../skills/registry.ts';
 import { MaestroError } from '../lib/errors.ts';
 
 export function registerSkillTools(server: McpServer, _thunk: ServicesThunk, directory?: string): void {
@@ -25,6 +25,27 @@ export function registerSkillTools(server: McpServer, _thunk: ServicesThunk, dir
         throw new MaestroError(result.error, ['Run maestro_skill with a valid skill name. Check available skills in maestro status output.']);
       }
       return textResponse(result.content);
+    }),
+  );
+
+  server.registerTool(
+    'maestro_skill_list',
+    {
+      description: 'List all available skills (builtin and external). Shows name, description, and source.',
+      inputSchema: {},
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async () => {
+      const skills = await listSkills(directory);
+      return respond({
+        count: skills.length,
+        skills: skills.map(s => ({
+          name: s.name,
+          description: s.description,
+          source: s.source,
+          ...(s.argumentHint ? { argumentHint: s.argumentHint } : {}),
+        })),
+      });
     }),
   );
 }
