@@ -21,7 +21,7 @@ import { renderDoctrineNetwork } from '../utils/visual/templates/doctrine-networ
 import { checkStatus, type StatusServices } from './check-status.ts';
 import { executionInsights } from './execution-insights.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { countTaskStatuses } from '../utils/workflow.ts';
+import { derivePipelineStage } from '../utils/workflow.ts';
 
 // ============================================================================
 // Data Gathering
@@ -61,15 +61,23 @@ async function gatherStatusDashboard(feature: string, services: MaestroServices)
 
   const status = await checkStatus(statusServices, feature);
 
-  // Doctrine stats from optional port
+  // Doctrine stats from optional port -- single pass
   const doctrineItems = services.doctrinePort?.list() ?? [];
-  const doctrineStats = {
-    total: doctrineItems.length,
-    active: doctrineItems.filter(d => d.status === 'active').length,
-    deprecated: doctrineItems.filter(d => d.status === 'deprecated').length,
-  };
+  let active = 0, deprecated = 0;
+  for (const d of doctrineItems) {
+    if (d.status === 'active') active++;
+    else if (d.status === 'deprecated') deprecated++;
+  }
 
   const featureJson = services.featureAdapter.get(feature);
+
+  const pipelineStage = derivePipelineStage({
+    planExists: status.plan.exists,
+    planApproved: status.plan.approved,
+    taskTotal: status.tasks.total,
+    taskDone: status.tasks.done,
+    contextCount: status.context.count,
+  });
 
   return {
     feature: {
@@ -90,9 +98,9 @@ async function gatherStatusDashboard(feature: string, services: MaestroServices)
     },
     runnable: status.runnable,
     blocked: status.blocked,
-    pipelineStage: status.nextAction.includes('plan') ? 'planning' : status.tasks.done === status.tasks.total && status.tasks.total > 0 ? 'done' : 'execution',
+    pipelineStage,
     memoryStats: { count: status.context.count, totalBytes: status.context.totalBytes },
-    doctrineStats,
+    doctrineStats: { total: doctrineItems.length, active, deprecated },
     nextAction: status.nextAction,
   };
 }

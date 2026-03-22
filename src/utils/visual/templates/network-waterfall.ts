@@ -46,8 +46,8 @@ export const renderNetworkWaterfall: TemplateRenderer<NetworkWaterfallData> = (i
     };
   }
 
-  const minTime = Math.min(...data.requests.map(r => safeNum(r.startTime)));
-  const maxTime = Math.max(...data.requests.map(r => safeNum(r.endTime)));
+  const minTime = data.requests.reduce((m, r) => Math.min(m, safeNum(r.startTime)), Infinity);
+  const maxTime = data.requests.reduce((m, r) => Math.max(m, safeNum(r.endTime)), -Infinity);
   const totalDuration = maxTime - minTime || 1;
 
   const rows = data.requests.map((req, i) => {
@@ -68,7 +68,7 @@ export const renderNetworkWaterfall: TemplateRenderer<NetworkWaterfallData> = (i
           ${escapeHtml(shortenUrl(req.url))}
         </div>
         <div class="waterfall__track">
-          <div class="${cls}" style="left: ${leftPct}%; width: ${widthPct}%" class="waterfall__bar ${cls}">
+          <div class="waterfall__bar ${cls}" style="left: ${leftPct}%; width: ${widthPct}%">
             ${duration}${sizeLabel ? ` / ${sizeLabel}` : ''}
           </div>
         </div>
@@ -91,11 +91,11 @@ export const renderNetworkWaterfall: TemplateRenderer<NetworkWaterfallData> = (i
         <div class="kpi__value">${data.requests.length}</div>
         <div class="kpi__label">Requests</div>
       </div>
-      <div class="kpi animate" style="--i: 0">
+      <div class="kpi animate" style="--i: 1">
         <div class="kpi__value" style="color: ${errors.length > 0 ? 'var(--danger)' : 'var(--secondary)'}">${errors.length}</div>
         <div class="kpi__label">Errors</div>
       </div>
-      <div class="kpi animate" style="--i: 0">
+      <div class="kpi animate" style="--i: 2">
         <div class="kpi__value">${totalTime}ms</div>
         <div class="kpi__label">Duration</div>
       </div>

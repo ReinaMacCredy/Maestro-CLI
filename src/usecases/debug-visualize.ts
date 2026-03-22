@@ -4,8 +4,8 @@
  */
 
 import { z } from 'zod';
-import type { DebugVisualType, VisualResult } from '../utils/visual/types.ts';
-import { renderPage, writeVisual, escapeHtml } from '../utils/visual/renderer.ts';
+import type { DebugVisualType, VisualResult, TemplateRenderer } from '../utils/visual/types.ts';
+import { renderPage, writeVisual } from '../utils/visual/renderer.ts';
 import { renderComponentTree } from '../utils/visual/templates/component-tree.ts';
 import { renderStateFlow } from '../utils/visual/templates/state-flow.ts';
 import { renderErrorCascade } from '../utils/visual/templates/error-cascade.ts';
@@ -93,7 +93,7 @@ const SCHEMAS: Record<DebugVisualType, z.ZodType> = {
 // Template Dispatch
 // ============================================================================
 
-const RENDERERS: Record<DebugVisualType, (input: any) => any> = {
+const RENDERERS: Record<DebugVisualType, TemplateRenderer<unknown>> = {
   'component-tree': renderComponentTree,
   'state-flow': renderStateFlow,
   'error-cascade': renderErrorCascade,
@@ -121,7 +121,7 @@ export async function debugVisualize(
   const result = schema.safeParse(data);
   if (!result.success) {
     throw new MaestroError(
-      `Invalid data for ${type}: ${escapeHtml(result.error.message)}`,
+      `Invalid data for ${type}: ${result.error.message}`,
       ['See maestro skill maestro:visual for schema reference'],
     );
   }

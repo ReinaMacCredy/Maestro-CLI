@@ -5,7 +5,7 @@
 
 import type { TemplateRenderer, ExecutionTimelineData } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
-import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT } from '../css.ts';
+import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT, ZOOM_CONTROLS_HTML } from '../css.ts';
 
 function buildKnowledgeFlow(data: ExecutionTimelineData): string {
   if (data.knowledgeFlow.length === 0) return '';
@@ -117,11 +117,7 @@ export const renderExecutionTimeline: TemplateRenderer<ExecutionTimelineData> = 
       <div class="section animate" style="--i: ${data.insights.length + 3}; margin-top: 1.5rem">
         <div class="section-label">Knowledge Flow</div>
         <div class="mermaid-wrap">
-          <div class="zoom-controls">
-            <button data-zoom-in title="Zoom in">+</button>
-            <button data-zoom-out title="Zoom out">&minus;</button>
-            <button data-zoom-reset title="Reset">&#8634;</button>
-          </div>
+          ${ZOOM_CONTROLS_HTML}
           <pre class="mermaid">${flowDef}</pre>
         </div>
       </div>

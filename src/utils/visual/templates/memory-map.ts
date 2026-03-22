@@ -17,8 +17,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function priorityLabel(p?: number): string {
-  if (p === undefined) return '--';
-  return `${'P' + p}`;
+  return p !== undefined ? `P${p}` : '--';
 }
 
 function categoryColor(cat?: string): string {

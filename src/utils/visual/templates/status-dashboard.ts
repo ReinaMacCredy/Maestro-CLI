@@ -67,7 +67,7 @@ export const renderStatusDashboard: TemplateRenderer<StatusDashboardData> = (inp
 
     <div class="grid--2 grid" style="margin-bottom: 1.5rem">
       <div class="section section--green animate" style="--i: ${kpis.length + 2}">
-        <div class="section-label" style="--dot-color: var(--secondary)">Runnable Tasks</div>
+        <div class="section-label">Runnable Tasks</div>
         ${runnableList}
       </div>
       <div class="section section--red animate" style="--i: ${kpis.length + 3}">

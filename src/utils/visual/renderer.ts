@@ -6,7 +6,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { writeAtomic, ensureDir } from '../fs-io.ts';
 import { MAESTRO_CSS, GOOGLE_FONTS_LINK } from './css.ts';
 import type { VisualType, VisualResult } from './types.ts';
@@ -159,7 +159,7 @@ function openBrowser(filePath: string): Promise<boolean> {
     }
 
     try {
-      const child = exec(`${cmd} ${args.map(a => `"${a}"`).join(' ')}`);
+      const child = execFile(cmd, args);
       child.on('error', () => resolve(false));
       child.on('exit', (code) => resolve(code === 0));
     } catch {

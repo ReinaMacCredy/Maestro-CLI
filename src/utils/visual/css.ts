@@ -608,6 +608,12 @@ window.addEventListener('error', function(e) {
 }, true);
 </script>`;
 
+export const ZOOM_CONTROLS_HTML = `<div class="zoom-controls">
+  <button data-zoom-in title="Zoom in">+</button>
+  <button data-zoom-out title="Zoom out">&minus;</button>
+  <button data-zoom-reset title="Reset">&#8634;</button>
+</div>`;
+
 export const ZOOM_CONTROLS_SCRIPT = `
 document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
   var scale = 1;

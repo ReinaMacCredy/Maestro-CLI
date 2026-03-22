@@ -5,7 +5,7 @@
 
 import type { TemplateRenderer, DoctrineNetworkData } from '../types.ts';
 import { escapeHtml, sanitizeMermaidLabel } from '../renderer.ts';
-import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT } from '../css.ts';
+import { MERMAID_CDN, ZOOM_CONTROLS_SCRIPT, ZOOM_CONTROLS_HTML } from '../css.ts';
 
 function buildDoctrineGraph(data: DoctrineNetworkData): string {
   if (data.items.length === 0) return '';
@@ -34,15 +34,20 @@ function buildDoctrineGraph(data: DoctrineNetworkData): string {
   }
 
   const addedEdges = new Set<string>();
+  const MAX_EDGES_PER_TAG = 15;
+  const MAX_TOTAL_EDGES = 200;
   for (const [tag, items] of Object.entries(tagToItems)) {
+    if (items.length > MAX_EDGES_PER_TAG) continue;
     for (let i = 0; i < items.length; i++) {
       for (let j = i + 1; j < items.length; j++) {
+        if (addedEdges.size >= MAX_TOTAL_EDGES) break;
         const edgeKey = [items[i], items[j]].sort().join('--');
         if (!addedEdges.has(edgeKey)) {
           addedEdges.add(edgeKey);
           lines.push(`  ${items[i]} ---|${sanitizeMermaidLabel(tag)}| ${items[j]}`);
         }
       }
+      if (addedEdges.size >= MAX_TOTAL_EDGES) break;
     }
   }
 
@@ -82,11 +87,7 @@ export const renderDoctrineNetwork: TemplateRenderer<DoctrineNetworkData> = (inp
 
     ${graphDef ? `
       <div class="mermaid-wrap animate" style="--i: 0; margin-bottom: 1.5rem">
-        <div class="zoom-controls">
-          <button data-zoom-in title="Zoom in">+</button>
-          <button data-zoom-out title="Zoom out">&minus;</button>
-          <button data-zoom-reset title="Reset">&#8634;</button>
-        </div>
+        ${ZOOM_CONTROLS_HTML}
         <pre class="mermaid">${graphDef}</pre>
       </div>
     ` : ''}

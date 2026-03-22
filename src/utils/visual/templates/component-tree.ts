@@ -6,7 +6,11 @@
 import type { TemplateRenderer, ComponentTreeData, ComponentTreeNode } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 
+const MAX_TREE_DEPTH = 50;
+
 function renderNode(node: ComponentTreeNode, allNodes: Map<string, ComponentTreeNode>, depth: number): string {
+  if (depth > MAX_TREE_DEPTH) return '<div class="tree-node" style="color:var(--text-dim)">[depth limit reached]</div>';
+
   const children = (node.children ?? [])
     .map(id => allNodes.get(id))
     .filter((n): n is ComponentTreeNode => n !== undefined);
