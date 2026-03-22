@@ -10,6 +10,7 @@ import cmdDoctrineList from '../doctrine/list.ts';
 import cmdDoctrineRead from '../doctrine/read.ts';
 import cmdDoctrineSuggest from '../doctrine/suggest.ts';
 import cmdDoctrineWrite from '../doctrine/write.ts';
+import cmdExecutionInsights from '../execution-insights/show.ts';
 import cmdFeatureActive from '../feature/active.ts';
 import cmdFeatureComplete from '../feature/complete.ts';
 import cmdFeatureCreate from '../feature/create.ts';
@@ -70,6 +71,7 @@ export const subCommands = {
   'doctrine-read': cmdDoctrineRead,
   'doctrine-suggest': cmdDoctrineSuggest,
   'doctrine-write': cmdDoctrineWrite,
+  'execution-insights': cmdExecutionInsights,
   'feature-active': cmdFeatureActive,
   'feature-complete': cmdFeatureComplete,
   'feature-create': cmdFeatureCreate,
