@@ -14,6 +14,10 @@ const STOPWORDS = new Set([
   'here', 'where', 'about', 'after', 'before', 'other',
 ]);
 
+/** Doctrine relevance scoring weights (tag overlap vs keyword overlap). */
+export const TAG_WEIGHT = 0.6;
+export const KEYWORD_WEIGHT = 0.4;
+
 const WEIGHTS = {
   tagOverlap: 0.30,
   categoryMatch: 0.20,

@@ -3,7 +3,7 @@
  * Returns version, project root, task backend, and integration availability.
  */
 
-import type { FsConfigAdapter } from '../adapters/fs/config.ts';
+import type { ConfigPort } from '../ports/config.ts';
 import type { GraphPort } from '../ports/graph.ts';
 import type { HandoffPort } from '../ports/handoff.ts';
 import type { SearchPort } from '../ports/search.ts';
@@ -11,7 +11,7 @@ import { VERSION } from '../version.ts';
 import { resolveTaskBackend } from '../lib/resolve-backend.ts';
 
 export interface PingServices {
-  configAdapter: FsConfigAdapter;
+  configAdapter: ConfigPort;
   directory: string;
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;

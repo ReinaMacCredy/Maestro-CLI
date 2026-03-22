@@ -10,17 +10,17 @@ import type { DoctrineItem, DoctrinePort, DoctrineStatus } from '../../ports/doc
 import { getDoctrinePath, getDoctrineItemPath } from '../../utils/paths.ts';
 import { readJson, writeJsonAtomic } from '../../utils/fs-io.ts';
 import { acquireLockSync } from '../../utils/locking.ts';
-import { extractKeywords } from '../../utils/relevance.ts';
+import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../../utils/relevance.ts';
 
 export const CURRENT_SCHEMA_VERSION = 1;
 const RELEVANCE_THRESHOLD = 0.2;
-const TAG_WEIGHT = 0.6;
-const KEYWORD_WEIGHT = 0.4;
 
 export class FsDoctrineAdapter implements DoctrinePort {
   private readonly projectRoot: string;
   /** In-process cache for active items. Invalidated on write/deprecate. */
   private activeCache: DoctrineItem[] | undefined;
+  /** Pre-computed keyword sets for cached active items. */
+  private keywordCache: Map<string, Set<string>> | undefined;
 
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
@@ -31,6 +31,7 @@ export class FsDoctrineAdapter implements DoctrinePort {
     const toWrite = { ...item, schemaVersion: CURRENT_SCHEMA_VERSION, updatedAt: new Date().toISOString() };
     writeJsonAtomic(filePath, toWrite);
     this.activeCache = undefined;
+    this.keywordCache = undefined;
     return filePath;
   }
 
@@ -74,9 +75,13 @@ export class FsDoctrineAdapter implements DoctrinePort {
   }
 
   findRelevant(tags: string[], keywords: Set<string>): DoctrineItem[] {
-    // Use cache if available; otherwise populate from list()
+    // Use cache if available; otherwise populate from list() and pre-compute keywords
     if (!this.activeCache) {
       this.activeCache = this.list({ status: 'active' });
+      this.keywordCache = new Map();
+      for (const item of this.activeCache) {
+        this.keywordCache.set(item.name, extractKeywords(`${item.rule} ${item.rationale}`));
+      }
     }
     const activeItems = this.activeCache;
     if (activeItems.length === 0) return [];
@@ -135,7 +140,7 @@ export class FsDoctrineAdapter implements DoctrinePort {
     }
     const tagScore = itemTags.length > 0 ? tagMatches / itemTags.length : 0;
 
-    const docKeywords = extractKeywords(`${item.rule} ${item.rationale}`);
+    const docKeywords = this.keywordCache?.get(item.name) ?? extractKeywords(`${item.rule} ${item.rationale}`);
     let keywordMatches = 0;
     for (const kw of docKeywords) {
       if (taskKeywords.has(kw)) keywordMatches++;

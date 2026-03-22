@@ -32,6 +32,7 @@ import type { GraphPort } from './ports/graph.ts';
 import type { HandoffPort } from './ports/handoff.ts';
 import type { SearchPort } from './ports/search.ts';
 import type { DoctrinePort } from './ports/doctrine.ts';
+import type { ConfigPort } from './ports/config.ts';
 import { FsDoctrineAdapter } from './adapters/fs/doctrine.ts';
 
 export interface MaestroServices {
@@ -40,7 +41,7 @@ export interface MaestroServices {
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
-  configAdapter: FsConfigAdapter;
+  configAdapter: ConfigPort;
   agentsMdAdapter: AgentsMdAdapter;
   directory: string;
   // Optional ports -- initialized based on tool availability

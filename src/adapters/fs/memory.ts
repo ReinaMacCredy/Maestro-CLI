@@ -120,7 +120,7 @@ export class FsMemoryAdapter implements MemoryPort {
     const filePath = path.join(dir, this.normalizeFileName(fileName));
     writeText(filePath, content);
 
-    const totalBytes = this._totalSize(dir);
+    const { totalBytes } = this._stats(dir);
     if (totalBytes > 20000) {
       return `${filePath}\n\n[warn] Memory total: ~${totalBytes} bytes (exceeds 20,000). Consider archiving older memories with memory-archive.`;
     }
@@ -168,13 +168,6 @@ export class FsMemoryAdapter implements MemoryPort {
       oldest: entries[0].name,
       newest: entries[entries.length - 1].name,
     };
-  }
-
-  private _totalSize(dir: string): number {
-    if (!fileExists(dir)) return 0;
-    return fs.readdirSync(dir, { withFileTypes: true })
-      .filter(f => f.isFile() && f.name.endsWith('.md'))
-      .reduce((sum, f) => sum + fs.statSync(path.join(dir, f.name)).size, 0);
   }
 
   private _enrichWithMeta(file: MemoryFile): MemoryFileWithMeta {

@@ -37,7 +37,7 @@ export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): v
     withErrorHandling(async () => {
       const services = thunk.get();
       const features = services.featureAdapter.list();
-      const active = services.featureAdapter.getActive();
+      const active = services.featureAdapter.getActive(features);
       return respond({
         features,
         active: active?.name ?? null,

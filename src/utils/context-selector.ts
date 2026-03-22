@@ -65,10 +65,9 @@ export function selectMemories(
   // Filter by threshold but always keep top-1
   const eligible = scored.filter((s, i) => i === 0 || s.score >= relevanceThreshold);
 
-  // Greedily fill budget
+  // Greedily fill budget (skip oversized items, don't stop -- smaller items may still fit)
   const included: typeof scored = [];
   let usedTokens = 0;
-
   for (const entry of eligible) {
     if (usedTokens + entry.tokens <= budgetTokens) {
       included.push(entry);

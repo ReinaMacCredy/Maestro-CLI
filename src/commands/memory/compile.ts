@@ -10,6 +10,7 @@ import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { estimateTokens } from '../../utils/tokens.ts';
+import { fitWithinBudget } from '../../utils/budget-fill.ts';
 import type { MemoryFileWithMeta } from '../../types.ts';
 
 function parseBudget(raw: string): number {
@@ -82,14 +83,7 @@ export default defineCommand({
         const sorted = [...memories].sort((a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
-        const included: typeof sorted = [];
-        let usedTokens = 0;
-        for (const m of sorted) {
-          const mTokens = estimateTokens(m.bodyContent);
-          if (usedTokens + mTokens > budget) break;
-          included.push(m);
-          usedTokens += mTokens;
-        }
+        const included = fitWithinBudget(sorted, m => estimateTokens(m.bodyContent), budget);
         output(formatMemories(included), (c) => c);
         return;
       }

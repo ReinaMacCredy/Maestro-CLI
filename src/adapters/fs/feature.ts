@@ -79,8 +79,8 @@ export class FsFeatureAdapter implements FeaturePort {
     return feature;
   }
 
-  getActive(): FeatureJson | null {
-    const features = this.list();
+  getActive(preloadedList?: string[]): FeatureJson | null {
+    const features = preloadedList ?? this.list();
     for (const name of features) {
       const feature = this.get(name);
       if (feature && feature.status !== 'completed') {

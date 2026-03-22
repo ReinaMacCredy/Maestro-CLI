@@ -208,9 +208,8 @@ async function main(): Promise<void> {
     const dcpConfig = config.dcp;
     const doctrineConfig = config.doctrine;
 
-    // Get feature creation time for recency scoring
-    const featureInfo = services.featureAdapter.get(featureName);
-    const featureCreatedAt = featureInfo?.createdAt;
+    // Get feature creation time for recency scoring (from activeFeature, already fetched)
+    const featureCreatedAt = activeFeature.createdAt;
 
     // Convert task list to TaskWithDeps for dependency-proximity scoring
     const taskDeps = allTasks.map(t => ({

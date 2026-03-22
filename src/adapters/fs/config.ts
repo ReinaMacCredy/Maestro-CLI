@@ -7,10 +7,11 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../types.ts';
 import type { AgentName } from '../../types.ts';
+import type { ConfigPort } from '../../ports/config.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
 import { SKILL_ALIASES } from '../../skills/aliases.ts';
 
-export class FsConfigAdapter {
+export class FsConfigAdapter implements ConfigPort {
   private configPath: string;
   private cachedConfig: HiveConfig | null = null;
 

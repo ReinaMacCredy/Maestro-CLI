@@ -14,7 +14,7 @@ import { renderStatusDashboard } from '../utils/visual/templates/status-dashboar
 import { renderMemoryMap } from '../utils/visual/templates/memory-map.ts';
 import { renderExecutionTimeline } from '../utils/visual/templates/execution-timeline.ts';
 import { renderDoctrineNetwork } from '../utils/visual/templates/doctrine-network.ts';
-import { checkStatus, type StatusServices } from './check-status.ts';
+import { checkStatus } from './check-status.ts';
 import { executionInsights } from './execution-insights.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { derivePipelineStage } from '../utils/workflow.ts';
@@ -42,20 +42,7 @@ async function gatherPlanGraph(feature: string, services: MaestroServices): Prom
 }
 
 async function gatherStatusDashboard(feature: string, services: MaestroServices): Promise<StatusDashboardData> {
-  // Bridge MaestroServices to StatusServices
-  const statusServices: StatusServices = {
-    taskPort: services.taskPort,
-    featureAdapter: services.featureAdapter,
-    planAdapter: services.planAdapter,
-    memoryAdapter: services.memoryAdapter,
-    configAdapter: services.configAdapter,
-    directory: services.directory,
-    graphPort: services.graphPort,
-    handoffPort: services.handoffPort,
-    searchPort: services.searchPort,
-  };
-
-  const status = await checkStatus(statusServices, feature);
+  const status = await checkStatus(services, feature);
 
   // Doctrine stats from optional port -- single pass
   const doctrineItems = services.doctrinePort?.list() ?? [];

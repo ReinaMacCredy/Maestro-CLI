@@ -13,7 +13,7 @@ import type { HandoffPort } from '../ports/handoff.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
 import { MaestroError } from '../lib/errors.ts';
-import type { FsConfigAdapter } from '../adapters/fs/config.ts';
+import type { ConfigPort } from '../ports/config.ts';
 import { type TaskInfo, type FeatureStatusType, type PlanComment } from '../types.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
@@ -22,7 +22,7 @@ export interface StatusServices {
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
-  configAdapter: FsConfigAdapter;
+  configAdapter: ConfigPort;
   directory: string;
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
@@ -64,8 +64,6 @@ export interface StatusResult {
   dcp?: {
     enabled: boolean;
     memoryBudgetBytes: number;
-    currentMemoryBytes: number;
-    memoryFileCount: number;
   };
   nextAction: string;
 }
@@ -145,8 +143,6 @@ export async function checkStatus(
     dcp: {
       enabled: dcpCfg.enabled,
       memoryBudgetBytes: dcpCfg.memoryBudgetBytes,
-      currentMemoryBytes: memoryStats.totalBytes,
-      memoryFileCount: memoryStats.count,
     },
     nextAction,
   };

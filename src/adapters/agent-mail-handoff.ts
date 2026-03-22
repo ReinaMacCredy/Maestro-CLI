@@ -9,7 +9,7 @@
 import type { HandoffPort, HandoffDocument, HandoffResult } from '../ports/handoff.ts';
 import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
 import type { MemoryPort } from '../ports/memory.ts';
-import type { FsConfigAdapter } from './fs/config.ts';
+import type { ConfigPort } from '../ports/config.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { getHandoffPath, getHandoffsPath } from '../utils/paths.ts';
@@ -31,14 +31,14 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   private projectRoot: string;
   private taskPort: TaskPort;
   private memoryAdapter: MemoryPort;
-  private configAdapter: FsConfigAdapter;
+  private configAdapter: ConfigPort;
   private identity: AgentMailIdentity | undefined;
 
   constructor(
     projectRoot: string,
     taskPort: TaskPort,
     memoryAdapter: MemoryPort,
-    configAdapter: FsConfigAdapter,
+    configAdapter: ConfigPort,
     agentMailUrl?: string,
   ) {
     this.projectRoot = projectRoot;

@@ -10,7 +10,7 @@ export interface FeaturePort {
   get(name: string): FeatureJson | null;
   list(): string[];
   requireActive(name: string): FeatureJson;
-  getActive(): FeatureJson | null;
+  getActive(preloadedList?: string[]): FeatureJson | null;
   updateStatus(name: string, status: FeatureStatusType): FeatureJson;
   getInfo(name: string): { name: string; status: FeatureStatusType; hasPlan: boolean; commentCount: number } | null;
   complete(name: string): FeatureJson;

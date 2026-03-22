@@ -43,23 +43,9 @@ export interface TaskStatus {
   revisionFeedback?: string;
 }
 
-export interface TaskInfo {
+export interface TaskInfo extends Omit<TaskStatus, 'schemaVersion'> {
   folder: string;
   name: string;
-  status: TaskStatusType;
-  origin: TaskOrigin;
-  planTitle?: string;
-  summary?: string;
-  claimedBy?: string;
-  claimedAt?: string;
-  completedAt?: string;
-  blockerReason?: string;
-  blockerDecision?: string;
-  /** Task dependencies */
-  dependsOn?: string[];
-  // Verification fields (stored inline; full report in verification.json)
-  revisionCount?: number;
-  revisionFeedback?: string;
 }
 
 // ============================================================================

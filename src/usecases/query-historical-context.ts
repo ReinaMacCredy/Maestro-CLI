@@ -11,7 +11,7 @@ import type { MemoryPort } from '../ports/memory.ts';
 import type { MemoryFileWithMeta } from '../types.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
-import { extractKeywords } from '../utils/relevance.ts';
+import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../utils/relevance.ts';
 
 export interface HistoricalPitfall {
   pattern: string;
@@ -50,10 +50,9 @@ function scoreOverlap(memTags: string[], planKeywords: Set<string>): number {
   }
   const tagScore = memTags.length > 0 ? matches / memTags.length : 0;
 
-  // Weight tag overlap more heavily (0.6) than keyword presence (0.4)
   const keywordScore = planKeywords.size > 0 ? matches / planKeywords.size : 0;
 
-  return tagScore * 0.6 + keywordScore * 0.4;
+  return tagScore * TAG_WEIGHT + keywordScore * KEYWORD_WEIGHT;
 }
 
 export function queryHistoricalContext(

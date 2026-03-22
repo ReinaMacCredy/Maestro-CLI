@@ -7,6 +7,7 @@
 import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
 import type { GraphPort } from '../ports/graph.ts';
 import type { DoctrinePort } from '../ports/doctrine.ts';
+import type { ConfigPort } from '../ports/config.ts';
 import type { MemoryFileWithMeta } from '../types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { selectMemories, type SelectedContext } from '../utils/context-selector.ts';
@@ -18,12 +19,13 @@ import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { estimateTokens } from '../utils/tokens.ts';
+import { fitWithinBudget } from '../utils/budget-fill.ts';
 
 export interface TaskBriefParams {
   taskPort: TaskPort;
   featureAdapter: { get(name: string): { name: string; createdAt?: string } | null };
   memoryAdapter: { listWithMeta(feature: string): MemoryFileWithMeta[] };
-  configAdapter: { get(): { dcp?: Record<string, unknown>; doctrine?: Record<string, unknown> } };
+  configAdapter: ConfigPort;
   directory: string;
   graphPort?: GraphPort;
   doctrinePort?: DoctrinePort;
@@ -133,7 +135,7 @@ export async function taskBrief(
 
   // 8. DCP-scored memories
   const config = configAdapter.get();
-  const dcpConfig = resolveDcpConfig(config.dcp as Parameters<typeof resolveDcpConfig>[0]);
+  const dcpConfig = resolveDcpConfig(config.dcp);
   const allTasks: TaskWithDeps[] = allTasksResult.status === 'fulfilled'
     ? allTasksResult.value.map(t => ({ folder: t.folder, status: t.status, dependsOn: t.dependsOn }))
     : [];
@@ -162,21 +164,15 @@ export async function taskBrief(
       .filter(t => t.status === 'done' && t.summary)
       .reverse(); // newest-first (list returns creation order)
     const budgetTokens = dcpConfig.completedTaskBudgetTokens ?? 512;
-    let usedTokens = 0;
-    for (const t of doneTasks) {
-      const entry = { folder: t.folder, name: t.name ?? t.folder, summary: t.summary! };
-      const entryTokens = estimateTokens(JSON.stringify(entry));
-      if (usedTokens + entryTokens > budgetTokens) break;
-      usedTokens += entryTokens;
-      completedTasks.push(entry);
-    }
+    const entries = doneTasks.map(t => ({ folder: t.folder, name: t.name ?? t.folder, summary: t.summary! }));
+    completedTasks.push(...fitWithinBudget(entries, e => estimateTokens(JSON.stringify(e)), budgetTokens));
   }
 
   // 10. Doctrine (try/catch, trace only if claimed)
   let doctrine: Array<{ name: string; rule: string; rationale: string }> = [];
   try {
     if (params.doctrinePort) {
-      const doctrineConfig = resolveDoctrineConfig(config.doctrine as Parameters<typeof resolveDoctrineConfig>[0]);
+      const doctrineConfig = resolveDoctrineConfig(config.doctrine);
       if (doctrineConfig.enabled) {
         const derivedTags = deriveFolderTags(taskFolder);
         const specKeywords = extractKeywords(spec);
