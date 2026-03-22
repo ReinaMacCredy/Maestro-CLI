@@ -4,6 +4,7 @@ import cmdConfigAgent from '../config/agent.ts';
 import cmdConfigGet from '../config/get.ts';
 import cmdConfigSet from '../config/set.ts';
 import cmdDcpPreview from '../dcp/preview.ts';
+import cmdDebugVisual from '../debug-visual/show.ts';
 import cmdDoctrineApprove from '../doctrine/approve.ts';
 import cmdDoctrineDeprecate from '../doctrine/deprecate.ts';
 import cmdDoctrineList from '../doctrine/list.ts';
@@ -58,6 +59,7 @@ import cmdTaskSpecWrite from '../task/spec-write.ts';
 import cmdTaskSync from '../task/sync.ts';
 import cmdTaskUnblock from '../task/unblock.ts';
 import cmdUpdate from '../update/run.ts';
+import cmdVisual from '../visual/show.ts';
 
 export const subCommands = {
   'agents-md': cmdAgentsMd,
@@ -65,6 +67,7 @@ export const subCommands = {
   'config-get': cmdConfigGet,
   'config-set': cmdConfigSet,
   'dcp-preview': cmdDcpPreview,
+  'debug-visual': cmdDebugVisual,
   'doctrine-approve': cmdDoctrineApprove,
   'doctrine-deprecate': cmdDoctrineDeprecate,
   'doctrine-list': cmdDoctrineList,
@@ -119,4 +122,5 @@ export const subCommands = {
   'task-sync': cmdTaskSync,
   'task-unblock': cmdTaskUnblock,
   'update': cmdUpdate,
+  'visual': cmdVisual,
 } as const;
