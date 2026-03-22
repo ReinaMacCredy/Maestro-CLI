@@ -539,7 +539,7 @@ tr:hover td { background: var(--accent-dim); }
 
 .animate {
   animation: fadeUp 0.4s ease-out both;
-  animation-delay: calc(var(--i, 0) * 0.06s);
+  animation-delay: calc(min(var(--i, 0), 20) * 0.06s);
 }
 
 @media (prefers-reduced-motion: reduce) {

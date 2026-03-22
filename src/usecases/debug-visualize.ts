@@ -15,64 +15,64 @@ import { MaestroError } from '../lib/errors.ts';
 
 const ComponentTreeSchema = z.object({
   nodes: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
+    id: z.string().max(200),
+    name: z.string().max(1000),
     type: z.enum(['component', 'element', 'provider', 'fragment']),
     props: z.record(z.unknown()).optional(),
-    children: z.array(z.string()).optional(),
-    error: z.string().optional(),
+    children: z.array(z.string().max(200)).max(100).optional(),
+    error: z.string().max(10000).optional(),
     errorBoundary: z.boolean().optional(),
-  })),
+  })).max(500),
 });
 
 const StateFlowSchema = z.object({
   timeline: z.array(z.object({
-    timestamp: z.string(),
-    action: z.string(),
+    timestamp: z.string().max(100),
+    action: z.string().max(500),
     prevState: z.record(z.unknown()),
     nextState: z.record(z.unknown()),
-    source: z.string().optional(),
-  })),
+    source: z.string().max(200).optional(),
+  })).max(1000),
 });
 
 const ErrorCascadeSchema = z.object({
   errors: z.array(z.object({
-    id: z.string(),
-    message: z.string(),
-    stack: z.string().optional(),
-    boundary: z.string().optional(),
+    id: z.string().max(200),
+    message: z.string().max(10000),
+    stack: z.string().max(50000).optional(),
+    boundary: z.string().max(200).optional(),
     caught: z.boolean().optional(),
-    children: z.array(z.string()).optional(),
-  })),
+    children: z.array(z.string().max(200)).max(100).optional(),
+  })).max(500),
 });
 
 const NetworkWaterfallSchema = z.object({
   requests: z.array(z.object({
-    id: z.string(),
-    url: z.string(),
-    method: z.string(),
-    startTime: z.number(),
-    endTime: z.number(),
-    status: z.number(),
-    size: z.number().optional(),
-    error: z.string().optional(),
-  })),
+    id: z.string().max(200),
+    url: z.string().max(2000),
+    method: z.string().max(10),
+    startTime: z.number().finite(),
+    endTime: z.number().finite(),
+    status: z.number().int().min(0).max(999),
+    size: z.number().min(0).optional(),
+    error: z.string().max(10000).optional(),
+  })).max(1000),
 });
 
 const DomDiffSchema = z.object({
-  expected: z.string(),
-  actual: z.string(),
-  context: z.string().optional(),
+  expected: z.string().max(500000),
+  actual: z.string().max(500000),
+  context: z.string().max(500).optional(),
 });
 
 const ConsoleTimelineSchema = z.object({
   entries: z.array(z.object({
-    timestamp: z.string(),
+    timestamp: z.string().max(100),
     level: z.enum(['log', 'warn', 'error', 'info', 'debug']),
-    message: z.string(),
+    message: z.string().max(10000),
     data: z.unknown().optional(),
-    source: z.string().optional(),
-  })),
+    source: z.string().max(200).optional(),
+  })).max(5000),
 });
 
 const SCHEMAS: Record<DebugVisualType, z.ZodType> = {

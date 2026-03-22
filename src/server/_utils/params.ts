@@ -6,7 +6,7 @@
 import { z } from 'zod';
 
 export const featureParam = () =>
-  z.string().optional().describe('Feature name (defaults to active feature)');
+  z.string().min(1).optional().describe('Feature name (defaults to active feature)');
 
 export const taskParam = () =>
   z.string().describe('Task folder ID');

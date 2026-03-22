@@ -1,5 +1,5 @@
 import type { TemplateRenderer, ConsoleTimelineData } from '../types.ts';
-import { escapeHtml } from '../renderer.ts';
+import { escapeHtml, safeStringify } from '../renderer.ts';
 
 const LEVEL_COLORS: Record<string, string> = {
   error: 'var(--danger)',
@@ -44,7 +44,7 @@ export const renderConsoleTimeline: TemplateRenderer<ConsoleTimelineData> = (inp
       : '';
 
     const dataHtml = entry.data !== undefined
-      ? `<details style="margin-top: 0.25rem"><summary style="font-size: 0.6875rem; color: var(--text-dim); cursor: pointer">data</summary><pre style="font-family: var(--font-mono); font-size: 0.6875rem; margin-top: 0.125rem; padding: 0.25rem; background: var(--surface2); border-radius: 4px; overflow-x: auto">${escapeHtml(JSON.stringify(entry.data, null, 2))}</pre></details>`
+      ? `<details style="margin-top: 0.25rem"><summary style="font-size: 0.6875rem; color: var(--text-dim); cursor: pointer">data</summary><pre style="font-family: var(--font-mono); font-size: 0.6875rem; margin-top: 0.125rem; padding: 0.25rem; background: var(--surface2); border-radius: 4px; overflow-x: auto">${escapeHtml(safeStringify(entry.data))}</pre></details>`
       : '';
 
     const sourceBadge = entry.source

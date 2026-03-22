@@ -19,13 +19,6 @@ function categoryColor(cat?: string): string {
   return cat ? (CATEGORY_COLORS[cat] ?? 'var(--text-dim)') : 'var(--text-dim)';
 }
 
-function cardSize(priority?: number): string {
-  // 0 = highest priority = largest card
-  const p = priority ?? 2;
-  const scale = 1 - (p * 0.1);
-  return `transform: scale(${scale})`;
-}
-
 function buildPieChart(memories: MemoryMapEntry[]): string {
   const counts: Record<string, number> = {};
   for (const m of memories) {

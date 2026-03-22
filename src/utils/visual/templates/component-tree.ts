@@ -1,5 +1,5 @@
 import type { TemplateRenderer, ComponentTreeData, ComponentTreeNode } from '../types.ts';
-import { escapeHtml } from '../renderer.ts';
+import { escapeHtml, safeStringify } from '../renderer.ts';
 
 const MAX_TREE_DEPTH = 50;
 
@@ -15,7 +15,7 @@ function renderNode(node: ComponentTreeNode, allNodes: Map<string, ComponentTree
   const typeLabel = node.type !== 'component' ? ` <span style="color:var(--text-dim); font-size: 0.75rem">[${node.type}]</span>` : '';
 
   const propsHtml = node.props && Object.keys(node.props).length > 0
-    ? `<details style="margin-top: 0.25rem"><summary style="font-size: 0.75rem; color: var(--text-dim); cursor: pointer">props</summary><pre style="font-family: var(--font-mono); font-size: 0.75rem; margin-top: 0.25rem; padding: 0.5rem; background: var(--surface2); border-radius: 4px; overflow-x: auto">${escapeHtml(JSON.stringify(node.props, null, 2))}</pre></details>`
+    ? `<details style="margin-top: 0.25rem"><summary style="font-size: 0.75rem; color: var(--text-dim); cursor: pointer">props</summary><pre style="font-family: var(--font-mono); font-size: 0.75rem; margin-top: 0.25rem; padding: 0.5rem; background: var(--surface2); border-radius: 4px; overflow-x: auto">${escapeHtml(safeStringify(node.props))}</pre></details>`
     : '';
 
   const errorHtml = node.error

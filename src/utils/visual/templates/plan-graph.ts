@@ -20,8 +20,11 @@ const STATUS_CLASSES: Record<string, string> = {
   revision: ':::revision',
 };
 
+const MAX_MERMAID_NODES = 150;
+
 function buildMermaid(data: PlanGraphData): string {
   if (data.tasks.length === 0) return '';
+  if (data.tasks.length > MAX_MERMAID_NODES) return '';
 
   const lines = ['flowchart TD'];
 
@@ -32,16 +35,21 @@ function buildMermaid(data: PlanGraphData): string {
   lines.push('  classDef review fill:#8b5cf620,stroke:#8b5cf6');
   lines.push('  classDef revision fill:#f59e0b20,stroke:#f59e0b');
 
+  const taskIds = new Set(data.tasks.map(t => t.folder));
+
   for (const task of data.tasks) {
+    const nodeId = sanitizeMermaidLabel(task.folder);
     const label = sanitizeMermaidLabel(task.name || task.folder);
     const shapeFn = STATUS_SHAPES[task.status] ?? STATUS_SHAPES.pending;
     const cls = STATUS_CLASSES[task.status] ?? '';
-    lines.push(`  ${shapeFn(task.folder, label)}${cls}`);
+    lines.push(`  ${shapeFn(nodeId, label)}${cls}`);
   }
 
   for (const task of data.tasks) {
+    const nodeId = sanitizeMermaidLabel(task.folder);
     for (const dep of task.dependsOn) {
-      lines.push(`  ${dep} --> ${task.folder}`);
+      if (!taskIds.has(dep)) continue;
+      lines.push(`  ${sanitizeMermaidLabel(dep)} --> ${nodeId}`);
     }
   }
 
@@ -82,7 +90,7 @@ export const renderPlanGraph: TemplateRenderer<PlanGraphData> = (input) => {
     <p class="subtitle">${escapeHtml(data.feature)} -- task dependency graph</p>
   `;
 
-  if (!data.planContent) {
+  if (data.planContent === undefined) {
     bodyHtml += `<div class="section section--orange animate" style="--i: 0; margin-bottom: 1rem">
       <div class="section-label">Notice</div>
       <p>No plan found -- showing task graph only.</p>
@@ -91,6 +99,12 @@ export const renderPlanGraph: TemplateRenderer<PlanGraphData> = (input) => {
 
   if (data.tasks.length === 0) {
     bodyHtml += `<div class="placeholder">No tasks found for this feature.</div>`;
+  } else if (!mermaidDef) {
+    bodyHtml += `<div class="section section--orange animate" style="--i: 1; margin-bottom: 1rem">
+      <div class="section-label">Notice</div>
+      <p>Graph too large to render (${data.tasks.length} tasks, max ${MAX_MERMAID_NODES}). Showing table only.</p>
+    </div>`;
+    bodyHtml += buildStatusTable(data);
   } else {
     bodyHtml += `
       <div class="mermaid-wrap animate" style="--i: 1">
@@ -103,7 +117,7 @@ export const renderPlanGraph: TemplateRenderer<PlanGraphData> = (input) => {
 
   return {
     bodyHtml,
-    extraHead: MERMAID_CDN,
-    extraScripts: ZOOM_CONTROLS_SCRIPT,
+    extraHead: mermaidDef ? MERMAID_CDN : undefined,
+    extraScripts: mermaidDef ? ZOOM_CONTROLS_SCRIPT : undefined,
   };
 };

@@ -15,7 +15,10 @@ function formatResult(result: VisualResult): string {
 }
 
 function parseData(raw: string): unknown {
-  // Inline JSON: starts with { or [
+  if (!raw || !raw.trim()) {
+    throw new MaestroError('--data is required', ['Pass a JSON string or file path.']);
+  }
+
   if (raw.startsWith('{') || raw.startsWith('[')) {
     try {
       return JSON.parse(raw);
@@ -38,6 +41,9 @@ function parseData(raw: string): unknown {
     }
     if (code === 'EACCES') {
       throw new MaestroError(`Permission denied reading: ${raw}`);
+    }
+    if (code === 'EISDIR') {
+      throw new MaestroError(`Path is a directory, not a file: ${raw}`);
     }
     throw e;
   }

@@ -45,14 +45,23 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => HTML_ESCAPE_MAP[ch] ?? ch);
 }
 
-const MERMAID_ILLEGAL = /[:\[\]\/\\'"{}()<>|#;]/g;
+/** JSON.stringify with circular reference protection. */
+export function safeStringify(value: unknown, indent = 2): string {
+  try {
+    return JSON.stringify(value, null, indent);
+  } catch {
+    return '[non-serializable data]';
+  }
+}
 
 /**
- * Sanitize text for use in Mermaid diagram labels.
- * Separate from escapeHtml -- Mermaid's parser breaks on different characters.
+ * Sanitize text for use in Mermaid diagram labels and node IDs.
+ * Separate from escapeHtml -- Mermaid's parser breaks on different characters
+ * (spaces, dots, colons, brackets, newlines, etc.) even when HTML-safe.
+ * Uses a whitelist: only alphanumeric, underscore, and hyphen survive.
  */
 export function sanitizeMermaidLabel(s: string): string {
-  return s.replace(MERMAID_ILLEGAL, '-').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
+  return s.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-{2,}/g, '-').replace(/^-|-$/g, '') || 'unnamed';
 }
 
 // ============================================================================

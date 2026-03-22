@@ -1,7 +1,11 @@
 import type { TemplateRenderer, ErrorCascadeData, ErrorCascadeEntry } from '../types.ts';
 import { escapeHtml } from '../renderer.ts';
 
+const MAX_ERROR_DEPTH = 50;
+
 function renderError(error: ErrorCascadeEntry, allErrors: Map<string, ErrorCascadeEntry>, depth: number): string {
+  if (depth > MAX_ERROR_DEPTH) return '<div style="color:var(--text-dim); padding: 0.25rem">[depth limit reached]</div>';
+
   const children = (error.children ?? [])
     .map(id => allErrors.get(id))
     .filter((e): e is ErrorCascadeEntry => e !== undefined);
