@@ -2,11 +2,12 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
+import { ANNOTATIONS_MUTATING, ANNOTATIONS_DESTRUCTIVE, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+import { validateName } from '../utils/validate-name.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { MEMORY_CATEGORIES } from '../types.ts';
@@ -108,7 +109,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
           return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
         }
         const cfg = resolveDcpConfig(services.configAdapter.get().dcp);
-        const budget = input.budget ?? cfg.memoryBudgetBytes;
+        const budget = input.budget ?? cfg.memoryBudgetTokens;
         const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
         const selected = selectMemories(
           richFiles, task, task.planTitle ?? null, budget,
@@ -155,6 +156,79 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
 
       const path = services.memoryAdapter.writeGlobal(input.name, content);
       return respond({ feature, name: input.name, promotedTo: path });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_memory_delete',
+    {
+      description: 'Delete a memory file. Per-feature by default; set global=true for project-scoped. Validates name to prevent path traversal.',
+      inputSchema: {
+        feature: z.string().optional().describe('Feature name (defaults to active feature; ignored when global=true)'),
+        name: z.string().describe('Memory file name to delete'),
+        global: z.boolean().optional().default(false).describe('Delete from global project memory instead of feature memory'),
+      },
+      annotations: ANNOTATIONS_DESTRUCTIVE,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const validation = validateName(input.name, 'memory name');
+      if (!validation.ok) {
+        throw new MaestroError(validation.error, ['Provide a valid memory file name']);
+      }
+
+      if (input.global) {
+        const deleted = services.memoryAdapter.deleteGlobal(validation.name);
+        if (!deleted) {
+          throw new MaestroError(`Memory '${validation.name}' not found in global memory`, [
+            'Use maestro_memory_list to see available memories',
+          ]);
+        }
+        return respond({ scope: 'global', name: validation.name, deleted: true });
+      }
+
+      const feature = requireFeature(services, input.feature);
+      const deleted = services.memoryAdapter.delete(feature, validation.name);
+      if (!deleted) {
+        throw new MaestroError(`Memory '${validation.name}' not found in feature '${feature}'`, [
+          'Use maestro_memory_list to see available memories',
+        ]);
+      }
+      return respond({ feature, name: validation.name, deleted: true });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_memory_stats',
+    {
+      description: 'Show memory statistics for a feature: file count, total bytes, oldest/newest timestamps.',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const stats = services.memoryAdapter.stats(feature);
+      return respond({ feature, ...stats });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_memory_compile',
+    {
+      description: 'Compile all feature memories into a single concatenated string. Useful for bulk review or export.',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const compiled = services.memoryAdapter.compile(feature);
+      return respond({ feature, compiled });
     }),
   );
 }
