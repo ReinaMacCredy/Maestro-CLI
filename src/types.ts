@@ -173,11 +173,14 @@ export interface HiveConfig {
   hook_cadence?: Record<string, number>;
   dcp?: {
     enabled?: boolean;                  // default true
-    memoryBudgetBytes?: number;         // default 4096
-    completedTaskBudgetBytes?: number;  // default 2048
+    memoryBudgetBytes?: number;         // default 4096 (backward compat)
+    memoryBudgetTokens?: number;        // default 1024 (preferred -- overrides bytes)
+    completedTaskBudgetBytes?: number;  // default 2048 (backward compat)
+    completedTaskBudgetTokens?: number; // default 512 (preferred)
     observationMasking?: boolean;       // default true
     relevanceThreshold?: number;        // minimum score to include, default 0.1
-    handoffDecisionBudgetBytes?: number; // default 2048
+    handoffDecisionBudgetBytes?: number; // default 2048 (backward compat)
+    handoffDecisionBudgetTokens?: number; // default 512 (preferred)
   };
   verification?: {
     enabled?: boolean;              // default: true
@@ -190,7 +193,8 @@ export interface HiveConfig {
   };
   doctrine?: {
     enabled?: boolean;                // default: true
-    doctrineBudgetBytes?: number;     // default: 1024
+    doctrineBudgetBytes?: number;     // default: 1024 (backward compat)
+    doctrineBudgetTokens?: number;    // default: 256 (preferred -- overrides bytes)
     maxSuggestionsPerFeature?: number; // default: 5
     staleThresholdDays?: number;       // default: 90
     crossFeatureScanLimit?: number;    // default: 20
@@ -213,15 +217,19 @@ export const AGENT_NAMES = Object.keys(DEFAULT_AGENT_MODELS) as AgentName[];
 export const DCP_DEFAULTS = {
   enabled: true,
   memoryBudgetBytes: 4096,
+  memoryBudgetTokens: 1024,
   completedTaskBudgetBytes: 2048,
+  completedTaskBudgetTokens: 512,
   observationMasking: true,
   relevanceThreshold: 0.1,
   handoffDecisionBudgetBytes: 2048,
+  handoffDecisionBudgetTokens: 512,
 } satisfies Required<NonNullable<HiveConfig['dcp']>>;
 
 export const DOCTRINE_DEFAULTS = {
   enabled: true,
   doctrineBudgetBytes: 1024,
+  doctrineBudgetTokens: 256,
   maxSuggestionsPerFeature: 5,
   staleThresholdDays: 90,
   crossFeatureScanLimit: 20,

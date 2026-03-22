@@ -1,23 +1,26 @@
 /**
  * Budget-aware memory selection for DCP.
  * Greedily fills budget with highest-scoring memories.
+ * Uses token estimation (chars/4) for budget accounting.
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
 import type { TaskWithDeps } from './task-dependency-graph.ts';
 import { scoreRelevance, buildTaskContext, type ProximityContext } from './relevance.ts';
 import { buildDownstreamMap } from './dependency-proximity.ts';
+import { estimateTokens } from './tokens.ts';
 
 export interface SelectedContext {
   memories: MemoryFileWithMeta[];  // ordered by score desc, within budget
-  totalBytes: number;
+  totalTokens: number;
+  totalBytes: number;              // backward compat: totalTokens * 4
   includedCount: number;
   droppedCount: number;
   scores: Array<{ name: string; score: number; included: boolean }>;
 }
 
 /**
- * Select the most relevant memories within a byte budget.
+ * Select the most relevant memories within a token budget.
  *
  * - Scores each memory with scoreRelevance()
  * - Filters by relevanceThreshold (but always keeps top-1)
@@ -27,13 +30,13 @@ export function selectMemories(
   memories: MemoryFileWithMeta[],
   task: TaskInfo,
   planSection: string | null,
-  budgetBytes: number,
+  budgetTokens: number,
   relevanceThreshold: number = 0.1,
   featureCreatedAt?: string,
   allTasks?: TaskWithDeps[],
 ): SelectedContext {
   if (memories.length === 0) {
-    return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: 0, scores: [] };
+    return { memories: [], totalTokens: 0, totalBytes: 0, includedCount: 0, droppedCount: 0, scores: [] };
   }
 
   const taskCtx = buildTaskContext(task, planSection);
@@ -41,19 +44,19 @@ export function selectMemories(
     ? { downstreamMap: buildDownstreamMap(allTasks), taskFolders: new Set(allTasks.map(t => t.folder)) }
     : undefined;
 
-  if (budgetBytes <= 0) {
+  if (budgetTokens <= 0) {
     const scores = memories.map(m => ({
       name: m.name,
       score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, proximityCtx),
       included: false,
     }));
-    return { memories: [], totalBytes: 0, includedCount: 0, droppedCount: memories.length, scores };
+    return { memories: [], totalTokens: 0, totalBytes: 0, includedCount: 0, droppedCount: memories.length, scores };
   }
 
   const scored = memories.map(m => ({
     memory: m,
     score: scoreRelevance(m, task, planSection, featureCreatedAt, taskCtx, proximityCtx),
-    bodyBytes: Buffer.byteLength(m.bodyContent),
+    tokens: estimateTokens(m.bodyContent),
   }));
 
   // Sort by score descending
@@ -64,12 +67,12 @@ export function selectMemories(
 
   // Greedily fill budget
   const included: typeof scored = [];
-  let usedBytes = 0;
+  let usedTokens = 0;
 
   for (const entry of eligible) {
-    if (usedBytes + entry.bodyBytes <= budgetBytes) {
+    if (usedTokens + entry.tokens <= budgetTokens) {
       included.push(entry);
-      usedBytes += entry.bodyBytes;
+      usedTokens += entry.tokens;
     }
   }
 
@@ -82,7 +85,8 @@ export function selectMemories(
 
   return {
     memories: included.map(i => i.memory),
-    totalBytes: usedBytes,
+    totalTokens: usedTokens,
+    totalBytes: usedTokens * 4,
     includedCount: included.length,
     droppedCount: memories.length - included.length,
     scores,
