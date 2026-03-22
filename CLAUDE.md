@@ -104,7 +104,7 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (53)
+## MCP Tools (55)
 
 | Group | Tools |
 |-------|-------|
@@ -121,6 +121,7 @@ Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto
 | Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
 | Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
 | Search (2) | `search_sessions`, `search_related` |
+| Visual (2) | `visual`, `debug_visual` |
 
 All tools are prefixed `maestro_` in MCP (e.g. `maestro_task_claim`).
 
@@ -154,6 +155,9 @@ Commands organized by domain:
 
 ### Config (3)
 `config-get`, `config-set`, `config-agent`
+
+### Visual (2)
+`visual`, `debug-visual`
 
 ### Other (9)
 `init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `dcp-preview`, `self-update`, `update`

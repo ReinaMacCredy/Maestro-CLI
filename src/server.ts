@@ -22,6 +22,7 @@ import { registerExecutionInsightsTools } from './server/execution-insights.ts';
 import { registerDoctrineTools } from './server/doctrine.ts';
 import { registerBriefTools } from './server/brief.ts';
 import { registerConfigTools } from './server/config.ts';
+import { registerVisualTools } from './server/visual.ts';
 import { VERSION } from './version.ts';
 import { checkCli } from './lib/cli-detect.ts';
 
@@ -47,6 +48,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerDoctrineTools(server, thunk);
   registerBriefTools(server, thunk);
   registerConfigTools(server, thunk);
+  registerVisualTools(server, thunk);
 
   // Conditional: only register graph/search tools when CLIs are available
   if (checkCli('bv')) registerGraphTools(server, thunk);
