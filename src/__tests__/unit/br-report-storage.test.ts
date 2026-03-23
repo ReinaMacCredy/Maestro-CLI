@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { BrTaskAdapter } from '../../adapters/br.ts';
-import { getTaskReportPath } from '../../utils/paths.ts';
+import { getTaskReportPath } from '../../core/paths.ts';
 
 describe('BrTaskAdapter report storage', () => {
   let tmpDir: string;

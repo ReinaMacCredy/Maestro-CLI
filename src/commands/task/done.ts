@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 import { writeExecutionMemory } from '../../utils/execution-memory.ts';
 
 export default defineCommand({

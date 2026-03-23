@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'task-block', description: 'Mark a task as blocked' },

@@ -10,7 +10,7 @@
 
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { parseFrontmatterRich } from '../utils/frontmatter.ts';
+import { parseFrontmatterRich } from '../core/frontmatter.ts';
 import type { SkillEntry, SkillSource } from './registry.ts';
 
 /** Directories to scan for external skills, in priority order. Shared with registry.ts. */

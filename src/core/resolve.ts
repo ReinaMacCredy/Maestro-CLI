@@ -8,7 +8,7 @@ import type { DoctrinePort } from '../ports/doctrine.ts';
 import type { GraphPort } from '../ports/graph.ts';
 import type { HandoffPort } from '../ports/handoff.ts';
 import type { SearchPort } from '../ports/search.ts';
-import { MaestroError } from './errors.ts';
+import { MaestroError } from '../lib/errors.ts';
 
 /**
  * Resolve feature name from explicit arg or active feature.

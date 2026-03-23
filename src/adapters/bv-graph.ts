@@ -6,7 +6,7 @@
  */
 
 import type { GraphPort, GraphInsights, NextRecommendation, ExecutionPlan } from '../ports/graph.ts';
-import { CliRunner } from '../utils/cli-runner.ts';
+import { CliRunner } from '../core/cli-runner.ts';
 
 export class BvGraphAdapter implements GraphPort {
   private cli: CliRunner;

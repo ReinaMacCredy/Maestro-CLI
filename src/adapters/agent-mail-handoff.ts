@@ -12,7 +12,7 @@ import type { MemoryPort } from '../ports/memory.ts';
 import type { ConfigPort } from '../ports/config.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
-import { getHandoffPath, getHandoffsPath } from '../utils/paths.ts';
+import { getHandoffPath, getHandoffsPath } from '../core/paths.ts';
 import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';

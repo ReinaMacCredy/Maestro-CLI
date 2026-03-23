@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { MaestroError, handleCommandError } from '../../lib/errors.ts';
-import { requireDoctrinePort } from '../../lib/resolve.ts';
+import { requireDoctrinePort } from '../../core/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-read', description: 'Read a doctrine item' },

@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireDoctrinePort } from '../../lib/resolve.ts';
+import { requireDoctrinePort } from '../../core/resolve.ts';
 import { suggestDoctrine } from '../../usecases/suggest-doctrine.ts';
 
 export default defineCommand({

@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { checkStatus, type StatusResult } from '../../usecases/check-status.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 import { truncateList, formatTruncation } from '../../core/truncation.ts';
 
 function formatStatus(result: StatusResult): string {

@@ -8,7 +8,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { limitParam } from './_utils/params.ts';
-import { requireSearchPort as requireSearchPortShared } from '../lib/resolve.ts';
+import { requireSearchPort as requireSearchPortShared } from '../core/resolve.ts';
 
 function requireSearchPort(thunk: ServicesThunk) {
   return requireSearchPortShared(thunk.get());

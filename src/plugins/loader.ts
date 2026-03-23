@@ -9,7 +9,7 @@ import { readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import type { ToolDefinition } from "./types";
-import { parseFrontmatter } from "../utils/frontmatter.ts";
+import { parseFrontmatter } from "../core/frontmatter.ts";
 export { parseFrontmatter };
 
 const TOOLS_DIR = join(homedir(), ".maestro", "tools");

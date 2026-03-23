@@ -20,7 +20,7 @@ import {
   getTaskSpecPath,
   getTaskReportPath,
   getTaskVerificationPath,
-} from '../utils/paths.ts';
+} from '../core/paths.ts';
 import type { VerificationReport } from '../ports/verification.ts';
 import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
 import { writeJsonAtomic } from '../utils/fs-io.ts';

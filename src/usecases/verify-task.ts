@@ -17,7 +17,7 @@ import type { VerificationPort, VerificationReport, VerificationCriterion } from
 import type { MemoryPort } from '../ports/memory.ts';
 import type { ResolvedVerificationConfig } from '../utils/verification-config.ts';
 import type { TaskInfo } from '../types.ts';
-import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { writeExecutionMemory } from '../utils/execution-memory.ts';
 
 export interface VerifyTaskOpts {

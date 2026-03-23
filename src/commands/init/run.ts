@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { getMaestroPath } from '../../utils/paths.ts';
+import { getMaestroPath } from '../../core/paths.ts';
 import { ensureDir } from '../../utils/fs-io.ts';
 import { findProjectRoot } from '../../utils/detection.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';

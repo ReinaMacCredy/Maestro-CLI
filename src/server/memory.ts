@@ -6,7 +6,7 @@ import { ANNOTATIONS_MUTATING, ANNOTATIONS_DESTRUCTIVE, ANNOTATIONS_READONLY } f
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
+import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { validateName } from '../core/validate-name.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';

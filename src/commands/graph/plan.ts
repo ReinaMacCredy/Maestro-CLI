@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireGraphPort } from '../../lib/resolve.ts';
+import { requireGraphPort } from '../../core/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'graph-plan', description: 'Show parallel execution tracks' },

@@ -5,7 +5,7 @@ import type { MaestroVisualType, VisualResult } from '../../utils/visual/types.t
 import { MAESTRO_VISUAL_TYPES } from '../../utils/visual/types.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 
 function formatResult(result: VisualResult): string {
   const lines: string[] = [];

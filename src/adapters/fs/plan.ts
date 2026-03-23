@@ -7,7 +7,7 @@ import {
   getPlanPath,
   getCommentsPath,
   getApprovedPath,
-} from '../../utils/paths.ts';
+} from '../../core/paths.ts';
 import { readJson, writeJsonAtomic, readText, writeText, fileExists } from '../../utils/fs-io.ts';
 import type { CommentsJson, PlanComment, PlanReadResult } from '../../types.ts';
 import type { PlanPort } from '../../ports/plans.ts';

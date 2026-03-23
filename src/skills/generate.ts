@@ -4,7 +4,7 @@
 
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { parseFrontmatterRich } from '../utils/frontmatter.ts';
+import { parseFrontmatterRich } from '../core/frontmatter.ts';
 
 const ROOT = join(import.meta.dir, '..', '..');
 const SKILLS_DIR = join(ROOT, 'skills', 'built-in');

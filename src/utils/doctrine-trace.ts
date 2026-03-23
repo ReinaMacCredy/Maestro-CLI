@@ -7,7 +7,7 @@
 
 import * as path from 'path';
 import { readJson, writeJsonAtomic } from './fs-io.ts';
-import { getTaskPath } from './paths.ts';
+import { getTaskPath } from '../core/paths.ts';
 
 export interface DoctrineTraceEntry {
   revision: number;

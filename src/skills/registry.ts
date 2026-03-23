@@ -2,7 +2,7 @@ import { BUILTIN_SKILLS, BUILTIN_SKILL_NAMES, type BuiltinSkillName } from './re
 import { SKILL_ALIASES } from './aliases.ts';
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
-import { parseFrontmatter } from '../utils/frontmatter.ts';
+import { parseFrontmatter } from '../core/frontmatter.ts';
 
 export { BUILTIN_SKILLS, BUILTIN_SKILL_NAMES, type BuiltinSkillName };
 

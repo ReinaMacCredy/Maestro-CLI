@@ -9,7 +9,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature, resolveFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { requireHandoffPort as requireHandoffPortShared } from '../lib/resolve.ts';
+import { requireHandoffPort as requireHandoffPortShared } from '../core/resolve.ts';
 
 function requireHandoffPort(thunk: ServicesThunk) {
   return requireHandoffPortShared(thunk.get());

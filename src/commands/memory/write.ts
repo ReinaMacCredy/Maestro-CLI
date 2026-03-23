@@ -6,8 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { parseTags } from '../../lib/resolve.ts';
-import { prependMetadataFrontmatter } from '../../utils/frontmatter.ts';
+import { parseTags } from '../../core/resolve.ts';
+import { prependMetadataFrontmatter } from '../../core/frontmatter.ts';
 import { MEMORY_CATEGORIES } from '../../types.ts';
 
 export default defineCommand({

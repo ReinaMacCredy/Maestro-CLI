@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { executionInsights, type ExecutionInsightsResult } from '../../usecases/execution-insights.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
+import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 
 function formatInsights(result: ExecutionInsightsResult): string {
   const lines: string[] = [];

@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireHandoffPort } from '../../lib/resolve.ts';
+import { requireHandoffPort } from '../../core/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'handoff-ack', description: 'Acknowledge a handoff' },

@@ -6,7 +6,7 @@
  */
 
 import type { SearchPort, SessionSearchResult } from '../ports/search.ts';
-import { CliRunner } from '../utils/cli-runner.ts';
+import { CliRunner } from '../core/cli-runner.ts';
 
 interface CassSearchHit {
   source_path?: string;

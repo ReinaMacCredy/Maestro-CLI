@@ -3,4 +3,4 @@
  * Re-exports from src/lib/resolve.ts for backward compatibility.
  */
 
-export { resolveFeature, requireFeature } from '../../lib/resolve.ts';
+export { resolveFeature, requireFeature } from '../../core/resolve.ts';

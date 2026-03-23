@@ -8,8 +8,8 @@ import type { MemoryPort } from '../ports/memory.ts';
 import type { DoctrinePort } from '../ports/doctrine.ts';
 import type { TaskInfo } from '../types.ts';
 import { extractKeywords } from './relevance.ts';
-import { prependMetadataFrontmatter } from './frontmatter.ts';
-import { getChangedFilesSince } from './git.ts';
+import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
+import { getChangedFilesSince } from '../core/git.ts';
 import { readDoctrineTrace, collectDoctrineNames } from './doctrine-trace.ts';
 
 export const EXEC_MEMORY_PREFIX = 'exec-';

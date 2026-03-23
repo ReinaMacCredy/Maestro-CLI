@@ -11,7 +11,7 @@ import {
   getTasksPath,
   getPlanPath,
   getCommentsPath,
-} from '../../utils/paths.ts';
+} from '../../core/paths.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
 import { acquireLockSync } from '../../utils/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../../types.ts';

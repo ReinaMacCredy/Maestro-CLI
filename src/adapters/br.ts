@@ -16,9 +16,9 @@ import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/ta
 import type { VerificationReport } from '../ports/verification.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
 import { MaestroError } from '../lib/errors.ts';
-import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../utils/paths.ts';
+import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../core/paths.ts';
 import { readJson, writeJsonAtomic, ensureDir, readText, writeText } from '../utils/fs-io.ts';
-import { CliRunner } from '../utils/cli-runner.ts';
+import { CliRunner } from '../core/cli-runner.ts';
 import { buildTaskFolder } from '../core/slug.ts';
 import * as path from 'path';
 

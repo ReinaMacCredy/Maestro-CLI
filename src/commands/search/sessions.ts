@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
-import { requireSearchPort } from '../../lib/resolve.ts';
+import { requireSearchPort } from '../../core/resolve.ts';
 
 export default defineCommand({
   meta: { name: 'search-sessions', description: 'Search past agent sessions' },
