@@ -9,7 +9,7 @@ import { output } from '../../lib/output.ts';
 import { MaestroError, handleCommandError } from '../../lib/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
-import { estimateTokens } from '../../utils/tokens.ts';
+import { estimateTokens } from '../../core/tokens.ts';
 import { fitWithinBudget } from '../../utils/budget-fill.ts';
 import type { MemoryFileWithMeta } from '../../types.ts';
 

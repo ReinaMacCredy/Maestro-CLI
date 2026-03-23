@@ -24,7 +24,7 @@ import {
 import type { VerificationReport } from '../ports/verification.ts';
 import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
 import { writeJsonAtomic } from '../utils/fs-io.ts';
-import { buildTaskFolder } from '../utils/slug.ts';
+import { buildTaskFolder } from '../core/slug.ts';
 import { extractDesignNotes, extractAcceptanceCriteria } from '../utils/bead-builder.ts';
 import * as fs from 'fs';
 

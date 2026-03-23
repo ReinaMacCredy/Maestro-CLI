@@ -17,7 +17,7 @@ import { ensureDir, writeText, readText } from '../utils/fs-io.ts';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveTaskBackend } from '../lib/resolve-backend.ts';
+import { resolveTaskBackend } from '../core/resolve-backend.ts';
 
 const DEFAULT_AGENT_MAIL_URL = 'http://localhost:8765';
 

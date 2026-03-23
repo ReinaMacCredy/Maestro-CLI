@@ -6,7 +6,7 @@
  * annotations, validates the dependency graph, and detects cycles.
  */
 
-import { buildTaskFolder } from './slug.ts';
+import { buildTaskFolder } from '../core/slug.ts';
 
 export interface ParsedTask {
   folder: string;

@@ -3,7 +3,7 @@ import {
   registerCleanup,
   unregisterCleanup,
   _registrySize,
-} from '../../lib/signals';
+} from '../../core/signals';
 
 describe('signals cleanup registry', () => {
   beforeEach(() => {

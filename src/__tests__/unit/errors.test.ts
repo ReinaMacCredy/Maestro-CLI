@@ -6,7 +6,7 @@ import {
   formatSuggestion,
   formatHint,
 } from "../../lib/errors";
-import { truncateList, formatTruncation } from "../../lib/truncation";
+import { truncateList, formatTruncation } from "../../core/truncation";
 
 describe("MaestroError", () => {
   test("constructs with message only", () => {

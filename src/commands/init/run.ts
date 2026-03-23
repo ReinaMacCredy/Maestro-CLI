@@ -8,7 +8,7 @@ import { handleCommandError } from '../../lib/errors.ts';
 import { getMaestroPath } from '../../utils/paths.ts';
 import { ensureDir } from '../../utils/fs-io.ts';
 import { findProjectRoot } from '../../utils/detection.ts';
-import { resolveTaskBackend } from '../../lib/resolve-backend.ts';
+import { resolveTaskBackend } from '../../core/resolve-backend.ts';
 import { FsConfigAdapter } from '../../adapters/fs/config.ts';
 import * as fs from 'fs';
 import * as path from 'path';

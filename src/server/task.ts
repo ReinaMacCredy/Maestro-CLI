@@ -12,7 +12,7 @@ import { resolveVerificationConfig } from '../utils/verification-config.ts';
 import type { ListOpts, TaskPort } from '../ports/tasks.ts';
 import type { TaskStatusType } from '../types.ts';
 import { writeExecutionMemory } from '../utils/execution-memory.ts';
-import { resolveTaskBackend } from '../lib/resolve-backend.ts';
+import { resolveTaskBackend } from '../core/resolve-backend.ts';
 import { buildTransitionHint, type TransitionHint } from '../utils/playbook.ts';
 
 async function maybeFinalTaskHint(

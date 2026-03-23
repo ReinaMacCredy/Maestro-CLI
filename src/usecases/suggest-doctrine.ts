@@ -9,7 +9,7 @@ import type { DoctrineItem, DoctrineConditions } from '../ports/doctrine.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
-import { titleToSlug } from '../utils/slug.ts';
+import { titleToSlug } from '../core/slug.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import type { HiveConfig } from '../types.ts';
 

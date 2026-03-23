@@ -8,7 +8,7 @@ import type { GraphPort } from '../ports/graph.ts';
 import type { HandoffPort } from '../ports/handoff.ts';
 import type { SearchPort } from '../ports/search.ts';
 import { VERSION } from '../version.ts';
-import { resolveTaskBackend } from '../lib/resolve-backend.ts';
+import { resolveTaskBackend } from '../core/resolve-backend.ts';
 
 export interface PingServices {
   configAdapter: ConfigPort;

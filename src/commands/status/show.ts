@@ -8,7 +8,7 @@ import { checkStatus, type StatusResult } from '../../usecases/check-status.ts';
 import { output, renderStatusLine } from '../../lib/output.ts';
 import { handleCommandError } from '../../lib/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../lib/resolve.ts';
-import { truncateList, formatTruncation } from '../../lib/truncation.ts';
+import { truncateList, formatTruncation } from '../../core/truncation.ts';
 
 function formatStatus(result: StatusResult): string {
   const lines: string[] = [];

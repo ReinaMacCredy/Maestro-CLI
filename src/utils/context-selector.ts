@@ -8,7 +8,7 @@ import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
 import type { TaskWithDeps } from './task-dependency-graph.ts';
 import { scoreRelevance, buildTaskContext, type ProximityContext } from './relevance.ts';
 import { buildDownstreamMap } from './dependency-proximity.ts';
-import { estimateTokens } from './tokens.ts';
+import { estimateTokens } from '../core/tokens.ts';
 
 export interface SelectedContext {
   memories: MemoryFileWithMeta[];  // ordered by score desc, within budget

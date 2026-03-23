@@ -10,7 +10,7 @@ import { selectMemories } from '../utils/context-selector.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
-import { estimateTokens } from '../utils/tokens.ts';
+import { estimateTokens } from '../core/tokens.ts';
 
 export interface PruneContextParams {
   featureName: string;

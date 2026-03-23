@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { truncateList, formatTruncation } from "../../lib/truncation";
+import { truncateList, formatTruncation } from "../../core/truncation";
 
 describe("truncateList", () => {
   test("returns all items when within limit", () => {

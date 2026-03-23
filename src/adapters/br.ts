@@ -19,7 +19,7 @@ import { MaestroError } from '../lib/errors.ts';
 import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../utils/paths.ts';
 import { readJson, writeJsonAtomic, ensureDir, readText, writeText } from '../utils/fs-io.ts';
 import { CliRunner } from '../utils/cli-runner.ts';
-import { buildTaskFolder } from '../utils/slug.ts';
+import { buildTaskFolder } from '../core/slug.ts';
 import * as path from 'path';
 
 const BR_STATUS = {

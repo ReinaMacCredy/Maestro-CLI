@@ -5,6 +5,7 @@ import cmdConfigGet from '../config/get.ts';
 import cmdConfigSet from '../config/set.ts';
 import cmdDcpPreview from '../dcp/preview.ts';
 import cmdDebugVisual from '../debug-visual/show.ts';
+import cmdDoctor from '../doctor/run.ts';
 import cmdDoctrineApprove from '../doctrine/approve.ts';
 import cmdDoctrineDeprecate from '../doctrine/deprecate.ts';
 import cmdDoctrineList from '../doctrine/list.ts';
@@ -23,6 +24,7 @@ import cmdGraphPlan from '../graph/plan.ts';
 import cmdHandoffAck from '../handoff/ack.ts';
 import cmdHandoffReceive from '../handoff/receive.ts';
 import cmdHandoffSend from '../handoff/send.ts';
+import cmdHistory from '../history/run.ts';
 import cmdInit from '../init/run.ts';
 import cmdInstall from '../install/index.ts';
 import cmdMemoryArchive from '../memory/archive.ts';
@@ -68,6 +70,7 @@ export const subCommands = {
   'config-set': cmdConfigSet,
   'dcp-preview': cmdDcpPreview,
   'debug-visual': cmdDebugVisual,
+  'doctor': cmdDoctor,
   'doctrine-approve': cmdDoctrineApprove,
   'doctrine-deprecate': cmdDoctrineDeprecate,
   'doctrine-list': cmdDoctrineList,
@@ -86,6 +89,7 @@ export const subCommands = {
   'handoff-ack': cmdHandoffAck,
   'handoff-receive': cmdHandoffReceive,
   'handoff-send': cmdHandoffSend,
+  'history': cmdHistory,
   'init': cmdInit,
   'install': cmdInstall,
   'memory-archive': cmdMemoryArchive,

@@ -7,7 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { MaestroError } from '../lib/errors.ts';
 import { prependMetadataFrontmatter } from '../utils/frontmatter.ts';
-import { validateName } from '../utils/validate-name.ts';
+import { validateName } from '../core/validate-name.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { MEMORY_CATEGORIES } from '../types.ts';

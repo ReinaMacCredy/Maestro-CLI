@@ -8,7 +8,7 @@ import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
 import { isDependencySatisfied } from '../../ports/tasks.ts';
 import type { VerificationReport } from '../../ports/verification.ts';
 import { MaestroError } from '../../lib/errors.ts';
-import { buildTaskFolder } from '../../utils/slug.ts';
+import { buildTaskFolder } from '../../core/slug.ts';
 
 interface StoredTask extends TaskInfo {
   description?: string;
