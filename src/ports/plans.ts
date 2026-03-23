@@ -3,7 +3,7 @@
  * Concrete implementation: FsPlanAdapter.
  */
 
-import type { PlanComment, PlanReadResult } from '../types.ts';
+import type { PlanComment, PlanReadResult } from '../core/types.ts';
 
 export interface PlanPort {
   write(featureName: string, content: string): string;

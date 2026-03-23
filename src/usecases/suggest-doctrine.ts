@@ -11,7 +11,7 @@ import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFe
 import { extractKeywords } from '../utils/relevance.ts';
 import { titleToSlug } from '../core/slug.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
-import type { HiveConfig } from '../types.ts';
+import type { HiveConfig } from '../core/types.ts';
 
 export interface DoctrineSuggestion {
   name: string;

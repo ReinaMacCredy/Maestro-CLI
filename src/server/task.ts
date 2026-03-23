@@ -10,7 +10,7 @@ import { translatePlan } from '../usecases/translate-plan.ts';
 import { verifyTask } from '../usecases/verify-task.ts';
 import { resolveVerificationConfig } from '../utils/verification-config.ts';
 import type { ListOpts, TaskPort } from '../ports/tasks.ts';
-import type { TaskStatusType } from '../types.ts';
+import type { TaskStatusType } from '../core/types.ts';
 import { writeExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveTaskBackend } from '../core/resolve-backend.ts';
 import { buildTransitionHint, type TransitionHint } from '../utils/playbook.ts';

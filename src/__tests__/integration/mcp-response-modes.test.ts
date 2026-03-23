@@ -17,7 +17,7 @@ import { execSync } from 'child_process';
 import { initServices, type MaestroServices } from '../../services.ts';
 import { syncPlan } from '../../usecases/sync-plan.ts';
 import { extractPlanOutline } from '../../utils/plan-parser.ts';
-import type { MemoryFile } from '../../types.ts';
+import type { MemoryFile } from '../../core/types.ts';
 
 let dir: string;
 let services: MaestroServices;

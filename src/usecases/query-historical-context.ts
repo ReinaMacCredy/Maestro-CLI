@@ -8,7 +8,7 @@
 
 import type { FeaturePort } from '../ports/features.ts';
 import type { MemoryPort } from '../ports/memory.ts';
-import type { MemoryFileWithMeta } from '../types.ts';
+import type { MemoryFileWithMeta } from '../core/types.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../utils/relevance.ts';

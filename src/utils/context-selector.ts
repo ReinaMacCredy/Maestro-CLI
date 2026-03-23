@@ -4,7 +4,7 @@
  * Uses token estimation (chars/4) for budget accounting.
  */
 
-import type { MemoryFileWithMeta, TaskInfo } from '../types.ts';
+import type { MemoryFileWithMeta, TaskInfo } from '../core/types.ts';
 import type { TaskWithDeps } from './task-dependency-graph.ts';
 import { scoreRelevance, buildTaskContext, type ProximityContext } from './relevance.ts';
 import { buildDownstreamMap } from './dependency-proximity.ts';

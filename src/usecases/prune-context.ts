@@ -3,7 +3,7 @@
  * Assembles task-aware, budget-conscious context injection for worker agents.
  */
 
-import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../types.ts';
+import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../core/types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import type { DoctrineItem } from '../ports/doctrine.ts';
 import { selectMemories } from '../utils/context-selector.ts';

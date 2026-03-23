@@ -4,7 +4,7 @@
  * Extended with rich bead fields for br backend.
  */
 
-import type { TaskStatusType, TaskInfo } from '../types.ts';
+import type { TaskStatusType, TaskInfo } from '../core/types.ts';
 import type { VerificationReport } from './verification.ts';
 
 export interface CreateOpts {

@@ -9,7 +9,7 @@
  *       report.md     -- task completion report
  */
 
-import type { TaskInfo, TaskStatus } from '../types.ts';
+import type { TaskInfo, TaskStatus } from '../core/types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
 import { isDependencySatisfied } from '../ports/tasks.ts';
 import { MaestroError } from '../core/errors.ts';

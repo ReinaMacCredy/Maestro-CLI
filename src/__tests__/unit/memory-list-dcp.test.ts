@@ -7,7 +7,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { selectMemories } from '../../utils/context-selector.ts';
-import type { MemoryFileWithMeta, TaskInfo } from '../../types.ts';
+import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 
 function makeMemory(name: string, bodyContent: string): MemoryFileWithMeta {
   return {

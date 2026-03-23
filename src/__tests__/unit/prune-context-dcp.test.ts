@@ -6,7 +6,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { pruneContext } from '../../usecases/prune-context.ts';
-import type { MemoryFileWithMeta, TaskInfo } from '../../types.ts';
+import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 
 function makeMemory(name: string, bodyContent: string): MemoryFileWithMeta {
   return {

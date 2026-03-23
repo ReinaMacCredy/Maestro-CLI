@@ -9,7 +9,7 @@ import {
   getApprovedPath,
 } from '../../core/paths.ts';
 import { readJson, writeJsonAtomic, readText, writeText, fileExists } from '../../core/fs-io.ts';
-import type { CommentsJson, PlanComment, PlanReadResult } from '../../types.ts';
+import type { CommentsJson, PlanComment, PlanReadResult } from '../../core/types.ts';
 import type { PlanPort } from '../../ports/plans.ts';
 import * as fs from 'fs';
 

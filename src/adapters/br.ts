@@ -11,7 +11,7 @@
  * Folder-to-ID mapping stored in `.maestro/features/<name>/br-mapping.json`.
  */
 
-import type { TaskInfo, TaskStatusType } from '../types.ts';
+import type { TaskInfo, TaskStatusType } from '../core/types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
 import type { VerificationReport } from '../ports/verification.ts';
 import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';

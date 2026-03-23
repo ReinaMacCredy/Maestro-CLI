@@ -3,7 +3,7 @@
  * Updated for 6-state model (pending/claimed/done/blocked/review/revision).
  */
 
-import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../types.ts';
+import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../core/types.ts';
 import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
 import { isDependencySatisfied } from '../../ports/tasks.ts';
 import type { VerificationReport } from '../../ports/verification.ts';

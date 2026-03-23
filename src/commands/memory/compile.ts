@@ -11,7 +11,7 @@ import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { estimateTokens } from '../../core/tokens.ts';
 import { fitWithinBudget } from '../../utils/budget-fill.ts';
-import type { MemoryFileWithMeta } from '../../types.ts';
+import type { MemoryFileWithMeta } from '../../core/types.ts';
 
 function parseBudget(raw: string): number {
   const n = parseInt(raw, 10);

@@ -10,7 +10,7 @@ import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { validateName } from '../core/validate-name.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
-import { MEMORY_CATEGORIES } from '../types.ts';
+import { MEMORY_CATEGORIES } from '../core/types.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

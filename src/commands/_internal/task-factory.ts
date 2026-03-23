@@ -6,7 +6,7 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output, renderStatusLine } from '../../core/output.ts';
 import { MaestroError, handleCommandError } from '../../core/errors.ts';
-import type { TaskInfo } from '../../types.ts';
+import type { TaskInfo } from '../../core/types.ts';
 
 export function makeInfoCommand() {
   return defineCommand({

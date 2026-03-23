@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import { scoreRelevance, type ProximityContext } from '../../utils/relevance.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { buildDownstreamMap } from '../../utils/dependency-proximity.ts';
-import type { MemoryFileWithMeta, TaskInfo } from '../../types.ts';
+import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 import type { TaskWithDeps } from '../../utils/task-dependency-graph.ts';
 
 function makeMemory(name: string, overrides: Partial<MemoryFileWithMeta> = {}): MemoryFileWithMeta {

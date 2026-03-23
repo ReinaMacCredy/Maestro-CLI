@@ -11,7 +11,7 @@ import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory } from '../utils/parse-exec-memory.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
-import type { HiveConfig } from '../types.ts';
+import type { HiveConfig } from '../core/types.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;

@@ -9,7 +9,7 @@ import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { verifyTask, type VerifyTaskOpts } from '../../usecases/verify-task.ts';
 import type { VerificationPort, VerificationReport, VerifyParams } from '../../ports/verification.ts';
 import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
-import { VERIFICATION_DEFAULTS } from '../../types.ts';
+import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
 
 const FEATURE = 'test-feature';
 const TASK = '01-setup-auth';

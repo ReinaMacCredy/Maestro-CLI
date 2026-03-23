@@ -3,7 +3,7 @@
  * Forked from hive-core/src/services/taskDependencyGraph.ts -- direct copy.
  */
 
-import type { TaskStatusType } from '../types.ts';
+import type { TaskStatusType } from '../core/types.ts';
 import { isDependencySatisfied } from '../ports/tasks.ts';
 
 export interface TaskWithDeps {

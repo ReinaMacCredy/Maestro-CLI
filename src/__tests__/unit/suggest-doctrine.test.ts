@@ -4,7 +4,7 @@ import { buildExecutionMemory } from '../../utils/execution-memory.ts';
 import type { FeaturePort } from '../../ports/features.ts';
 import type { MemoryPort } from '../../ports/memory.ts';
 import type { DoctrineItem } from '../../ports/doctrine.ts';
-import type { FeatureJson, MemoryFileWithMeta } from '../../types.ts';
+import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';
 
 function makeFeatureAdapter(features: Array<{ name: string; createdAt: string }>): FeaturePort {
   return {

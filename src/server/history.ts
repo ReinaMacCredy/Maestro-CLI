@@ -5,7 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { limitParam } from './_utils/params.ts';
 import { history } from '../usecases/history.ts';
-import type { FeatureStatusType } from '../types.ts';
+import type { FeatureStatusType } from '../core/types.ts';
 
 const FEATURE_STATUSES = ['planning', 'approved', 'executing', 'completed'] as const;
 

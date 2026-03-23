@@ -3,7 +3,7 @@
  * Token fields take precedence. If only byte fields are set, derive tokens from bytes/4.
  */
 
-import { DOCTRINE_DEFAULTS, type HiveConfig } from '../types.ts';
+import { DOCTRINE_DEFAULTS, type HiveConfig } from '../core/types.ts';
 
 export function resolveDoctrineConfig(override?: NonNullable<HiveConfig['doctrine']>) {
   const merged = { ...DOCTRINE_DEFAULTS, ...override };

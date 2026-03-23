@@ -4,7 +4,7 @@
  * still get useful metadata for DCP scoring.
  */
 
-import type { MemoryMetadata, MemoryCategory } from '../types.ts';
+import type { MemoryMetadata, MemoryCategory } from '../core/types.ts';
 
 interface CategoryRule {
   keywords: string[];

@@ -3,7 +3,7 @@
  * Concrete implementation: FsMemoryAdapter.
  */
 
-import type { MemoryFile, MemoryFileWithMeta } from '../types.ts';
+import type { MemoryFile, MemoryFileWithMeta } from '../core/types.ts';
 
 export interface MemoryPort {
   write(featureName: string, fileName: string, content: string): string;

@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { history } from '../../usecases/history.ts';
 import { output, renderTable } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
-import type { FeatureStatusType } from '../../types.ts';
+import type { FeatureStatusType } from '../../core/types.ts';
 
 function formatDuration(days?: number): string {
   if (days === undefined) return '--';

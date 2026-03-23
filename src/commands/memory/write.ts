@@ -8,7 +8,7 @@ import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { parseTags } from '../../core/resolve.ts';
 import { prependMetadataFrontmatter } from '../../core/frontmatter.ts';
-import { MEMORY_CATEGORIES } from '../../types.ts';
+import { MEMORY_CATEGORIES } from '../../core/types.ts';
 
 export default defineCommand({
   meta: { name: 'memory-write', description: 'Write a memory file' },

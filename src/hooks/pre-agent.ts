@@ -21,7 +21,7 @@ import { deriveFolderTags } from '../utils/execution-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
 import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
 import type { DoctrineItem } from '../ports/doctrine.ts';
-import type { TaskInfo } from '../types.ts';
+import type { TaskInfo } from '../core/types.ts';
 import type { RichTaskFields } from '../ports/tasks.ts';
 
 export { WORKER_RULES };

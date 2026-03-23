@@ -5,7 +5,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { FsVerificationAdapter } from '../../adapters/verification.ts';
-import { VERIFICATION_DEFAULTS } from '../../types.ts';
+import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
 import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
 
 function makeConfig(overrides: Partial<ResolvedVerificationConfig> = {}): ResolvedVerificationConfig {

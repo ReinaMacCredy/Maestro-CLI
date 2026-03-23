@@ -3,7 +3,7 @@
  * Follows the same pattern as dcp-config.ts.
  */
 
-import { VERIFICATION_DEFAULTS, type HiveConfig } from '../types.ts';
+import { VERIFICATION_DEFAULTS, type HiveConfig } from '../core/types.ts';
 
 export interface ResolvedVerificationConfig {
   enabled: boolean;

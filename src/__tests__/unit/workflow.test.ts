@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { countTaskStatuses, derivePipelineStage, getNextAction } from "../../utils/workflow";
-import type { TaskStatusType } from "../../types";
+import type { TaskStatusType } from '../../core/types.ts';
 
 type TaskEntry = { status: TaskStatusType; folder: string };
 

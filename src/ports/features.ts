@@ -3,7 +3,7 @@
  * Concrete implementation: FsFeatureAdapter.
  */
 
-import type { FeatureJson, FeatureStatusType } from '../types.ts';
+import type { FeatureJson, FeatureStatusType } from '../core/types.ts';
 
 export interface FeaturePort {
   create(name: string, ticket?: string): FeatureJson;

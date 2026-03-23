@@ -6,8 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { MaestroError, handleCommandError } from '../../core/errors.ts';
-import { AGENT_NAMES } from '../../types.ts';
-import type { AgentName } from '../../types.ts';
+import { AGENT_NAMES } from '../../core/types.ts';
+import type { AgentName } from '../../core/types.ts';
 
 export default defineCommand({
   meta: { name: 'config-agent', description: 'Get agent-specific config' },

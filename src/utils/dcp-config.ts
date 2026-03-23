@@ -3,7 +3,7 @@
  * Token fields take precedence. If only byte fields are set, derive tokens from bytes/4.
  */
 
-import { DCP_DEFAULTS, type HiveConfig } from '../types.ts';
+import { DCP_DEFAULTS, type HiveConfig } from '../core/types.ts';
 
 export function resolveDcpConfig(override?: NonNullable<HiveConfig['dcp']>) {
   const merged = { ...DCP_DEFAULTS, ...override };

@@ -3,7 +3,7 @@ import { writePlan, type WritePlanServices } from '../../usecases/write-plan.ts'
 import type { PlanPort } from '../../ports/plans.ts';
 import type { FeaturePort } from '../../ports/features.ts';
 import type { MemoryPort } from '../../ports/memory.ts';
-import type { FeatureJson, MemoryFileWithMeta } from '../../types.ts';
+import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';
 import { buildExecutionMemory } from '../../utils/execution-memory.ts';
 
 const VALID_PLAN = [

@@ -5,7 +5,7 @@
 
 import type { FeaturePort } from '../ports/features.ts';
 import type { TaskPort } from '../ports/tasks.ts';
-import type { FeatureStatusType } from '../types.ts';
+import type { FeatureStatusType } from '../core/types.ts';
 
 export interface HistoryServices {
   featureAdapter: FeaturePort;

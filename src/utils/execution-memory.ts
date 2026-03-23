@@ -6,7 +6,7 @@
 import type { VerificationReport } from '../ports/verification.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { DoctrinePort } from '../ports/doctrine.ts';
-import type { TaskInfo } from '../types.ts';
+import type { TaskInfo } from '../core/types.ts';
 import { extractKeywords } from './relevance.ts';
 import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { getChangedFilesSince } from '../core/git.ts';
