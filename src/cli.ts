@@ -1,5 +1,5 @@
 import { defineCommand, runMain } from 'citty';
-import { setOutputMode } from './lib/output.ts';
+import { setOutputMode } from './core/output.ts';
 import { initServices } from './services.ts';
 import { findProjectRoot } from './utils/detection.ts';
 import { subCommands } from './commands/_internal/registry.generated.ts';

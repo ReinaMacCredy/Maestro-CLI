@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { doctor, type DoctorReport } from '../../usecases/doctor.ts';
-import { output, renderTable } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output, renderTable } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 
 const STATUS_MARKER: Record<string, string> = {
   ok: '[ok]',

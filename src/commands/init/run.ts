@@ -3,10 +3,10 @@
  */
 
 import { defineCommand } from 'citty';
-import { output } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 import { getMaestroPath } from '../../core/paths.ts';
-import { ensureDir } from '../../utils/fs-io.ts';
+import { ensureDir } from '../../core/fs-io.ts';
 import { findProjectRoot } from '../../utils/detection.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
 import { FsConfigAdapter } from '../../adapters/fs/config.ts';

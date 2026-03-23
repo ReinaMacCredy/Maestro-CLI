@@ -6,8 +6,8 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { getMaestroPath } from '../core/paths.ts';
-import { ensureDir } from '../utils/fs-io.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { ensureDir } from '../core/fs-io.ts';
+import { MaestroError } from '../core/errors.ts';
 
 const execFileAsync = promisify(execFile);
 

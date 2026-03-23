@@ -4,8 +4,8 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 import { requireDoctrinePort, parseTags } from '../../core/resolve.ts';
 import { buildDoctrineItem } from '../../utils/doctrine-factory.ts';
 

@@ -4,7 +4,7 @@ import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, textResponse, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { loadSkill, loadSkillReference, listSkills } from '../skills/registry.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 
 export function registerSkillTools(server: McpServer, _thunk: ServicesThunk, directory?: string): void {
   server.registerTool(

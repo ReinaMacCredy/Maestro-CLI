@@ -16,7 +16,7 @@ import { renderExecutionTimeline } from '../utils/visual/templates/execution-tim
 import { renderDoctrineNetwork } from '../utils/visual/templates/doctrine-network.ts';
 import { checkStatus } from './check-status.ts';
 import { executionInsights } from './execution-insights.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import { derivePipelineStage } from '../utils/workflow.ts';
 
 // ============================================================================

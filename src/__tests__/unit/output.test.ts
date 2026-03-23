@@ -6,7 +6,7 @@ import {
   renderTable,
   renderStatusLine,
   renderList,
-} from "../../lib/output";
+} from '../../core/output.ts';
 
 describe("output module", () => {
   beforeEach(() => {

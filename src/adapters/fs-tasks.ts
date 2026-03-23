@@ -12,7 +12,7 @@
 import type { TaskInfo, TaskStatus } from '../types.ts';
 import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
 import { isDependencySatisfied } from '../ports/tasks.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import {
   getTasksPath,
   getTaskPath,
@@ -22,8 +22,8 @@ import {
   getTaskVerificationPath,
 } from '../core/paths.ts';
 import type { VerificationReport } from '../ports/verification.ts';
-import { ensureDir, readJson, readText, writeText } from '../utils/fs-io.ts';
-import { writeJsonAtomic } from '../utils/fs-io.ts';
+import { ensureDir, readJson, readText, writeText } from '../core/fs-io.ts';
+import { writeJsonAtomic } from '../core/fs-io.ts';
 import { buildTaskFolder } from '../core/slug.ts';
 import { extractDesignNotes, extractAcceptanceCriteria } from '../utils/bead-builder.ts';
 import * as fs from 'fs';

@@ -7,7 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import { buildTransitionHint } from '../utils/playbook.ts';
 import { extractPlanOutline } from '../utils/plan-parser.ts';
 

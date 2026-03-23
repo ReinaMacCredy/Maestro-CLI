@@ -13,7 +13,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir } from './_helpers.ts';
-import { ensureDir } from '../utils/fs-io.ts';
+import { ensureDir } from '../core/fs-io.ts';
 import { initServices } from '../services.ts';
 import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';

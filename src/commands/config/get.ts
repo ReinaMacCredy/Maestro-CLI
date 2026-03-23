@@ -4,8 +4,8 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output } from '../../lib/output.ts';
-import { MaestroError, handleCommandError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { MaestroError, handleCommandError } from '../../core/errors.ts';
 
 export default defineCommand({
   meta: { name: 'config-get', description: 'Get a config value' },

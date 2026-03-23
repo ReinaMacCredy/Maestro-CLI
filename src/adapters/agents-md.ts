@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { fileExists, readText, writeText } from '../utils/fs-io.ts';
+import { fileExists, readText, writeText } from '../core/fs-io.ts';
 import type { MemoryFile } from '../types.ts';
 import type { FsMemoryAdapter } from './fs/memory.ts';
 import { checkCli } from '../lib/cli-detect.ts';

@@ -9,7 +9,7 @@ import { isActiveTask } from '../ports/tasks.ts';
 import type { PlanPort } from '../ports/plans.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
 import { buildSpecContent } from '../utils/spec-builder.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import type { TasksSyncResult } from '../types.ts';
 
 export interface SyncPlanServices {

@@ -5,7 +5,7 @@ import {
   formatWarning,
   formatSuggestion,
   formatHint,
-} from "../../lib/errors";
+} from '../../core/errors.ts';
 import { truncateList, formatTruncation } from "../../core/truncation";
 
 describe("MaestroError", () => {

@@ -2,7 +2,7 @@
  * Detect available external research tools by checking .mcp.json files.
  */
 
-import { readJson } from './fs-io.ts';
+import { readJson } from '../core/fs-io.ts';
 import * as path from 'path';
 import { homedir } from 'os';
 

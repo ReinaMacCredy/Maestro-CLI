@@ -7,7 +7,7 @@ import { renderErrorCascade } from '../utils/visual/templates/error-cascade.ts';
 import { renderNetworkWaterfall } from '../utils/visual/templates/network-waterfall.ts';
 import { renderDomDiff } from '../utils/visual/templates/dom-diff.ts';
 import { renderConsoleTimeline } from '../utils/visual/templates/console-timeline.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 
 // ============================================================================
 // Zod Schemas

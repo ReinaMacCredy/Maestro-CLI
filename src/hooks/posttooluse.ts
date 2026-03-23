@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readStdin, resolveProjectDir, logHookError, getSessionsDir, EVENTS_FILE } from './_helpers.ts';
-import { ensureDir } from '../utils/fs-io.ts';
+import { ensureDir } from '../core/fs-io.ts';
 
 const HOOK_NAME = 'posttooluse';
 

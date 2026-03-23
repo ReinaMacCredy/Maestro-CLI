@@ -1,6 +1,6 @@
 import type { PlanPort } from '../ports/plans.ts';
 import type { FeaturePort } from '../ports/features.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 
 export interface ApprovePlanServices {
   planAdapter: PlanPort;

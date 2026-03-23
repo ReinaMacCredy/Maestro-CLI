@@ -4,8 +4,8 @@
 
 import { defineCommand } from 'citty';
 import { loadSkill, loadSkillReference } from '../../skills/registry.ts';
-import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError, MaestroError } from '../../core/errors.ts';
 
 function formatSkillContent(result: { content: string }): string {
   return result.content;

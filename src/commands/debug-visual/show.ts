@@ -3,8 +3,8 @@ import { defineCommand } from 'citty';
 import { debugVisualize } from '../../usecases/debug-visualize.ts';
 import type { DebugVisualType, VisualResult } from '../../utils/visual/types.ts';
 import { DEBUG_VISUAL_TYPES } from '../../utils/visual/types.ts';
-import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError, MaestroError } from '../../core/errors.ts';
 
 function formatResult(result: VisualResult): string {
   const lines: string[] = [];

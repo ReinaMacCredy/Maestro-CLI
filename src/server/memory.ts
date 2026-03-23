@@ -5,7 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_DESTRUCTIVE, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { validateName } from '../core/validate-name.ts';
 import { selectMemories } from '../utils/context-selector.ts';

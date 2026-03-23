@@ -4,8 +4,8 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output, renderTaskTable } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { output, renderTaskTable } from '../../core/output.ts';
+import { handleCommandError, MaestroError } from '../../core/errors.ts';
 import type { TaskStatusType } from '../../types.ts';
 
 const VALID_STATUSES: TaskStatusType[] = ['pending', 'claimed', 'done', 'blocked', 'review', 'revision'];

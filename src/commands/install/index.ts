@@ -12,9 +12,9 @@
  */
 
 import { defineCommand } from 'citty';
-import { output } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
-import { ensureDir, writeAtomic } from '../../utils/fs-io.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
+import { ensureDir, writeAtomic } from '../../core/fs-io.ts';
 import { BUILTIN_SKILLS } from '../../skills/registry.ts';
 import * as path from 'path';
 

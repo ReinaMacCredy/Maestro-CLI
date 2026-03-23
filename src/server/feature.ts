@@ -7,7 +7,7 @@ import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { completeFeature } from '../usecases/complete-feature.ts';
 import { buildTransitionHint } from '../utils/playbook.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 
 export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

@@ -4,8 +4,8 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output } from '../../lib/output.ts';
-import { handleCommandError, MaestroError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError, MaestroError } from '../../core/errors.ts';
 
 type Action = 'init' | 'sync' | 'apply';
 const VALID_ACTIONS: Action[] = ['init', 'sync', 'apply'];

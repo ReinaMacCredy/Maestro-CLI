@@ -17,7 +17,7 @@ import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import { estimateTokens } from '../core/tokens.ts';
 import { fitWithinBudget } from '../utils/budget-fill.ts';
 

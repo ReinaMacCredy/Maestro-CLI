@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { findProjectRoot } from '../utils/detection.ts';
-import { ensureDir } from '../utils/fs-io.ts';
+import { ensureDir } from '../core/fs-io.ts';
 
 /** Parse JSON from stdin. Returns {} on parse failure. */
 export async function readStdin(): Promise<Record<string, unknown>> {

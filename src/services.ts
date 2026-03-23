@@ -17,7 +17,7 @@ import { FsPlanAdapter } from './adapters/fs/plan.ts';
 import { FsMemoryAdapter } from './adapters/fs/memory.ts';
 import { FsConfigAdapter } from './adapters/fs/config.ts';
 import { AgentsMdAdapter } from './adapters/agents-md.ts';
-import { MaestroError } from './lib/errors.ts';
+import { MaestroError } from './core/errors.ts';
 import { checkCli } from './lib/cli-detect.ts';
 import { resolveTaskBackend } from './core/resolve-backend.ts';
 import type { ConfigBackend, ResolvedBackend } from './core/resolve-backend.ts';

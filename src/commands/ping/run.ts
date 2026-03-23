@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { ping, type PingResult } from '../../usecases/ping.ts';
-import { output, renderStatusLine } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output, renderStatusLine } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 
 function formatPing(result: PingResult): string {
   const lines: string[] = [];

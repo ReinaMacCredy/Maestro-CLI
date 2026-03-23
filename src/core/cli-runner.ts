@@ -7,7 +7,7 @@
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from './errors.ts';
 
 const execFileAsync = promisify(execFile);
 

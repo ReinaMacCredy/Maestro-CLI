@@ -12,11 +12,11 @@ import {
   getPlanPath,
   getCommentsPath,
 } from '../../core/paths.ts';
-import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
-import { acquireLockSync } from '../../utils/locking.ts';
+import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../core/fs-io.ts';
+import { acquireLockSync } from '../../core/locking.ts';
 import type { FeatureJson, FeatureStatusType, CommentsJson } from '../../types.ts';
 import { listFeatures } from '../../utils/detection.ts';
-import { MaestroError } from '../../lib/errors.ts';
+import { MaestroError } from '../../core/errors.ts';
 import { validateName } from '../../core/validate-name.ts';
 import type { FeaturePort } from '../../ports/features.ts';
 

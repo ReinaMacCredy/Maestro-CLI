@@ -5,8 +5,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { history } from '../../usecases/history.ts';
-import { output, renderTable } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output, renderTable } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 import type { FeatureStatusType } from '../../types.ts';
 
 function formatDuration(days?: number): string {

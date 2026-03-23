@@ -6,8 +6,8 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { syncPlan } from '../../usecases/sync-plan.ts';
 import { translatePlan } from '../../usecases/translate-plan.ts';
-import { output } from '../../lib/output.ts';
-import { handleCommandError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { handleCommandError } from '../../core/errors.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
 
 export default defineCommand({

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir, EVENTS_FILE } from './_helpers.ts';
-import { writeJsonAtomic, ensureDir } from '../utils/fs-io.ts';
+import { writeJsonAtomic, ensureDir } from '../core/fs-io.ts';
 import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
 

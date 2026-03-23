@@ -8,7 +8,7 @@ import { homedir } from 'os';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../types.ts';
 import type { AgentName } from '../../types.ts';
 import type { ConfigPort } from '../../ports/config.ts';
-import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../utils/fs-io.ts';
+import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../core/fs-io.ts';
 import { SKILL_ALIASES } from '../../skills/aliases.ts';
 
 export class FsConfigAdapter implements ConfigPort {

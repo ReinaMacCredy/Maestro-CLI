@@ -2,7 +2,7 @@ import type { TaskPort } from '../ports/tasks.ts';
 import type { FeaturePort } from '../ports/features.ts';
 import type { MemoryPort } from '../ports/memory.ts';
 import type { DoctrinePort } from '../ports/doctrine.ts';
-import { MaestroError } from '../lib/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 import type { FeatureJson, HiveConfig } from '../types.ts';
 import { suggestDoctrine, type DoctrineSuggestion } from './suggest-doctrine.ts';
 

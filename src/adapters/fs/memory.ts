@@ -7,7 +7,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { getMemoryPath, getGlobalMemoryPath } from '../../core/paths.ts';
-import { ensureDir, fileExists, readText, writeText } from '../../utils/fs-io.ts';
+import { ensureDir, fileExists, readText, writeText } from '../../core/fs-io.ts';
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../../types.ts';
 import type { MemoryPort } from '../../ports/memory.ts';
 import { parseFrontmatterRich, stripFrontmatter } from '../../core/frontmatter.ts';

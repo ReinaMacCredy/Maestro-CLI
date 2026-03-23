@@ -5,8 +5,8 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { output } from '../../lib/output.ts';
-import { MaestroError, handleCommandError } from '../../lib/errors.ts';
+import { output } from '../../core/output.ts';
+import { MaestroError, handleCommandError } from '../../core/errors.ts';
 import { selectMemories } from '../../utils/context-selector.ts';
 import { resolveDcpConfig } from '../../utils/dcp-config.ts';
 import { estimateTokens } from '../../core/tokens.ts';
