@@ -4,6 +4,7 @@ import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
 import { readJson, writeJsonAtomic, ensureDir } from '../../core/fs-io.ts';
+import { getNestedValue, setNestedValue } from '../../core/object-utils.ts';
 import * as path from 'path';
 
 const REDACT_PATTERN = /apiKey|token|secret|password/i;
@@ -20,18 +21,6 @@ function redactSecrets(obj: Record<string, unknown>): Record<string, unknown> {
     }
   }
   return result;
-}
-
-function getNestedValue(obj: unknown, path: string): unknown {
-  const parts = path.split('.');
-  let current: unknown = obj;
-  for (const part of parts) {
-    if (current === null || current === undefined || typeof current !== 'object') {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current;
 }
 
 export function registerConfigTools(server: McpServer, thunk: ServicesThunk): void {
@@ -74,16 +63,7 @@ export function registerConfigTools(server: McpServer, thunk: ServicesThunk): vo
 
       const settingsPath = path.join(services.directory, '.maestro', 'settings.json');
       const existing = readJson<Record<string, unknown>>(settingsPath) ?? {};
-
-      const parts = input.key.split('.');
-      let current: Record<string, unknown> = existing;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (current[parts[i]] === undefined || typeof current[parts[i]] !== 'object') {
-          current[parts[i]] = {};
-        }
-        current = current[parts[i]] as Record<string, unknown>;
-      }
-      current[parts[parts.length - 1]] = parsed;
+      setNestedValue(existing, input.key, parsed);
 
       ensureDir(path.dirname(settingsPath));
       writeJsonAtomic(settingsPath, existing);

@@ -3,26 +3,14 @@
  * Writes to .maestro/settings.json (project) by default.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { defineCommand } from 'citty';
 import { getServices } from '../../../services.ts';
 import { output } from '../../../core/output.ts';
 import { handleCommandError } from '../../../core/errors.ts';
 import { ensureDir, writeJsonAtomic, readJson } from '../../../core/fs-io.ts';
+import { setNestedValue } from '../../../core/object-utils.ts';
 import { homedir } from 'os';
-
-function setNestedValue(obj: Record<string, unknown>, dotPath: string, value: unknown): void {
-  const parts = dotPath.split('.');
-  let current: Record<string, unknown> = obj;
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (current[parts[i]] === undefined || typeof current[parts[i]] !== 'object') {
-      current[parts[i]] = {};
-    }
-    current = current[parts[i]] as Record<string, unknown>;
-  }
-  current[parts[parts.length - 1]] = value;
-}
 
 export default defineCommand({
   meta: { name: 'config-set', description: 'Set a settings value' },

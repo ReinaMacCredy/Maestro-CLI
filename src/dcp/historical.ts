@@ -12,6 +12,7 @@ import type { MemoryFileWithMeta } from '../core/types.ts';
 import { isExecutionMemory } from '../memory/execution/writer.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../memory/execution/parser.ts';
 import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from './relevance.ts';
+import { formatDurationMinutes, parseDurationMinutes } from '../core/time-utils.ts';
 
 export interface HistoricalPitfall {
   pattern: string;
@@ -144,7 +145,7 @@ export function queryHistoricalContext(
     } else if (avgDuration !== undefined && avgDuration > 120) {
       pitfalls.push({
         pattern: `tasks involving [${tags.join(', ')}]`,
-        metric: `${formatMinutes(avgDuration)} average duration across ${uniqueFeatures.length} features`,
+        metric: `${formatDurationMinutes(avgDuration)} average duration across ${uniqueFeatures.length} features`,
         sourceFeatures: uniqueFeatures,
         sourceTasks,
         severity: 'low',
@@ -163,18 +164,3 @@ export function queryHistoricalContext(
   };
 }
 
-function parseDurationMinutes(duration: string): number | undefined {
-  const hoursMatch = duration.match(/(\d+)h/);
-  const minutesMatch = duration.match(/(\d+)m/);
-  const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
-  const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
-  const total = hours * 60 + minutes;
-  return total > 0 ? total : undefined;
-}
-
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)}m`;
-  const hours = Math.floor(minutes / 60);
-  const rem = Math.round(minutes % 60);
-  return rem > 0 ? `${hours}h${rem}m` : `${hours}h`;
-}

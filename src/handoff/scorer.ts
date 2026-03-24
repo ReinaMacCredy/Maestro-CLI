@@ -6,7 +6,7 @@
  */
 
 import type { MemoryFileWithMeta } from '../core/types.ts';
-import { extractKeywords } from '../dcp/relevance.ts';
+import { extractKeywords, scorePriority } from '../dcp/relevance.ts';
 
 export interface ScoredMemory {
   name: string;
@@ -119,7 +119,3 @@ function scoreRecency(updatedAt: string, now: number): number {
   return Math.max(0, 1 - ageMs / (30 * dayMs));
 }
 
-function scorePriority(priority: number | undefined): number {
-  const clamped = Math.max(0, Math.min(4, priority ?? 2));
-  return (4 - clamped) / 4;
-}

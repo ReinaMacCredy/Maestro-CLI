@@ -15,16 +15,10 @@ import simpleGit from 'simple-git';
 import * as fs from 'fs';
 import * as path from 'path';
 import { readJson } from '../../core/fs-io.ts';
+import { extractKeywords } from '../../dcp/relevance.ts';
 
 const MAX_BUILD_OUTPUT = 2048;
 const MIN_SUMMARY_LENGTH = 20;
-const SIGNIFICANT_WORD_RE = /\b[a-z]{4,}\b/g;
-const STOP_WORDS = new Set(['this', 'that', 'with', 'from', 'have', 'been', 'will', 'should', 'would', 'could', 'task', 'plan', 'spec', 'section', 'feature']);
-
-function extractSignificantWords(text: string, filterStopWords = false): string[] {
-  const words = text.toLowerCase().match(SIGNIFICANT_WORD_RE) ?? [];
-  return filterStopWords ? words.filter(w => !STOP_WORDS.has(w)) : words;
-}
 
 export class FsVerificationAdapter implements VerificationPort {
   private config: ResolvedVerificationConfig;
@@ -190,7 +184,7 @@ export class FsVerificationAdapter implements VerificationPort {
     }
 
     if (specContent) {
-      const uniqueTerms = [...new Set(extractSignificantWords(specContent, true))];
+      const uniqueTerms = [...extractKeywords(specContent)];
 
       if (uniqueTerms.length > 0) {
         const summaryLower = summary.toLowerCase();
@@ -221,7 +215,7 @@ export class FsVerificationAdapter implements VerificationPort {
 
     const summaryLower = summary.toLowerCase();
     const matchedCount = bullets.filter(bullet => {
-      const words = extractSignificantWords(bullet);
+      const words = [...extractKeywords(bullet)];
       return words.some(w => summaryLower.includes(w));
     }).length;
 

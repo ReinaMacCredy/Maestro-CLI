@@ -95,7 +95,7 @@ function scoreCategoryMatch(
   return 0;
 }
 
-function scorePriority(priority: number | undefined): number {
+export function scorePriority(priority: number | undefined): number {
   const clamped = Math.max(0, Math.min(4, priority ?? 2));
   return (4 - clamped) / 4;
 }

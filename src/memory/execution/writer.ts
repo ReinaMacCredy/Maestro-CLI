@@ -8,6 +8,7 @@ import type { MemoryPort } from '../../memory/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
 import type { TaskInfo } from '../../core/types.ts';
 import { extractKeywords } from '../../dcp/relevance.ts';
+import { formatDurationMinutes } from '../../core/time-utils.ts';
 import { prependMetadataFrontmatter } from '../../core/frontmatter.ts';
 import { getChangedFilesSince } from '../../core/git.ts';
 import { readDoctrineTrace, collectDoctrineNames } from '../../doctrine/trace.ts';
@@ -87,10 +88,7 @@ function formatDuration(claimedAt?: string, completedAt?: string): string {
   const ms = new Date(completedAt).getTime() - new Date(claimedAt).getTime();
   if (isNaN(ms) || ms < 0) return 'unknown';
   const minutes = Math.round(ms / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const rem = minutes % 60;
-  return rem > 0 ? `${hours}h${rem}m` : `${hours}h`;
+  return formatDurationMinutes(minutes);
 }
 
 /**
