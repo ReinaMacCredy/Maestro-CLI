@@ -23,6 +23,11 @@ export const EXTERNAL_SOURCES: ReadonlyArray<{ dir: string; source: SkillSource 
 /** Per-projectRoot cache -- skills don't change mid-session. */
 const _cache = new Map<string, SkillEntry[]>();
 
+/** Clear cache for a project root (used by skill sync). */
+export function _clearCache(projectRoot: string): void {
+  _cache.delete(projectRoot);
+}
+
 /** Discover external skills from project directories (sync). */
 export function discoverExternalSkills(projectRoot: string): SkillEntry[] {
   const cached = _cache.get(projectRoot);
@@ -58,12 +63,15 @@ export function discoverExternalSkills(projectRoot: string): SkillEntry[] {
         stage = Array.isArray(fm.stage) ? fm.stage.map(String) : [String(fm.stage)];
       }
 
+      const audience = fm.audience ? String(fm.audience) as 'orchestrator' | 'worker' | 'both' : undefined;
+
       results.push({
         name: String(fm.name),
         description: String(fm.description),
         source,
         argumentHint: fm['argument-hint'] ? String(fm['argument-hint']) : undefined,
         stage,
+        audience,
       });
     }
   }

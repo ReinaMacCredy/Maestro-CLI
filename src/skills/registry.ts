@@ -14,6 +14,7 @@ export interface SkillEntry {
   source: SkillSource;
   argumentHint?: string;
   stage?: string[];
+  audience?: 'orchestrator' | 'worker' | 'both';
 }
 
 /** Return built-in skills tagged for a specific pipeline stage. */
