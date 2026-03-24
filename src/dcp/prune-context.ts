@@ -1,6 +1,10 @@
 /**
  * DCP (Dynamic Context Pruning) usecase.
  * Assembles task-aware, budget-conscious context injection for worker agents.
+ *
+ * Uses the DCP Component Registry for priority-based pruning when a
+ * totalBudgetTokens is provided. Protected components (spec, worker-rules,
+ * revision) are never pruned; lowest-priority components drop first.
  */
 
 import { type MemoryFileWithMeta, type TaskInfo } from '../core/types.ts';
@@ -12,6 +16,7 @@ import { isExecutionMemory } from '../memory/execution/writer.ts';
 import { resolveDcpConfig } from './config.ts';
 import { resolveDoctrineConfig } from '../doctrine/config.ts';
 import { estimateTokens } from '../core/tokens.ts';
+import { pruneComponents } from './components.ts';
 
 export interface PruneContextParams {
   featureName: string;
@@ -29,6 +34,8 @@ export interface PruneContextParams {
   doctrineItems?: DoctrineItem[];
   featureCreatedAt?: string;
   allTasks?: TaskWithDeps[];
+  /** Total token budget for the entire injection. When set, component registry prunes lowest-priority sections. */
+  totalBudgetTokens?: number;
 }
 
 export interface PruneContextResult {
@@ -43,6 +50,10 @@ export interface PruneContextResult {
     executionMemoriesIncluded: number;
     doctrineItemsIncluded: number;
     scores: Array<{ name: string; score: number; included: boolean }>;
+    /** Components included by the registry (only present when totalBudgetTokens is set). */
+    componentsIncluded?: string[];
+    /** Components dropped by the registry (only present when totalBudgetTokens is set). */
+    componentsDropped?: string[];
   };
 }
 
@@ -168,24 +179,54 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
   // with the hook's own "## Completed Tasks" section.
   const cleanSpec = spec.replace(PRIOR_WORK_RE, '');
 
-  // -- Assemble injection --
+  // -- Assemble as named components --
+  // Map component names to their assembled content for registry-based pruning.
+  const specContent = `## Task Spec: ${taskFolder}\n\n${cleanSpec}\n${richContext}`;
+  const rulesContent = workerRules;
+  const revisionContent = revisionContext;
+
+  const componentMap = new Map<string, string>([
+    ['spec', specContent],
+    ['worker-rules', rulesContent],
+    ['revision', revisionContent],
+    ['graph', graphContext],
+    ['completed-tasks', completedSection],
+    ['doctrine', doctrineSection],
+    ['memories', memorySection],
+  ]);
+
+  let componentsIncluded: string[] | undefined;
+  let componentsDropped: string[] | undefined;
+
+  if (params.totalBudgetTokens !== undefined) {
+    // Component registry pruning: drop lowest-priority sections when over budget
+    const pruned = pruneComponents(componentMap, params.totalBudgetTokens);
+    componentsIncluded = pruned.included.map(e => e.name);
+    componentsDropped = pruned.dropped.map(e => e.name);
+
+    const includedSet = new Set(componentsIncluded);
+    for (const [name] of componentMap) {
+      if (!includedSet.has(name)) {
+        componentMap.set(name, '');
+      }
+    }
+  }
+
+  // -- Assemble injection from (possibly pruned) components --
   const injection = [
-    `## Task Spec: ${taskFolder}`,
-    '',
-    cleanSpec,
-    richContext,
-    workerRules,
-    revisionContext,
-    graphContext,
-    completedSection,
-    doctrineSection,
-    memorySection,
+    componentMap.get('spec') ?? '',
+    componentMap.get('worker-rules') ?? '',
+    componentMap.get('revision') ?? '',
+    componentMap.get('graph') ?? '',
+    componentMap.get('completed-tasks') ?? '',
+    componentMap.get('doctrine') ?? '',
+    componentMap.get('memories') ?? '',
   ].join('\n');
 
-  const specBytes = Buffer.byteLength(spec);
+  const specBytes = Buffer.byteLength(componentMap.get('spec') ?? '');
   const richBytes = Buffer.byteLength(richContext);
-  const graphBytes = Buffer.byteLength(graphContext);
-  const rulesBytes = Buffer.byteLength(workerRules);
+  const graphBytes = Buffer.byteLength(componentMap.get('graph') ?? '');
+  const rulesBytes = Buffer.byteLength(componentMap.get('worker-rules') ?? '');
 
   return {
     injection,
@@ -194,12 +235,12 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       totalTokens: estimateTokens(injection),
       sections: {
         spec: specBytes,
-        memories: memoryBytes,
-        completed: completedBytes,
+        memories: Buffer.byteLength(componentMap.get('memories') ?? ''),
+        completed: Buffer.byteLength(componentMap.get('completed-tasks') ?? ''),
         rich: richBytes,
         graph: graphBytes,
         rules: rulesBytes,
-        doctrine: doctrineBytes,
+        doctrine: Buffer.byteLength(componentMap.get('doctrine') ?? ''),
       },
       memoriesIncluded,
       memoriesDropped,
@@ -207,6 +248,8 @@ export function pruneContext(params: PruneContextParams): PruneContextResult {
       executionMemoriesIncluded,
       doctrineItemsIncluded,
       scores,
+      componentsIncluded,
+      componentsDropped,
     },
   };
 }
