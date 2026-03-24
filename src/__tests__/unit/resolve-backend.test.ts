@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
-import { checkCli } from '../../lib/cli-detect.ts';
+import { checkCli } from '../../core/cli-detect.ts';
 import { mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';

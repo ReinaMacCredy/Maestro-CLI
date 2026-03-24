@@ -269,7 +269,7 @@ describe('status response modes', () => {
 // ---------------------------------------------------------------------------
 describe('conditional tool registration', () => {
   test('checkCli returns boolean', async () => {
-    const { checkCli } = await import('../../lib/cli-detect.ts');
+    const { checkCli } = await import('../../core/cli-detect.ts');
     // 'ls' should be available on any system
     expect(checkCli('ls')).toBe(true);
     // A nonsense CLI name should not be available

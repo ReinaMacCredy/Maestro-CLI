@@ -3,7 +3,7 @@
  */
 
 import type { HiveConfig } from './types.ts';
-import { checkCli } from '../lib/cli-detect.ts';
+import { checkCli } from './cli-detect.ts';
 import { fileExists } from './fs-io.ts';
 import { join } from 'path';
 

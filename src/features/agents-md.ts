@@ -8,7 +8,7 @@ import * as path from 'path';
 import { fileExists, readText, writeText } from '../core/fs-io.ts';
 import type { MemoryFile } from '../core/types.ts';
 import type { FsMemoryAdapter } from './fs/memory.ts';
-import { checkCli } from '../lib/cli-detect.ts';
+import { checkCli } from '../core/cli-detect.ts';
 
 export interface InitResult {
   content: string;
