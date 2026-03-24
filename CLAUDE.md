@@ -57,7 +57,7 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **6 task states**: pending, claimed, done, blocked, review, revision
-- **25 MCP tools** (21 merged action-based + 4 standalone meta) across 13 groups
+- **26 MCP tools** (17 merged action-based + 9 standalone) across 13 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Doctrine Compiler**: cross-feature learning from execution history, injected into workers via separate budget
@@ -104,7 +104,7 @@ If a worker hits a blocker:
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (25)
+## MCP Tools (26)
 
 Tools use `action` (mutating) or `what` (read-only) params to route within each merged tool.
 
@@ -116,7 +116,7 @@ Tools use `action` (mutating) or `what` (read-only) params to route within each 
 | `maestro_plan_read` | read-only | (reads plan + comments) |
 | `maestro_task` | mutating | action: sync, claim, done, accept, reject, block, unblock, spec_write, report_write |
 | `maestro_task_read` | read-only | what: list, info, spec, report, next, brief |
-| `maestro_memory` | mutating | action: write, delete, promote, compress, consolidate, archive |
+| `maestro_memory` | mutating | action: write, delete, promote, compress, consolidate, connect, archive |
 | `maestro_memory_read` | read-only | what: read, list, stats, insights, compile |
 | `maestro_doctrine` | mutating | action: write, approve, suggest, deprecate |
 | `maestro_doctrine_read` | read-only | what: list, read |
@@ -124,9 +124,10 @@ Tools use `action` (mutating) or `what` (read-only) params to route within each 
 | `maestro_handoff_read` | read-only | what: read, list, status, receive |
 | `maestro_skill` | read-only | action: load, list, install, create, remove, sync |
 | `maestro_graph` | mutating | action: insights, next, plan, discovery, reserve |
-| `maestro_search` | read-only | action: sessions, related |
+| `maestro_search` | read-only | action: sessions, related, similar |
 | `maestro_visual` | mutating | type: any visualization type |
 | `maestro_dcp` | read-only | action: preview, stats, config |
+| `maestro_stage` | mutating | action: jump, skip, back |
 | `maestro_status` | read-only | (standalone) |
 | `maestro_ping` | read-only | (standalone) |
 | `maestro_init` | mutating | (standalone) |
@@ -138,7 +139,7 @@ Tools use `action` (mutating) or `what` (read-only) params to route within each 
 
 All tools are prefixed `maestro_` in MCP.
 
-## CLI Commands
+## CLI Commands (70)
 
 Commands organized by domain:
 
@@ -148,11 +149,11 @@ Commands organized by domain:
 ### Plan (6)
 `plan-write`, `plan-read`, `plan-approve`, `plan-revoke`, `plan-comment`, `plan-comments-clear`
 
-### Task (8)
-`task-sync`, `task-list`, `task-next`, `task-info`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
+### Task (12)
+`task-sync`, `task-list`, `task-next`, `task-info`, `task-claim`, `task-done`, `task-block`, `task-unblock`, `task-spec-read`, `task-spec-write`, `task-report-read`, `task-report-write`
 
-### Memory (8)
-`memory-write`, `memory-read`, `memory-list`, `memory-delete`, `memory-compile`, `memory-archive`, `memory-stats`, `memory-promote`
+### Memory (9)
+`memory-write`, `memory-read`, `memory-list`, `memory-delete`, `memory-compile`, `memory-consolidate`, `memory-archive`, `memory-stats`, `memory-promote`
 
 ### Handoff (3)
 `handoff-send`, `handoff-receive`, `handoff-ack`
@@ -169,54 +170,13 @@ Commands organized by domain:
 ### Config (3)
 `config-get`, `config-set`, `config-agent`
 
+### Toolbox (6)
+`toolbox-add`, `toolbox-create`, `toolbox-install`, `toolbox-list`, `toolbox-remove`, `toolbox-test`
+
 ### Visual (2)
 `visual`, `debug-visual`
 
-### Other (9)
-`init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `dcp-preview`, `self-update`, `update`
+### Other (13)
+`init`, `install`, `status`, `agents-md`, `skill`, `skill-list`, `dcp-preview`, `ping`, `doctor`, `history`, `execution-insights`, `self-update`, `update`
 
 All commands accept `--json`. Use `maestro <command> --help` for full usage.
-
-
-# TypeScript Style Guide
-
-## Types
-- Prefer `interface` for object shapes and `type` for unions or intersections
-- Avoid `any`; use `unknown` and narrow with type guards
-- Use `readonly` for immutable data
-- Prefer `const` assertions for literal types
-- Use discriminated unions over optional fields for variant types
-
-## Naming
-- Types and interfaces: PascalCase
-- Variables and functions: camelCase
-- Constants: UPPER_SNAKE_CASE
-- Enums: PascalCase for both enum names and members
-- Files: kebab-case
-
-## Functions
-- Prefer arrow functions for callbacks and short expressions
-- Use named functions for top-level declarations
-- Add explicit return types for public API functions
-- Use function overloads sparingly; prefer union types
-
-## Async
-- Always `await` promises; avoid fire-and-forget flows
-- Use `Promise.all()` for parallel independent operations
-- Handle errors with `try/catch` at the boundary rather than every call site
-- Prefer `async/await` over `.then()` chains
-
-## Imports
-- Group imports by built-in, external, internal, then relative
-- Use named imports instead of `import *`
-- Avoid circular dependencies
-
-## Nullability
-- Prefer `undefined` over `null`
-- Use optional chaining (`?.`) and nullish coalescing (`??`)
-- Avoid non-null assertions except in tests or tightly constrained cases
-
-## Testing
-- Use `describe` and `it` for structure
-- Mock external dependencies, not internal modules
-- Test error paths in addition to happy paths
