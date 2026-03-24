@@ -4,6 +4,7 @@ import { checkStatus } from '../workflow/status.ts';
 import { detectResearchTools } from '../workflow/research-tools.ts';
 import { derivePipelineStage, type PipelineStage } from '../workflow/stages.ts';
 import { buildPlaybook, buildPlaybookWithExternalSkills } from '../workflow/playbook.ts';
+import { detectHost } from '../core/host-detect.ts';
 
 const HOOK_NAME = 'sessionstart';
 
@@ -86,8 +87,9 @@ async function main(): Promise<void> {
   }
 
   // Full context for startup
+  const hostType = detectHost();
   const lines: string[] = [
-    `[maestro] Feature: ${featureName} [${stage}]`,
+    `[maestro] Feature: ${featureName} [${stage}]` + (hostType !== 'standalone' ? ` (host: ${hostType})` : ''),
     '',
     buildPipelineGuidance(stage),
     '',

@@ -61,6 +61,13 @@ export interface AgentModelSettings {
   variant?: string;
 }
 
+export interface HostSettings {
+  /** Auto-detect host environment from env vars. */
+  autoDetect: boolean;
+  /** Override host type. 'auto' uses detection. */
+  type: 'claude-code' | 'codex' | 'standalone' | 'auto';
+}
+
 export interface MaestroSettings {
   toolbox: ToolboxSettings;
   agentTools: AgentToolsSettings;
@@ -69,6 +76,7 @@ export interface MaestroSettings {
   doctrine: DoctrineSettings;
   tasks: TasksSettings;
   agents: Record<string, AgentModelSettings>;
+  host: HostSettings;
 }
 
 // ============================================================================
@@ -106,6 +114,10 @@ export const DEFAULT_SETTINGS: MaestroSettings = {
     backend: 'auto',
   },
   agents: {},
+  host: {
+    autoDetect: true,
+    type: 'auto',
+  },
 };
 
 // ============================================================================
