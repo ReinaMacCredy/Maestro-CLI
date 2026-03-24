@@ -35,6 +35,10 @@ import type { GraphPort } from './tasks/graph/port.ts';
 import type { HandoffPort } from './handoff/port.ts';
 import type { SearchPort } from './search/port.ts';
 import type { DoctrinePort } from './doctrine/port.ts';
+import type { HostBackend } from './host/port.ts';
+import { createHostBackend } from './host/factory.ts';
+import { detectHost } from './core/host-detect.ts';
+
 export interface MaestroServices {
   taskPort: TaskPort;
   verificationPort: VerificationPort;
@@ -55,6 +59,8 @@ export interface MaestroServices {
   workflowRegistry?: import('./workflow/registry.ts').WorkflowRegistry;
   /** Resolved task backend: 'fs' or 'br'. Use this instead of resolveTaskBackend(). */
   taskBackend: 'fs' | 'br';
+  /** Host backend (null for standalone). */
+  hostBackend?: HostBackend;
 }
 
 let _services: MaestroServices | undefined;
@@ -159,6 +165,7 @@ export function initServices(
     toolbox: tb,
     settingsPort: settingsAdapter,
     agentToolsRegistry: buildAgentToolsRegistry(settings.agentTools),
+    hostBackend: createHostBackend(detectHost(), directory) ?? undefined,
   };
 
   return _services;

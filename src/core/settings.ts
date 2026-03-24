@@ -66,6 +66,10 @@ export interface HostSettings {
   autoDetect: boolean;
   /** Override host type. 'auto' uses detection. */
   type: 'claude-code' | 'codex' | 'standalone' | 'auto';
+  /** Mirror task state to host system (requires adapter). */
+  mirror: boolean;
+  /** Reconcile host tasks from filesystem on session start. */
+  reconcileOnStart: boolean;
 }
 
 export interface MaestroSettings {
@@ -117,6 +121,8 @@ export const DEFAULT_SETTINGS: MaestroSettings = {
   host: {
     autoDetect: true,
     type: 'auto',
+    mirror: false,
+    reconcileOnStart: false,
   },
 };
 
