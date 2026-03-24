@@ -248,4 +248,23 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       return respond({ feature, ...result });
     }),
   );
+
+  server.registerTool(
+    'maestro_memory_consolidate',
+    {
+      description: 'Consolidate feature memories: merge duplicates, compress stale, auto-promote qualifying memories to global.',
+      inputSchema: {
+        feature: featureParam(),
+        autoPromote: z.boolean().optional().default(false).describe('Auto-promote qualifying memories (priority 0-1, decision/architecture, 3+ selections) to global'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const { consolidateMemories } = await import('../../memory/consolidate.ts');
+      const result = consolidateMemories(services.memoryAdapter, feature, { autoPromote: input.autoPromote });
+      return respond({ feature, ...result });
+    }),
+  );
 }

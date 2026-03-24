@@ -143,12 +143,18 @@ export class FsMemoryAdapter implements MemoryPort {
     const filePath = path.join(dir, this.normalizeFileName(fileName));
     writeText(filePath, content);
 
-    const { totalBytes } = this._stats(dir);
-    if (totalBytes > 20000) {
-      return `${filePath}\n\n[warn] Memory total: ~${totalBytes} bytes (exceeds 20,000). Consider archiving older memories with memory-archive.`;
+    const stats = this._stats(dir);
+    const warnings: string[] = [];
+    if (stats.totalBytes > 20000) {
+      warnings.push(`[warn] Memory total: ~${stats.totalBytes} bytes (exceeds 20,000). Consider archiving with memory-archive.`);
+    }
+    if (stats.count >= 30) {
+      warnings.push(`[warn] ${stats.count} memories (threshold: 30). Consider running memory-consolidate to merge duplicates.`);
     }
 
-    return filePath;
+    return warnings.length > 0
+      ? `${filePath}\n\n${warnings.join('\n')}`
+      : filePath;
   }
 
   private _list(dir: string): MemoryFile[] {

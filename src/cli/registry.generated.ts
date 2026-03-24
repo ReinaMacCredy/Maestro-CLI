@@ -29,6 +29,7 @@ import cmdInit from './handlers/init.ts';
 import cmdInstall from './handlers/install.ts';
 import cmdMemoryArchive from './handlers/memory/memory.ts';
 import cmdMemoryCompile from './handlers/memory/compile.ts';
+import cmdMemoryConsolidate from './handlers/memory/consolidate.ts';
 import cmdMemoryDelete from './handlers/memory/delete.ts';
 import cmdMemoryList from './handlers/memory/list.ts';
 import cmdMemoryPromote from './handlers/memory/promote.ts';
@@ -100,6 +101,7 @@ export const subCommands = {
   'install': cmdInstall,
   'memory-archive': cmdMemoryArchive,
   'memory-compile': cmdMemoryCompile,
+  'memory-consolidate': cmdMemoryConsolidate,
   'memory-delete': cmdMemoryDelete,
   'memory-list': cmdMemoryList,
   'memory-promote': cmdMemoryPromote,
