@@ -10,7 +10,7 @@ import { prependMetadataFrontmatter } from '../../core/frontmatter.ts';
 import { validateName } from '../../core/validate-name.ts';
 import { selectMemories } from '../../dcp/selector.ts';
 import { resolveDcpConfig } from '../../dcp/config.ts';
-import { MEMORY_CATEGORIES } from '../../core/types.ts';
+import { MEMORY_CATEGORIES, type MemoryRelation } from '../../core/types.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   // Mutating: write | delete | promote | compress | consolidate | archive
@@ -19,18 +19,21 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
     {
       description:
         'Memory mutations. Actions: write (save memory), delete (remove memory), promote (feature -> global), ' +
-        'compress (truncate to 200 chars), consolidate (deduplicate + compress + promote), archive (archive all to timestamped dir).',
+        'compress (truncate to 200 chars), consolidate (deduplicate + compress + promote), ' +
+        'connect (link two memories), archive (archive all to timestamped dir).',
       inputSchema: {
-        action: z.enum(['write', 'delete', 'promote', 'compress', 'consolidate', 'archive'])
+        action: z.enum(['write', 'delete', 'promote', 'compress', 'consolidate', 'connect', 'archive'])
           .describe('Action to perform'),
         feature: z.string().optional().describe('Feature name (defaults to active feature; ignored when global=true)'),
-        name: z.string().optional().describe('Memory file name (required for write, delete, promote, compress)'),
+        name: z.string().optional().describe('Memory file name (required for write, delete, promote, compress, connect)'),
         content: z.string().optional().describe('Memory content (required for write)'),
         global: z.boolean().optional().default(false).describe('Target global project memory instead of feature memory (write and delete only)'),
         tags: z.array(z.string()).optional().describe('Tags for DCP relevance scoring (write only)'),
         priority: z.number().min(0).max(4).optional().describe('Priority 0-4 (write only)'),
         category: z.enum(MEMORY_CATEGORIES).optional().describe('Memory category for DCP scoring (write only)'),
         autoPromote: z.boolean().optional().default(false).describe('Auto-promote qualifying memories (consolidate only)'),
+        target: z.string().optional().describe('Target memory name (required for connect)'),
+        relation: z.enum(['related', 'supersedes', 'contradicts', 'extends']).optional().describe('Relation type (required for connect)'),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
@@ -102,6 +105,14 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
           const { consolidateMemories } = await import('../../memory/consolidate.ts');
           const result = consolidateMemories(services.memoryAdapter, feature, { autoPromote: input.autoPromote });
           return respond({ feature, ...result });
+        }
+        case 'connect': {
+          if (!input.name) return respond({ error: 'name is required for action: connect' });
+          if (!input.target) return respond({ error: 'target is required for action: connect' });
+          if (!input.relation) return respond({ error: 'relation is required for action: connect' });
+          const feature = requireFeature(services, input.feature);
+          services.memoryAdapter.connect(feature, input.name, input.target, input.relation as MemoryRelation);
+          return respond({ feature, source: input.name, target: input.target, relation: input.relation });
         }
         case 'archive': {
           const feature = requireFeature(services, input.feature);
@@ -187,8 +198,18 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
             }});
           }
           const files = input.brief
-            ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({ name, updatedAt, sizeBytes, ...metadata }))
-            : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({ name, content, updatedAt, sizeBytes, ...metadata }));
+            ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({
+                name, updatedAt, sizeBytes, ...metadata,
+                connections: services.memoryAdapter.getConnections(feature, name),
+              }))
+            : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({
+                name, content, updatedAt, sizeBytes, ...metadata,
+                connections: services.memoryAdapter.getConnections(feature, name),
+              }));
+          // Filter out empty connections arrays
+          for (const f of files) {
+            if (f.connections.length === 0) delete (f as Record<string, unknown>).connections;
+          }
           return respond({ feature, files });
         }
         case 'stats': {

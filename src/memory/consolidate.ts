@@ -3,11 +3,12 @@
  * Detects duplicates, compresses stale memories, identifies promotion candidates.
  */
 
-import type { MemoryFileWithMeta, MemoryMetadata } from '../core/types.ts';
+import type { MemoryFileWithMeta, MemoryMetadata, MemoryConnection } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
 import { extractKeywords } from '../dcp/relevance.ts';
 
 const DUPLICATE_THRESHOLD = 0.8;  // 80% keyword overlap = duplicate
+const CONNECTION_THRESHOLD = 0.4; // 40-79% keyword overlap = related
 const STALE_DAYS = 90;
 const STALE_MIN_PRIORITY = 3;     // only auto-archive low-priority (3-4)
 const PROMOTE_MIN_SELECTIONS = 3;
@@ -24,6 +25,7 @@ export interface ConsolidationResult {
   compressed: string[];
   promoted: string[];
   promotionCandidates: string[];
+  connections: Array<{ source: string; target: string; relation: string }>;
   stats: { total: number; afterConsolidation: number };
 }
 
@@ -37,7 +39,7 @@ export function consolidateMemories(
 ): ConsolidationResult {
   const memories = memoryAdapter.listWithMeta(feature);
   if (memories.length === 0) {
-    return { merged: [], compressed: [], promoted: [], promotionCandidates: [], stats: { total: 0, afterConsolidation: 0 } };
+    return { merged: [], compressed: [], promoted: [], promotionCandidates: [], connections: [], stats: { total: 0, afterConsolidation: 0 } };
   }
 
   const result: ConsolidationResult = {
@@ -45,6 +47,7 @@ export function consolidateMemories(
     compressed: [],
     promoted: [],
     promotionCandidates: [],
+    connections: [],
     stats: { total: memories.length, afterConsolidation: memories.length },
   };
 
@@ -119,6 +122,23 @@ export function consolidateMemories(
           memoryAdapter.writeGlobal(mem.name, content);
           result.promoted.push(mem.name);
         }
+      }
+    }
+  }
+
+  // Step 4: Detect connections between remaining memories (40-79% keyword overlap)
+  const active = memories.filter(m => !removed.has(m.name));
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i + 1; j < active.length; j++) {
+      const a = active[i];
+      const b = active[j];
+      const overlap = computeOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!);
+      if (overlap >= CONNECTION_THRESHOLD && overlap < DUPLICATE_THRESHOLD) {
+        if (!opts.dryRun) {
+          memoryAdapter.connect(feature, a.name, b.name, 'related');
+          memoryAdapter.connect(feature, b.name, a.name, 'related');
+        }
+        result.connections.push({ source: a.name, target: b.name, relation: 'related' });
       }
     }
   }
