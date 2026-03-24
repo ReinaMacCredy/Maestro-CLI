@@ -3,6 +3,7 @@ name: maestro:simplify
 description: "Review changed code for reuse, quality, and efficiency, then fix issues found. Use after implementing a task or feature -- catches duplication, hacky patterns, and wasted work before review."
 argument-hint: "[--staged | --task <task-id> | --feature <feature-name>]"
 stage: execution
+audience: worker
 ---
 
 # Simplify -- Code Review and Cleanup

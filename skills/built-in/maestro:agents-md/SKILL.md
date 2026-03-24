@@ -1,6 +1,7 @@
 ---
 name: maestro:agents-md
 description: "Use when bootstrapping, updating, or reviewing AGENTS.md — teaches what makes effective agent memory, how to structure sections, signal vs noise filtering, and when to prune stale entries"
+audience: both
 ---
 
 # AGENTS.md Mastery

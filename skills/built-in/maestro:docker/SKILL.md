@@ -1,6 +1,7 @@
 ---
 name: maestro:docker
 description: "Use when working with Docker containers — debugging container failures, writing Dockerfiles, docker-compose for integration tests, image optimization, or deploying containerized applications"
+audience: both
 ---
 
 # Docker Mastery

@@ -3,6 +3,7 @@ name: maestro:visual
 description: "Create interactive HTML visualizations of maestro state and debug data"
 argument-hint: "<visualization type or description>"
 stage: execution
+audience: both
 ---
 
 # maestro:visual

@@ -2,6 +2,7 @@
 name: maestro:brainstorming
 description: "Use before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
 stage: [discovery, research]
+audience: orchestrator
 ---
 
 # Brainstorming Ideas Into Designs

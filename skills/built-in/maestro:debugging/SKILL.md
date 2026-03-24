@@ -2,6 +2,7 @@
 name: maestro:debugging
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
 stage: execution
+audience: worker
 ---
 
 # Systematic Debugging

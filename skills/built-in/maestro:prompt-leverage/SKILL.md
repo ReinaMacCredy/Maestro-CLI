@@ -1,6 +1,7 @@
 ---
 name: maestro:prompt-leverage
 description: Strengthen a raw user prompt into an execution-ready instruction set for Claude Code, Amp, Codex, or another AI agent. Use when the user wants to improve an existing prompt, build a reusable prompting framework, wrap the current request with better structure, add clearer tool rules, or create a hook that upgrades prompts before execution.
+audience: both
 ---
 
 # Prompt Leverage

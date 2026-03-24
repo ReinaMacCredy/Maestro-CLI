@@ -3,6 +3,7 @@ name: maestro:revert
 description: "Git-aware revert of feature, phase, or individual task. Safely undoes implementation with task state rollback."
 argument-hint: "<feature> [--phase <N>] [--task <name>]"
 stage: execution
+audience: both
 ---
 
 # Revert -- Git-Aware Undo

@@ -2,6 +2,7 @@
 name: maestro:dispatching
 description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
 stage: execution
+audience: orchestrator
 ---
 
 # Dispatching Parallel Agents

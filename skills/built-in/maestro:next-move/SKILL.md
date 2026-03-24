@@ -2,6 +2,7 @@
 name: maestro:next-move
 description: "Strategic analysis of a project to identify the single highest-leverage, most innovative addition. Use when the user asks what to build next, what the most impactful improvement would be, what's missing, or any question about strategic direction and priorities. Also use when stuck choosing between competing features."
 argument-hint: "[vision or focus area (optional)]"
+audience: orchestrator
 ---
 
 # Next Move

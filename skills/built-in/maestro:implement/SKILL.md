@@ -3,6 +3,7 @@ name: maestro:implement
 description: "Execute feature tasks following TDD workflow. Single-agent by default, --team for parallel Agent Teams, Sub Agent Parallels. Use when ready to implement a planned feature."
 argument-hint: "[<feature-name>] [--team] [--parallel]"
 stage: execution
+audience: both
 ---
 
 # Implement -- Task Execution Engine

@@ -3,6 +3,7 @@ name: maestro:design
 description: "Deep discovery and specification for ambitious features. Full BMAD-inspired interview with classification, vision, journeys, domain analysis, and FR synthesis. Same output contract (spec.md + plan.md) as a standard feature but far richer. Use for multi-component systems, regulated domains, or unclear requirements."
 argument-hint: "<feature description>"
 stage: [discovery, research, planning]
+audience: orchestrator
 ---
 
 # Design -- Deep Discovery & Specification

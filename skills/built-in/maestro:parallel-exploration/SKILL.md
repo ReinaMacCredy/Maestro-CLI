@@ -2,6 +2,7 @@
 name: maestro:parallel-exploration
 description: Use when you need parallel, read-only exploration with task() (Scout fan-out)
 stage: [discovery, research]
+audience: orchestrator
 ---
 
 # Parallel Exploration (Scout Fan-Out)

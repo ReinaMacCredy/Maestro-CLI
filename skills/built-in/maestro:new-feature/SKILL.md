@@ -3,6 +3,7 @@ name: maestro:new-feature
 description: "Create a new feature/bug track with spec and implementation plan. Interactive interview generates requirements spec, then phased TDD plan. Use when starting work on a new feature, bug fix, or chore."
 argument-hint: "<feature description>"
 stage: discovery
+audience: both
 ---
 
 # New Feature -- Specification & Planning
