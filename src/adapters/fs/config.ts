@@ -7,7 +7,7 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { HiveConfig, DEFAULT_HIVE_CONFIG, AGENT_NAMES } from '../../core/types.ts';
 import type { AgentName } from '../../core/types.ts';
-import type { ConfigPort } from '../../ports/config.ts';
+import type { ConfigPort } from '../../core/config.ts';
 import { ensureDir, readJson, writeJsonAtomic, fileExists } from '../../core/fs-io.ts';
 import { SKILL_ALIASES } from '../../skills/aliases.ts';
 

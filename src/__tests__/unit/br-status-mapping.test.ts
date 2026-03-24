@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { isValidTransition, VALID_TRANSITIONS } from '../../ports/tasks.ts';
+import { isValidTransition, VALID_TRANSITIONS } from '../../tasks/transitions.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 
 describe('isValidTransition', () => {

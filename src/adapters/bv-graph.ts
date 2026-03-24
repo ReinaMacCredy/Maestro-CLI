@@ -5,7 +5,7 @@
  * Gracefully returns empty/null when bv is not installed.
  */
 
-import type { GraphPort, GraphInsights, NextRecommendation, ExecutionPlan } from '../ports/graph.ts';
+import type { GraphPort, GraphInsights, NextRecommendation, ExecutionPlan } from '../tasks/graph/port.ts';
 import { CliRunner } from '../core/cli-runner.ts';
 
 export class BvGraphAdapter implements GraphPort {

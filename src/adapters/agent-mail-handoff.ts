@@ -6,10 +6,10 @@
  * File is always written; Agent Mail is best-effort.
  */
 
-import type { HandoffPort, HandoffDocument, HandoffResult } from '../ports/handoff.ts';
-import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
-import type { MemoryPort } from '../ports/memory.ts';
-import type { ConfigPort } from '../ports/config.ts';
+import type { HandoffPort, HandoffDocument, HandoffResult } from '../handoff/port.ts';
+import type { TaskPort, RichTaskFields } from '../tasks/port.ts';
+import type { MemoryPort } from '../memory/port.ts';
+import type { ConfigPort } from '../core/config.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 import { getHandoffPath, getHandoffsPath } from '../core/paths.ts';

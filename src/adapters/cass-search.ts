@@ -5,7 +5,7 @@
  * Always uses --robot/--json flags (never bare cass which launches TUI).
  */
 
-import type { SearchPort, SessionSearchResult } from '../ports/search.ts';
+import type { SearchPort, SessionSearchResult } from '../search/port.ts';
 import { CliRunner } from '../core/cli-runner.ts';
 
 interface CassSearchHit {

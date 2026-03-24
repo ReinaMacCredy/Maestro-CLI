@@ -8,7 +8,7 @@
  *   4. AC match: acceptance criteria keyword presence in summary
  */
 
-import type { VerificationPort, VerifyParams, VerificationReport, VerificationCriterion } from '../ports/verification.ts';
+import type { VerificationPort, VerifyParams, VerificationReport, VerificationCriterion } from '../tasks/verification/port.ts';
 import type { ResolvedVerificationConfig } from '../utils/verification-config.ts';
 import { spawn } from 'child_process';
 import simpleGit from 'simple-git';

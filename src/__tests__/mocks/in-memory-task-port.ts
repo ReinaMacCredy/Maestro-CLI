@@ -4,9 +4,9 @@
  */
 
 import type { TaskInfo, TaskStatusType, TaskOrigin } from '../../core/types.ts';
-import type { TaskPort, CreateOpts, ListOpts } from '../../ports/tasks.ts';
-import { isDependencySatisfied } from '../../ports/tasks.ts';
-import type { VerificationReport } from '../../ports/verification.ts';
+import type { TaskPort, CreateOpts, ListOpts } from '../../tasks/port.ts';
+import { isDependencySatisfied } from '../../tasks/transitions.ts';
+import type { VerificationReport } from '../../tasks/verification/port.ts';
 import { MaestroError } from '../../core/errors.ts';
 import { buildTaskFolder } from '../../core/slug.ts';
 

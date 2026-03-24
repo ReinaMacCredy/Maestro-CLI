@@ -10,8 +10,8 @@
  */
 
 import type { TaskInfo, TaskStatus } from '../core/types.ts';
-import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
-import { isDependencySatisfied } from '../ports/tasks.ts';
+import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../tasks/port.ts';
+import { isDependencySatisfied } from '../tasks/transitions.ts';
 import { MaestroError } from '../core/errors.ts';
 import {
   getTasksPath,
@@ -21,7 +21,7 @@ import {
   getTaskReportPath,
   getTaskVerificationPath,
 } from '../core/paths.ts';
-import type { VerificationReport } from '../ports/verification.ts';
+import type { VerificationReport } from '../tasks/verification/port.ts';
 import { ensureDir, readJson, readText, writeText } from '../core/fs-io.ts';
 import { writeJsonAtomic } from '../core/fs-io.ts';
 import { buildTaskFolder } from '../core/slug.ts';

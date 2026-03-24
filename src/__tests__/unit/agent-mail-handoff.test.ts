@@ -9,7 +9,7 @@ import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
 import type { FsConfigAdapter } from '../../adapters/fs/config.ts';
 import type { HiveConfig } from '../../core/types.ts';
 import { DEFAULT_HIVE_CONFIG } from '../../core/types.ts';
-import type { HandoffDocument } from '../../ports/handoff.ts';
+import type { HandoffDocument } from '../../handoff/port.ts';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

@@ -9,7 +9,7 @@ import { translatePlan, type TranslatePlanServices } from '../../usecases/transl
 import { buildBeadOpts } from '../../utils/bead-builder.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
-import type { PlanPort } from '../../ports/plans.ts';
+import type { PlanPort } from '../../plans/port.ts';
 
 // ---------------------------------------------------------------------------
 // Helpers

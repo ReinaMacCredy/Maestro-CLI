@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'bun:test';
 import { writePlan, type WritePlanServices } from '../../usecases/write-plan.ts';
-import type { PlanPort } from '../../ports/plans.ts';
-import type { FeaturePort } from '../../ports/features.ts';
-import type { MemoryPort } from '../../ports/memory.ts';
+import type { PlanPort } from '../../plans/port.ts';
+import type { FeaturePort } from '../../features/port.ts';
+import type { MemoryPort } from '../../memory/port.ts';
 import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';
 import { buildExecutionMemory } from '../../utils/execution-memory.ts';
 

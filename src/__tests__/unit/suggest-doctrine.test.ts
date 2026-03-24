@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'bun:test';
 import { suggestDoctrine } from '../../usecases/suggest-doctrine.ts';
 import { buildExecutionMemory } from '../../utils/execution-memory.ts';
-import type { FeaturePort } from '../../ports/features.ts';
-import type { MemoryPort } from '../../ports/memory.ts';
-import type { DoctrineItem } from '../../ports/doctrine.ts';
+import type { FeaturePort } from '../../features/port.ts';
+import type { MemoryPort } from '../../memory/port.ts';
+import type { DoctrineItem } from '../../doctrine/port.ts';
 import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';
 
 function makeFeatureAdapter(features: Array<{ name: string; createdAt: string }>): FeaturePort {

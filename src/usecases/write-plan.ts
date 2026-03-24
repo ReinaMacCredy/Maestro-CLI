@@ -1,7 +1,7 @@
-import type { PlanPort } from '../ports/plans.ts';
-import type { FeaturePort } from '../ports/features.ts';
-import type { TaskPort } from '../ports/tasks.ts';
-import type { MemoryPort } from '../ports/memory.ts';
+import type { PlanPort } from '../plans/port.ts';
+import type { FeaturePort } from '../features/port.ts';
+import type { TaskPort } from '../tasks/port.ts';
+import type { MemoryPort } from '../memory/port.ts';
 import { MaestroError } from '../core/errors.ts';
 import scaffoldTemplate from '../templates/plan-scaffold.md';
 import { queryHistoricalContext, type HistoricalPitfall } from './query-historical-context.ts';

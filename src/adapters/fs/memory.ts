@@ -9,7 +9,7 @@ import * as path from 'path';
 import { getMemoryPath, getGlobalMemoryPath } from '../../core/paths.ts';
 import { ensureDir, fileExists, readText, writeText } from '../../core/fs-io.ts';
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../../core/types.ts';
-import type { MemoryPort } from '../../ports/memory.ts';
+import type { MemoryPort } from '../../memory/port.ts';
 import { parseFrontmatterRich, stripFrontmatter } from '../../core/frontmatter.ts';
 import { inferMetadata } from '../../utils/memory-inference.ts';
 

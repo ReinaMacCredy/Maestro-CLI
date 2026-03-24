@@ -4,7 +4,7 @@
  */
 
 import type { TaskStatusType } from '../core/types.ts';
-import { isDependencySatisfied } from '../ports/tasks.ts';
+import { isDependencySatisfied } from '../tasks/transitions.ts';
 
 export interface TaskWithDeps {
   folder: string;

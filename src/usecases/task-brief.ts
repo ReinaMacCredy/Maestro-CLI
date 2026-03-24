@@ -4,10 +4,10 @@
  * can call maestro_task_brief and get the same rich context.
  */
 
-import type { TaskPort, RichTaskFields } from '../ports/tasks.ts';
-import type { GraphPort } from '../ports/graph.ts';
-import type { DoctrinePort } from '../ports/doctrine.ts';
-import type { ConfigPort } from '../ports/config.ts';
+import type { TaskPort, RichTaskFields } from '../tasks/port.ts';
+import type { GraphPort } from '../tasks/graph/port.ts';
+import type { DoctrinePort } from '../doctrine/port.ts';
+import type { ConfigPort } from '../core/config.ts';
 import type { MemoryFileWithMeta } from '../core/types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
 import { selectMemories, type SelectedContext } from '../utils/context-selector.ts';

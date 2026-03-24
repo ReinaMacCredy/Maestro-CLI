@@ -6,8 +6,8 @@
  * Deterministic, no LLM calls.
  */
 
-import type { FeaturePort } from '../ports/features.ts';
-import type { MemoryPort } from '../ports/memory.ts';
+import type { FeaturePort } from '../features/port.ts';
+import type { MemoryPort } from '../memory/port.ts';
 import type { MemoryFileWithMeta } from '../core/types.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';

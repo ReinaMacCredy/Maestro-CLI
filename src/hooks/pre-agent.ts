@@ -20,15 +20,15 @@ import { WORKER_RULES } from '../utils/worker-rules.ts';
 import { deriveFolderTags } from '../utils/execution-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';
 import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
-import type { DoctrineItem } from '../ports/doctrine.ts';
+import type { DoctrineItem } from '../doctrine/port.ts';
 import type { TaskInfo } from '../core/types.ts';
-import type { RichTaskFields } from '../ports/tasks.ts';
+import type { RichTaskFields } from '../tasks/port.ts';
 
 export { WORKER_RULES };
 
 const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
 
-/** Subset of GraphInsights from ports/graph.ts -- only the fields formatGraphContext needs. */
+/** Subset of GraphInsights from tasks/graph/port.ts -- only the fields formatGraphContext needs. */
 type GraphInsightsSubset = { criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> };
 
 /** Format rich bead context (design/AC) from getRichFields result. */

@@ -1,6 +1,6 @@
 import type { TaskStatusType, FeatureStatusType, MemoryCategory } from '../../core/types.ts';
 import type { ExecutionInsight, DoctrineEffectivenessInsight } from '../../usecases/execution-insights.ts';
-import type { DoctrineItem } from '../../ports/doctrine.ts';
+import type { DoctrineItem } from '../../doctrine/port.ts';
 
 // ============================================================================
 // Template Contract

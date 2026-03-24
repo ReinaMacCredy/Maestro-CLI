@@ -3,8 +3,8 @@
  */
 
 import { buildEffectiveDependencies } from './task-dependency-graph.ts';
-import type { TaskPort } from '../ports/tasks.ts';
-import { isDependencySatisfied } from '../ports/tasks.ts';
+import type { TaskPort } from '../tasks/transitions.ts';
+import { isDependencySatisfied } from '../tasks/transitions.ts';
 import type { TaskInfo } from '../core/types.ts';
 
 /**

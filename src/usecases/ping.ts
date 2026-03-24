@@ -3,10 +3,10 @@
  * Returns version, project root, task backend, and integration availability.
  */
 
-import type { ConfigPort } from '../ports/config.ts';
-import type { GraphPort } from '../ports/graph.ts';
-import type { HandoffPort } from '../ports/handoff.ts';
-import type { SearchPort } from '../ports/search.ts';
+import type { ConfigPort } from '../core/config.ts';
+import type { GraphPort } from '../tasks/graph/port.ts';
+import type { HandoffPort } from '../handoff/port.ts';
+import type { SearchPort } from '../search/port.ts';
 import { VERSION } from '../version.ts';
 import { resolveTaskBackend } from '../core/resolve-backend.ts';
 

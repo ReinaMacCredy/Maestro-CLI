@@ -9,7 +9,7 @@
 
 import type { ParsedTask } from './plan-parser.ts';
 import { extractPlanSection, getTaskType } from './spec-builder.ts';
-import type { CreateOpts } from '../ports/tasks.ts';
+import type { CreateOpts } from '../tasks/port.ts';
 
 const DESIGN_SECTION_RE = /(?:####?\s*(?:Design|Architecture|Approach|Technical Design)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i;
 const AC_SECTION_RE = /(?:####?\s*(?:Acceptance Criteria|Done When|Success Criteria|Verification|AC)[^\n]*)\n([\s\S]*?)(?=####?\s|$)/i;

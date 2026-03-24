@@ -8,7 +8,7 @@ import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireDoctrinePort, parseTags } from '../../core/resolve.ts';
 import { buildDoctrineItem } from '../../utils/doctrine-factory.ts';
-import type { DoctrineStatus } from '../../ports/doctrine.ts';
+import type { DoctrineStatus } from '../../doctrine/port.ts';
 
 const VALID_STATUSES = new Set<DoctrineStatus>(['active', 'deprecated', 'proposed']);
 

@@ -18,7 +18,7 @@ import type { FeatureJson, FeatureStatusType, CommentsJson } from '../../core/ty
 import { listFeatures } from '../../utils/detection.ts';
 import { MaestroError } from '../../core/errors.ts';
 import { validateName } from '../../core/validate-name.ts';
-import type { FeaturePort } from '../../ports/features.ts';
+import type { FeaturePort } from '../../features/port.ts';
 
 export class FsFeatureAdapter implements FeaturePort {
   constructor(private projectRoot: string) {}

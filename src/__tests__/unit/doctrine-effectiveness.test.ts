@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { appendDoctrineTrace, readDoctrineTrace, collectDoctrineNames } from '../../utils/doctrine-trace.ts';
 import { FsDoctrineAdapter } from '../../adapters/fs/doctrine.ts';
-import type { DoctrineItem } from '../../ports/doctrine.ts';
+import type { DoctrineItem } from '../../doctrine/port.ts';
 
 let tmpDir: string;
 

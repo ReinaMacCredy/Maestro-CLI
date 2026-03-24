@@ -5,7 +5,7 @@
 
 import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../core/types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
-import type { DoctrineItem } from '../ports/doctrine.ts';
+import type { DoctrineItem } from '../doctrine/port.ts';
 import { selectMemories } from '../utils/context-selector.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';

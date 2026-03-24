@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireDoctrinePort } from '../../core/resolve.ts';
-import type { DoctrineStatus } from '../../ports/doctrine.ts';
+import type { DoctrineStatus } from '../../doctrine/port.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-list', description: 'List doctrine items' },

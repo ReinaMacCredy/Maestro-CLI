@@ -6,7 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { DoctrineItem, DoctrinePort, DoctrineStatus } from '../../ports/doctrine.ts';
+import type { DoctrineItem, DoctrinePort, DoctrineStatus } from '../../doctrine/port.ts';
 import { getDoctrinePath, getDoctrineItemPath } from '../../core/paths.ts';
 import { readJson, writeJsonAtomic } from '../../core/fs-io.ts';
 import { acquireLockSync } from '../../core/locking.ts';

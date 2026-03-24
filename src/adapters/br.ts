@@ -12,9 +12,9 @@
  */
 
 import type { TaskInfo, TaskStatusType } from '../core/types.ts';
-import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../ports/tasks.ts';
-import type { VerificationReport } from '../ports/verification.ts';
-import { isValidTransition, VALID_TRANSITIONS } from '../ports/tasks.ts';
+import type { TaskPort, CreateOpts, ListOpts, RichTaskFields } from '../tasks/port.ts';
+import type { VerificationReport } from '../tasks/verification/port.ts';
+import { isValidTransition, VALID_TRANSITIONS } from '../tasks/transitions.ts';
 import { MaestroError } from '../core/errors.ts';
 import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../core/paths.ts';
 import { readJson, writeJsonAtomic, ensureDir, readText, writeText } from '../core/fs-io.ts';

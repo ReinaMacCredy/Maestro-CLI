@@ -3,9 +3,9 @@
  * All heuristic, no LLM. Requires minSampleSize features with matching pattern.
  */
 
-import type { FeaturePort } from '../ports/features.ts';
-import type { MemoryPort } from '../ports/memory.ts';
-import type { DoctrineItem, DoctrineConditions } from '../ports/doctrine.ts';
+import type { FeaturePort } from '../features/port.ts';
+import type { MemoryPort } from '../memory/port.ts';
+import type { DoctrineItem, DoctrineConditions } from '../doctrine/port.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
 import { extractKeywords } from '../utils/relevance.ts';

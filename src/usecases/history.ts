@@ -3,8 +3,8 @@
  * Shows feature completion history with stats.
  */
 
-import type { FeaturePort } from '../ports/features.ts';
-import type { TaskPort } from '../ports/tasks.ts';
+import type { FeaturePort } from '../features/port.ts';
+import type { TaskPort } from '../tasks/port.ts';
 import type { FeatureStatusType } from '../core/types.ts';
 
 export interface HistoryServices {

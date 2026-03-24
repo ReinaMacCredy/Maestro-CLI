@@ -3,17 +3,17 @@
  * Composite query for feature, plan, tasks, and context.
  */
 
-import type { TaskPort } from '../ports/tasks.ts';
-import type { FeaturePort } from '../ports/features.ts';
-import type { PlanPort } from '../ports/plans.ts';
-import type { MemoryPort } from '../ports/memory.ts';
-import type { GraphPort } from '../ports/graph.ts';
-import type { SearchPort } from '../ports/search.ts';
-import type { HandoffPort } from '../ports/handoff.ts';
+import type { TaskPort } from '../tasks/port.ts';
+import type { FeaturePort } from '../features/port.ts';
+import type { PlanPort } from '../plans/port.ts';
+import type { MemoryPort } from '../memory/port.ts';
+import type { GraphPort } from '../tasks/graph/port.ts';
+import type { SearchPort } from '../search/port.ts';
+import type { HandoffPort } from '../handoff/port.ts';
 import { countTaskStatuses, getNextAction } from '../utils/workflow.ts';
 import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
 import { MaestroError } from '../core/errors.ts';
-import type { ConfigPort } from '../ports/config.ts';
+import type { ConfigPort } from '../core/config.ts';
 import { type TaskInfo, type FeatureStatusType, type PlanComment } from '../core/types.ts';
 import { resolveDcpConfig } from '../utils/dcp-config.ts';
 
