@@ -20,7 +20,7 @@ export interface RunResult {
   stderr: string;
 }
 
-const CLI_PATH = join(import.meta.dir, '../../cli.ts');
+const CLI_PATH = join(import.meta.dir, '../../cli/index.ts');
 
 export async function createTestHarness(): Promise<TestHarness> {
   const rawDir = await mkdtemp(join(tmpdir(), 'maestro-e2e-'));

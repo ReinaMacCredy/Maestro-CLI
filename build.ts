@@ -26,7 +26,7 @@ async function build() {
   await $`bun src/skills/generate.ts`;
 
   console.log('[build] Generating command registry...');
-  await $`bun src/commands/_internal/generate.ts`;
+  await $`bun src/cli/_generate.ts`;
 
   // Step 1: Server bundle (Node target, ESM)
   console.log('[build] Bundling MCP server...');
@@ -57,7 +57,7 @@ async function build() {
   // Step 3: CLI bundle for npm bin entry (Node target)
   console.log('[build] Bundling CLI for npm...');
   checkBuild(await Bun.build({
-    entrypoints: ['./src/cli.ts'],
+    entrypoints: ['./src/cli/index.ts'],
     outdir: './dist',
     target: 'node',
     format: 'esm',
@@ -79,7 +79,7 @@ async function build() {
 
   // Step 5: Compile standalone binary (existing behavior)
   console.log('[build] Compiling to standalone binary...');
-  await $`bun build --compile --minify ./src/cli.ts --outfile ./dist/maestro`;
+  await $`bun build --compile --minify ./src/cli/index.ts --outfile ./dist/maestro`;
 
   console.log('[build] Done.');
   console.log('  dist/server.bundle.mjs  -- MCP server');
