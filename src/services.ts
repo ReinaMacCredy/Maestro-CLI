@@ -6,18 +6,11 @@
  * initServices() in its run() before dispatching subcommands. Each subcommand
  * calls getServices().
  *
- * v2: Toolbox-driven port resolution. The ToolboxRegistry decides which
- * adapter wins for each port based on manifest priority, install detection,
- * and allow/deny settings. Static adapter imports are used (no dynamic
- * import()) so hooks can safely call initServices() through the bundler.
+ * v2: Toolbox-driven port resolution via ADAPTER_FACTORIES registry.
+ * External adapters are resolved by tool name from manifests, not hardcoded.
  */
 
-// Static adapter imports -- always available, no dynamic import()
-import { FsTaskAdapter } from './tasks/adapter.ts';
-import { BrTaskAdapter } from './adapters/br.ts';
-import { BvGraphAdapter } from './adapters/bv-graph.ts';
-import { CassSearchAdapter } from './adapters/cass-search.ts';
-import { AgentMailHandoffAdapter } from './adapters/agent-mail-handoff.ts';
+// Built-in adapters (not toolbox-driven, always static)
 import { FsFeatureAdapter } from './features/adapter.ts';
 import { FsPlanAdapter } from './plans/adapter.ts';
 import { FsMemoryAdapter } from './memory/adapter.ts';
@@ -28,7 +21,10 @@ import { FsVerificationAdapter } from './tasks/verification/adapter.ts';
 import { resolveVerificationConfig } from './tasks/verification/config.ts';
 import { FsDoctrineAdapter } from './doctrine/adapter.ts';
 import { FsSettingsAdapter } from './core/settings-adapter.ts';
+import { FsTaskAdapter } from './tasks/adapter.ts';
 import { buildToolbox, ToolboxRegistry } from './toolbox/registry.ts';
+import { getAdapterFactory } from './toolbox/loader.ts';
+import type { AdapterContext } from './toolbox/types.ts';
 import type { MaestroSettings, SettingsPort } from './core/settings.ts';
 import type { TaskPort } from './tasks/port.ts';
 import type { VerificationPort } from './tasks/verification/port.ts';
@@ -65,56 +61,59 @@ export interface MaestroServices {
 let _services: MaestroServices | undefined;
 
 // ============================================================================
-// Toolbox-driven port resolution (static adapters)
+// Toolbox-driven port resolution via adapter factories
 // ============================================================================
+
+function buildContext(
+  toolbox: ToolboxRegistry,
+  settings: MaestroSettings,
+  directory: string,
+  ports: Record<string, unknown> = {},
+): (toolName: string) => AdapterContext {
+  return (toolName: string) => ({
+    projectRoot: directory,
+    settings,
+    toolConfig: settings.toolbox.config[toolName] ?? {},
+    manifest: toolbox.getManifest(toolName)!,
+    ports,
+  });
+}
 
 function resolveTaskPort(
   toolbox: ToolboxRegistry,
   settings: MaestroSettings,
   directory: string,
 ): { port: TaskPort; backend: 'fs' | 'br' } {
+  const makeCtx = buildContext(toolbox, settings, directory);
+
   // Explicit backend choice overrides toolbox priority
   if (settings.tasks.backend === 'fs') {
     return { port: new FsTaskAdapter(directory, settings.tasks.claimExpiresMinutes), backend: 'fs' };
   }
   if (settings.tasks.backend === 'br') {
-    if (toolbox.isAvailable('br')) {
-      return { port: new BrTaskAdapter(directory), backend: 'br' };
-    }
+    const factory = toolbox.isAvailable('br') ? getAdapterFactory('br') : null;
+    if (factory) return { port: factory(makeCtx('br')) as TaskPort, backend: 'br' };
     return { port: new FsTaskAdapter(directory, settings.tasks.claimExpiresMinutes), backend: 'fs' };
   }
-  // 'auto': toolbox resolves by priority (br > fs-tasks if installed)
+  // 'auto': toolbox resolves by priority
   const provider = toolbox.resolveProvider('tasks');
   if (provider?.name === 'br') {
-    return { port: new BrTaskAdapter(directory), backend: 'br' };
+    const factory = getAdapterFactory('br');
+    if (factory) return { port: factory(makeCtx('br')) as TaskPort, backend: 'br' };
   }
   return { port: new FsTaskAdapter(directory, settings.tasks.claimExpiresMinutes), backend: 'fs' };
 }
 
-function resolveGraphPort(
+function resolveOptionalPort<T>(
   toolbox: ToolboxRegistry,
-  directory: string,
-): GraphPort | undefined {
-  if (!toolbox.resolveProvider('graph')) return undefined;
-  return new BvGraphAdapter(directory);
-}
-
-function resolveSearchPort(
-  toolbox: ToolboxRegistry,
-): SearchPort | undefined {
-  if (!toolbox.resolveProvider('search')) return undefined;
-  return new CassSearchAdapter();
-}
-
-function resolveHandoffPort(
-  toolbox: ToolboxRegistry,
-  directory: string,
-  taskPort: TaskPort,
-  memoryAdapter: MemoryPort,
-  configAdapter: ConfigPort,
-): HandoffPort | undefined {
-  if (!toolbox.resolveProvider('handoff')) return undefined;
-  return new AgentMailHandoffAdapter(directory, taskPort, memoryAdapter, configAdapter);
+  portName: string,
+  makeCtx: (name: string) => AdapterContext,
+): T | undefined {
+  const provider = toolbox.resolveProvider(portName);
+  if (!provider) return undefined;
+  const factory = getAdapterFactory(provider.name);
+  if (!factory) return undefined;
+  return factory(makeCtx(provider.name)) as T;
 }
 
 // ============================================================================
@@ -136,11 +135,15 @@ export function initServices(
 
   // Phase 1: independent ports (no cross-port deps)
   const { port: taskPort, backend: taskBackend } = resolveTaskPort(tb, settings, directory);
-  const graphPort = resolveGraphPort(tb, directory);
-  const searchPort = resolveSearchPort(tb);
+  const makeCtx = buildContext(tb, settings, directory);
+  const graphPort = resolveOptionalPort<GraphPort>(tb, 'graph', makeCtx);
+  const searchPort = resolveOptionalPort<SearchPort>(tb, 'search', makeCtx);
 
   // Phase 2: dependent ports (need Phase 1 results)
-  const handoffPort = resolveHandoffPort(tb, directory, taskPort, memoryAdapter, configAdapter);
+  const makeCtxWithPorts = buildContext(tb, settings, directory, {
+    taskPort, memoryPort: memoryAdapter, configPort: configAdapter,
+  });
+  const handoffPort = resolveOptionalPort<HandoffPort>(tb, 'handoff', makeCtxWithPorts);
 
   _services = {
     taskPort,

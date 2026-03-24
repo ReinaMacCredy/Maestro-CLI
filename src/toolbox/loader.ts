@@ -132,14 +132,38 @@ export function inferTransport(manifest: ToolManifest): TransportType {
 }
 
 // ============================================================================
-// Adapter Registry (static imports -- no dynamic import())
+// Adapter Registry
 // ============================================================================
 
-import type { AdapterFactory } from './types.ts';
+import type { AdapterFactory, AdapterContext } from './types.ts';
+import { createAdapter as fsTasksFactory } from './tools/built-in/fs-tasks/adapter.ts';
+import { createAdapter as brFactory } from './tools/external/br/adapter.ts';
+import { createAdapter as bvFactory } from './tools/external/bv/adapter.ts';
+import { createAdapter as cassFactory } from './tools/external/cass/adapter.ts';
+import { createAdapter as agentMailFactory } from './tools/external/agent-mail/adapter.ts';
 
 /**
- * Static registry mapping tool names to their adapter factory modules.
- * Uses lazy imports to avoid loading all adapter code upfront.
+ * Synchronous registry: tool name -> adapter factory function.
+ * Used by services.ts for port resolution without async cascade.
+ */
+export const ADAPTER_FACTORIES: Record<string, AdapterFactory> = {
+  'fs-tasks': fsTasksFactory,
+  'br': brFactory,
+  'bv': bvFactory,
+  'cass': cassFactory,
+  'agent-mail': agentMailFactory,
+};
+
+/**
+ * Get an adapter factory by tool name (synchronous).
+ */
+export function getAdapterFactory(toolName: string): AdapterFactory | null {
+  return ADAPTER_FACTORIES[toolName] ?? null;
+}
+
+/**
+ * Async registry for future external/dynamic tool loading.
+ * @deprecated Use ADAPTER_FACTORIES for built-in tools.
  */
 export const ADAPTER_REGISTRY: Record<string, () => Promise<{ createAdapter: AdapterFactory }>> = {
   'fs-tasks': () => import('./tools/built-in/fs-tasks/adapter.ts'),
