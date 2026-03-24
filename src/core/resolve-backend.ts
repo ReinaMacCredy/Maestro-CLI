@@ -15,6 +15,8 @@ export type ResolvedBackend = Exclude<ConfigBackend, 'auto'>;
  * 1. br binary is on PATH (checkCli, cached)
  * 2. .beads/ directory exists in projectRoot (br is initialized for this project)
  * Falls back to 'fs' if either check fails.
+ *
+ * @deprecated Use services.taskBackend instead. Only init.ts should call this directly.
  */
 export function resolveTaskBackend(configured: ConfigBackend | undefined, projectRoot?: string): ResolvedBackend {
   if (configured === 'fs' || configured === 'br') return configured;

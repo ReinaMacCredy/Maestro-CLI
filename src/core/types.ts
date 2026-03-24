@@ -127,6 +127,7 @@ export interface AgentModelConfig {
   variant?: string;
 }
 
+/** @deprecated Use MaestroSettings from core/settings.ts for new code. */
 export interface HiveConfig {
   $schema?: string;
   enableToolsFor?: string[];
@@ -188,6 +189,7 @@ export const DEFAULT_AGENT_MODELS = {
 export type AgentName = keyof typeof DEFAULT_AGENT_MODELS;
 export const AGENT_NAMES = Object.keys(DEFAULT_AGENT_MODELS) as AgentName[];
 
+/** @deprecated Use DEFAULT_SETTINGS.dcp from core/settings.ts */
 export const DCP_DEFAULTS = {
   enabled: true,
   memoryBudgetBytes: 4096,
@@ -200,6 +202,7 @@ export const DCP_DEFAULTS = {
   handoffDecisionBudgetTokens: 512,
 } satisfies Required<NonNullable<HiveConfig['dcp']>>;
 
+/** @deprecated Use DEFAULT_SETTINGS.doctrine from core/settings.ts */
 export const DOCTRINE_DEFAULTS = {
   enabled: true,
   doctrineBudgetBytes: 1024,
@@ -210,6 +213,7 @@ export const DOCTRINE_DEFAULTS = {
   minSampleSize: 5,
 } satisfies Required<NonNullable<HiveConfig['doctrine']>>;
 
+/** @deprecated Use DEFAULT_SETTINGS.verification from core/settings.ts */
 export const VERIFICATION_DEFAULTS = {
   enabled: true,
   autoReject: true,
@@ -219,6 +223,7 @@ export const VERIFICATION_DEFAULTS = {
   scoreThreshold: 0.7,
 } satisfies Omit<Required<NonNullable<HiveConfig['verification']>>, 'buildCommand'>;
 
+/** @deprecated Use DEFAULT_SETTINGS from core/settings.ts */
 export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   $schema: 'https://raw.githubusercontent.com/tctinh/agent-hive/main/packages/opencode-hive/schema/agent_hive.schema.json',
   enableToolsFor: [],
