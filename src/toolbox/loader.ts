@@ -141,6 +141,8 @@ import { createAdapter as brFactory } from './tools/external/br/adapter.ts';
 import { createAdapter as bvFactory } from './tools/external/bv/adapter.ts';
 import { createAdapter as cassFactory } from './tools/external/cass/adapter.ts';
 import { createAdapter as agentMailFactory } from './tools/external/agent-mail/adapter.ts';
+import { createAdapter as mcpSearchFactory } from './tools/external/mcp-search/adapter.ts';
+import { createAdapter as mcpGraphFactory } from './tools/external/mcp-graph/adapter.ts';
 
 /**
  * Synchronous registry: tool name -> adapter factory function.
@@ -152,6 +154,8 @@ export const ADAPTER_FACTORIES: Record<string, AdapterFactory> = {
   'bv': bvFactory,
   'cass': cassFactory,
   'agent-mail': agentMailFactory,
+  'mcp-search': mcpSearchFactory,
+  'mcp-graph': mcpGraphFactory,
 };
 
 /**
