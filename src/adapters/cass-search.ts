@@ -6,7 +6,7 @@
  */
 
 import type { SearchPort, SessionSearchResult } from '../search/port.ts';
-import { CliRunner } from '../core/cli-runner.ts';
+import { CliTransport } from '../toolbox/sdk/cli-transport.ts';
 
 interface CassSearchHit {
   source_path?: string;
@@ -19,10 +19,11 @@ interface CassSearchHit {
 }
 
 export class CassSearchAdapter implements SearchPort {
-  private cli: CliRunner;
+  private cli: CliTransport;
 
   constructor() {
-    this.cli = new CliRunner('cass', {
+    this.cli = new CliTransport({
+      binary: 'cass',
       cwd: process.cwd(),
       toolName: 'cass',
       installHint: 'cass (Coding Agent Session Search) is required. Install: https://github.com/Dicklesworthstone/coding_agent_session_search',

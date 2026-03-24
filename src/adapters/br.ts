@@ -18,7 +18,7 @@ import { isValidTransition, VALID_TRANSITIONS } from '../tasks/transitions.ts';
 import { MaestroError } from '../core/errors.ts';
 import { getFeaturePath, getTaskReportPath, getTaskVerificationPath, getTaskPath } from '../core/paths.ts';
 import { readJson, writeJsonAtomic, ensureDir, readText, writeText } from '../core/fs-io.ts';
-import { CliRunner } from '../core/cli-runner.ts';
+import { CliTransport } from '../toolbox/sdk/cli-transport.ts';
 import { buildTaskFolder } from '../core/slug.ts';
 import * as path from 'path';
 
@@ -64,11 +64,12 @@ interface BrMapping {
 
 export class BrTaskAdapter implements TaskPort {
   private projectRoot: string;
-  private cli: CliRunner;
+  private cli: CliTransport;
 
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
-    this.cli = new CliRunner('br', {
+    this.cli = new CliTransport({
+      binary: 'br',
       cwd: projectRoot,
       toolName: 'br',
       retryExitCodes: [5],

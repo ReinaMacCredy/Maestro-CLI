@@ -6,13 +6,14 @@
  */
 
 import type { GraphPort, GraphInsights, NextRecommendation, ExecutionPlan } from '../tasks/graph/port.ts';
-import { CliRunner } from '../core/cli-runner.ts';
+import { CliTransport } from '../toolbox/sdk/cli-transport.ts';
 
 export class BvGraphAdapter implements GraphPort {
-  private cli: CliRunner;
+  private cli: CliTransport;
 
   constructor(projectRoot: string) {
-    this.cli = new CliRunner('bv', {
+    this.cli = new CliTransport({
+      binary: 'bv',
       cwd: projectRoot,
       toolName: 'bv',
       installHint: 'bv (beads viewer) is required. See: https://github.com/Dicklesworthstone/beads_viewer',
