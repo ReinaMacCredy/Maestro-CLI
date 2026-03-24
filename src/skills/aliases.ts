@@ -22,4 +22,9 @@ export const SKILL_ALIASES: Record<string, BuiltinSkillName> = {
   'verification-before-completion': 'maestro:verification',
   'new-track': 'maestro:new-feature',
   'maestro:new-track': 'maestro:new-feature',
+  // Overhaul redirects (Sprint 16)
+  'maestro:setup': 'maestro:design',
+  'maestro:status': 'maestro:design',
+  'setup': 'maestro:design',
+  'status': 'maestro:design',
 };

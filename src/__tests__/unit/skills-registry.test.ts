@@ -86,8 +86,8 @@ describe('skills registry', () => {
     });
   });
 
-  test('SKILL_ALIASES contains all 14 mappings', () => {
-    expect(Object.keys(SKILL_ALIASES)).toHaveLength(14);
+  test('SKILL_ALIASES contains all mappings', () => {
+    expect(Object.keys(SKILL_ALIASES)).toHaveLength(18);
     expect(SKILL_ALIASES['writing-plans']).toBe('maestro:design');
     expect(SKILL_ALIASES['executing-plans']).toBe('maestro:implement');
     expect(SKILL_ALIASES['code-reviewer']).toBe('maestro:review');
@@ -130,8 +130,8 @@ describe('skills registry', () => {
     expect(result).toHaveProperty('error');
   });
 
-  test('all 21 built-in skills load without error', async () => {
-    expect(BUILTIN_SKILL_NAMES).toHaveLength(21);
+  test('all 19 built-in skills load without error', async () => {
+    expect(BUILTIN_SKILL_NAMES).toHaveLength(19);
     for (const name of BUILTIN_SKILL_NAMES) {
       const result = await loadSkill(name, tmpDir);
       expect(result).toHaveProperty('content');
