@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { BrTaskAdapter } from '../../adapters/br.ts';
+import { BrTaskAdapter } from '../../toolbox/tools/external/br/adapter.ts';
 import { getTaskReportPath } from '../../core/paths.ts';
 
 describe('BrTaskAdapter report storage', () => {

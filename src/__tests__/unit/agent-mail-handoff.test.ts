@@ -3,7 +3,7 @@
  */
 
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { AgentMailHandoffAdapter } from '../../adapters/agent-mail-handoff.ts';
+import { AgentMailHandoffAdapter } from '../../toolbox/tools/external/agent-mail/adapter.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
 import type { FsConfigAdapter } from '../../core/config.ts';
