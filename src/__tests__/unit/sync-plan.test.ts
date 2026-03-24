@@ -234,7 +234,7 @@ describe("syncPlan", () => {
   // Dependencies
   // -----------------------------------------------------------------------
 
-  test("passes dependency folders to taskPort.create", async () => {
+  test("passes dependency ids to taskPort.create", async () => {
     setupFeatureDir(tmpDir, PLAN_3_TASKS, true);
     planAdapter = new FsPlanAdapter(tmpDir);
 
@@ -244,13 +244,13 @@ describe("syncPlan", () => {
     const t1 = await taskPort.get(FEATURE, "01-setup-database");
     expect(t1?.dependsOn ?? []).toEqual([]);
 
-    // Task 2: depends on task 1's folder
+    // Task 2: depends on task 1's id (slug from title, no numeric prefix)
     const t2 = await taskPort.get(FEATURE, "02-build-api");
-    expect(t2?.dependsOn).toContain("01-setup-database");
+    expect(t2?.dependsOn).toContain("setup-database");
 
-    // Task 3: depends on task 2's folder
+    // Task 3: depends on task 2's id
     const t3 = await taskPort.get(FEATURE, "03-add-tests");
-    expect(t3?.dependsOn).toContain("02-build-api");
+    expect(t3?.dependsOn).toContain("build-api");
   });
 
   // -----------------------------------------------------------------------

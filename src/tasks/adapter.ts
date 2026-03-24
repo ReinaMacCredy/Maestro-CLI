@@ -201,9 +201,14 @@ export class FsTaskAdapter implements TaskPort {
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const all = await this.list(feature, { includeAll: true });
-    const satisfiedSet = new Set(
-      all.filter(t => isDependencySatisfied(t.status)).map(t => t.folder),
-    );
+    // Dual-key: deps may reference id or folder (backward compat)
+    const satisfiedSet = new Set<string>();
+    for (const t of all) {
+      if (isDependencySatisfied(t.status)) {
+        satisfiedSet.add(t.id);
+        satisfiedSet.add(t.folder);
+      }
+    }
     const now = Date.now();
     const expiryMs = this.claimExpiresMinutes * 60 * 1000;
 
@@ -273,7 +278,8 @@ export class FsTaskAdapter implements TaskPort {
 
   private statusToInfo(folder: string, status: TaskStatus): TaskInfo {
     const { schemaVersion: _, ...rest } = status;
-    return { folder, name: folder.replace(/^\d+-/, ''), ...rest };
+    const name = folder.replace(/^\d+-/, '');
+    return { id: name, folder, name, ...rest };
   }
 
   // Optional rich methods -- fs backend extracts from spec file

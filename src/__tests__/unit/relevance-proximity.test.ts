@@ -30,9 +30,9 @@ function makeTask(overrides: Partial<TaskInfo> = {}): TaskInfo {
 
 function makeTaskDeps(): TaskWithDeps[] {
   return [
-    { folder: '01-setup-auth', status: 'done', dependsOn: [] },
-    { folder: '02-add-endpoints', status: 'claimed', dependsOn: ['01-setup-auth'] },
-    { folder: '03-testing', status: 'pending', dependsOn: ['02-add-endpoints'] },
+    { id: '01-setup-auth', folder: '01-setup-auth', status: 'done', dependsOn: [] },
+    { id: '02-add-endpoints', folder: '02-add-endpoints', status: 'claimed', dependsOn: ['01-setup-auth'] },
+    { id: '03-testing', folder: '03-testing', status: 'pending', dependsOn: ['02-add-endpoints'] },
   ];
 }
 

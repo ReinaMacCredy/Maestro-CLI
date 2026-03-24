@@ -5,7 +5,7 @@
 import { buildEffectiveDependencies } from './dependency.ts';
 import type { TaskPort } from '../port.ts';
 import { isDependencySatisfied } from '../transitions.ts';
-import type { TaskInfo } from '../../core/types.ts';
+import type { TaskInfo, TaskStatusType } from '../../core/types.ts';
 
 /**
  * Check if a task's dependencies are satisfied.
@@ -19,25 +19,35 @@ export async function checkDependencies(
   const tasks = existingTasks ?? await taskPort.list(feature, { includeAll: true });
 
   const tasksWithDeps = tasks.map(task => ({
+    id: task.id ?? task.folder,
     folder: task.folder,
     status: task.status,
     dependsOn: task.dependsOn,
   }));
 
   const effectiveDeps = buildEffectiveDependencies(tasksWithDeps);
-  const deps = effectiveDeps.get(taskFolder) ?? [];
+
+  // Look up deps by id first, fall back to folder for backward compatibility
+  const targetTask = tasks.find(t => t.folder === taskFolder || t.id === taskFolder);
+  const targetId = targetTask ? (targetTask.id ?? targetTask.folder) : taskFolder;
+  const deps = effectiveDeps.get(targetId) ?? effectiveDeps.get(taskFolder) ?? [];
 
   if (deps.length === 0) {
     return { allowed: true };
   }
 
-  const statusByFolder = new Map(tasks.map(t => [t.folder, t.status]));
+  // Support lookup by id or folder for backward compatibility
+  const statusById = new Map<string, TaskStatusType>();
+  for (const t of tasks) {
+    statusById.set(t.folder, t.status);
+    if (t.id) statusById.set(t.id, t.status);
+  }
   const unmetDeps: Array<{ folder: string; status: string }> = [];
 
-  for (const depFolder of deps) {
-    const depStatus = statusByFolder.get(depFolder);
+  for (const depId of deps) {
+    const depStatus = statusById.get(depId);
     if (!depStatus || !isDependencySatisfied(depStatus)) {
-      unmetDeps.push({ folder: depFolder, status: depStatus ?? 'unknown' });
+      unmetDeps.push({ folder: depId, status: depStatus ?? 'unknown' });
     }
   }
 

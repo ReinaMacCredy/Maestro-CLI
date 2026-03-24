@@ -7,6 +7,9 @@ import type { TaskStatusType } from '../../core/types.ts';
 import { isDependencySatisfied } from '../transitions.ts';
 
 export interface TaskWithDeps {
+  /** Primary identifier. */
+  id: string;
+  /** @deprecated Internal storage path segment. Use `id` for public identity. */
   folder: string;
   status: TaskStatusType;
   dependsOn?: string[];
@@ -18,15 +21,17 @@ export interface RunnableBlockedResult {
 }
 
 export function computeRunnableAndBlocked(tasks: TaskWithDeps[]): RunnableBlockedResult {
-  const statusByFolder = new Map<string, TaskStatusType>();
+  // Dual-key status lookup: deps may reference id or folder (backward compat)
+  const statusLookup = new Map<string, TaskStatusType>();
   for (const task of tasks) {
-    statusByFolder.set(task.folder, task.status);
+    statusLookup.set(task.id, task.status);
+    statusLookup.set(task.folder, task.status);
   }
 
   const runnable: string[] = [];
   const blocked: Record<string, string[]> = {};
 
-  const effectiveDepsByFolder = buildEffectiveDependencies(tasks);
+  const effectiveDeps = buildEffectiveDependencies(tasks);
 
   for (const task of tasks) {
     // Both pending and revision tasks are candidates for runnable
@@ -34,58 +39,28 @@ export function computeRunnableAndBlocked(tasks: TaskWithDeps[]): RunnableBlocke
       continue;
     }
 
-    const deps = effectiveDepsByFolder.get(task.folder) ?? [];
+    const key = task.id;
+    const deps = effectiveDeps.get(key) ?? effectiveDeps.get(task.folder) ?? [];
 
     const unmetDeps = deps.filter(dep => {
-      const depStatus = statusByFolder.get(dep);
+      const depStatus = statusLookup.get(dep);
       return !depStatus || !isDependencySatisfied(depStatus);
     });
 
     if (unmetDeps.length === 0) {
-      runnable.push(task.folder);
+      runnable.push(key);
     } else {
-      blocked[task.folder] = unmetDeps;
+      blocked[key] = unmetDeps;
     }
   }
 
   return { runnable, blocked };
 }
 
+/**
+ * Build effective dependencies from explicit dependsOn declarations.
+ * No implicit ordering from numeric folder prefixes.
+ */
 export function buildEffectiveDependencies(tasks: TaskWithDeps[]): Map<string, string[]> {
-  const orderByFolder = new Map<string, number | null>();
-  const folderByOrder = new Map<number, string>();
-
-  for (const task of tasks) {
-    const match = task.folder.match(/^(\d+)-/);
-    if (!match) {
-      orderByFolder.set(task.folder, null);
-      continue;
-    }
-
-    const order = parseInt(match[1], 10);
-    orderByFolder.set(task.folder, order);
-    if (!folderByOrder.has(order)) {
-      folderByOrder.set(order, task.folder);
-    }
-  }
-
-  const effectiveDeps = new Map<string, string[]>();
-
-  for (const task of tasks) {
-    if (task.dependsOn !== undefined) {
-      effectiveDeps.set(task.folder, task.dependsOn);
-      continue;
-    }
-
-    const order = orderByFolder.get(task.folder);
-    if (!order || order <= 1) {
-      effectiveDeps.set(task.folder, []);
-      continue;
-    }
-
-    const previousFolder = folderByOrder.get(order - 1);
-    effectiveDeps.set(task.folder, previousFolder ? [previousFolder] : []);
-  }
-
-  return effectiveDeps;
+  return new Map(tasks.map(t => [t.id, t.dependsOn ?? []]));
 }

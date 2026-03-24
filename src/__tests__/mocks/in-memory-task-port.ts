@@ -37,6 +37,7 @@ export class InMemoryTaskPort implements TaskPort {
     const folder = buildTaskFolder(id, title);
 
     const task: StoredTask = {
+      id: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
       folder,
       name: title,
       status: 'pending',
@@ -147,9 +148,14 @@ export class InMemoryTaskPort implements TaskPort {
 
   async getRunnable(feature: string): Promise<TaskInfo[]> {
     const tasks = [...this.getFeatureTasks(feature).values()];
-    const satisfiedSet = new Set(
-      tasks.filter(t => isDependencySatisfied(t.status)).map(t => t.folder),
-    );
+    // Dual-key: deps may reference id or folder (backward compat)
+    const satisfiedSet = new Set<string>();
+    for (const t of tasks) {
+      if (isDependencySatisfied(t.status)) {
+        satisfiedSet.add(t.id);
+        satisfiedSet.add(t.folder);
+      }
+    }
 
     return tasks.filter(t => {
       if (t.status !== 'pending' && t.status !== 'revision') return false;
@@ -192,7 +198,9 @@ export class InMemoryTaskPort implements TaskPort {
   /** Seed a task with an exact folder name */
   seed(feature: string, folder: string, overrides: Partial<TaskInfo> & { status?: TaskStatusType; origin?: TaskOrigin; dependsOn?: string[] } = {}): void {
     const map = this.getFeatureTasks(feature);
+    const id = overrides.id ?? folder.replace(/^\d+-/, '');
     map.set(folder, {
+      id,
       folder,
       name: overrides.name ?? folder,
       status: overrides.status ?? 'pending',

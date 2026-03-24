@@ -91,10 +91,24 @@ describe("parseTasksFromPlan", () => {
     expect(tasks[3].dependsOnNumbers).toEqual([2]);
   });
 
-  test("leaves dependsOnNumbers null when no annotation present", () => {
+  test("leaves dependsOnNumbers empty when no annotation present on task 1", () => {
     const plan = "### 1. Solo task\nDo the thing.";
     const tasks = parseTasksFromPlan(plan);
-    expect(tasks[0].dependsOnNumbers).toBeNull();
+    // Task 1 has no annotation and order === 1, so implicit dep is empty
+    expect(tasks[0].dependsOnNumbers).toEqual([]);
+  });
+
+  test("applies implicit sequential dep when no annotation present on task 2+", () => {
+    const plan = [
+      "### 1. First",
+      "Do one.",
+      "",
+      "### 2. Second",
+      "Do two.",
+    ].join("\n");
+    const tasks = parseTasksFromPlan(plan);
+    // Task 2 has no annotation -> implicit dep on task 1
+    expect(tasks[1].dependsOnNumbers).toEqual([1]);
   });
 
   test("stops task body at non-numbered ### heading", () => {
@@ -114,18 +128,19 @@ describe("parseTasksFromPlan", () => {
 describe("validateDependencyGraph", () => {
   test("accepts a valid graph with no errors", () => {
     const tasks: ParsedTask[] = [
-      { folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [] },
-      { folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [1] },
-      { folder: "03-c", order: 3, name: "C", description: "", dependsOnNumbers: [1, 2] },
+      { id: "a", folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [] },
+      { id: "b", folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [1] },
+      { id: "c", folder: "03-c", order: 3, name: "C", description: "", dependsOnNumbers: [1, 2] },
     ];
 
     expect(() => validateDependencyGraph(tasks, "test-feature")).not.toThrow();
   });
 
-  test("accepts tasks with null (implicit) dependencies", () => {
+  test("accepts tasks with implicit (sequential) dependencies", () => {
+    // dependsOnNumbers is never null now -- implicit deps resolved at parse time
     const tasks: ParsedTask[] = [
-      { folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: null },
-      { folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: null },
+      { id: "a", folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [] },
+      { id: "b", folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [1] },
     ];
 
     expect(() => validateDependencyGraph(tasks, "test-feature")).not.toThrow();
@@ -133,7 +148,7 @@ describe("validateDependencyGraph", () => {
 
   test("throws on self-dependency", () => {
     const tasks: ParsedTask[] = [
-      { folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [1] },
+      { id: "a", folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [1] },
     ];
 
     expect(() => validateDependencyGraph(tasks, "test-feature")).toThrow(/Self-dependency/);
@@ -141,8 +156,8 @@ describe("validateDependencyGraph", () => {
 
   test("throws on reference to missing task number", () => {
     const tasks: ParsedTask[] = [
-      { folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [] },
-      { folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [99] },
+      { id: "a", folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [] },
+      { id: "b", folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [99] },
     ];
 
     expect(() => validateDependencyGraph(tasks, "test-feature")).toThrow(/Unknown task number 99/);
@@ -150,8 +165,8 @@ describe("validateDependencyGraph", () => {
 
   test("throws on cyclic dependencies", () => {
     const tasks: ParsedTask[] = [
-      { folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [2] },
-      { folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [1] },
+      { id: "a", folder: "01-a", order: 1, name: "A", description: "", dependsOnNumbers: [2] },
+      { id: "b", folder: "02-b", order: 2, name: "B", description: "", dependsOnNumbers: [1] },
     ];
 
     expect(() => validateDependencyGraph(tasks, "test-feature")).toThrow(/Cycle detected/);
@@ -159,15 +174,17 @@ describe("validateDependencyGraph", () => {
 });
 
 describe("resolveDependencies", () => {
+  // id is the slug derived from the task name (no numeric prefix)
   const allTasks: ParsedTask[] = [
-    { folder: "01-setup", order: 1, name: "Setup", description: "", dependsOnNumbers: [] },
-    { folder: "02-core", order: 2, name: "Core", description: "", dependsOnNumbers: [1] },
-    { folder: "03-finish", order: 3, name: "Finish", description: "", dependsOnNumbers: null },
+    { id: "setup", folder: "01-setup", order: 1, name: "Setup", description: "", dependsOnNumbers: [] },
+    { id: "core", folder: "02-core", order: 2, name: "Core", description: "", dependsOnNumbers: [1] },
+    // Implicit dep resolved at parse time: task 3 depends on task 2
+    { id: "finish", folder: "03-finish", order: 3, name: "Finish", description: "", dependsOnNumbers: [2] },
   ];
 
-  test("resolves explicit dependency numbers to folder names", () => {
+  test("resolves explicit dependency numbers to task ids", () => {
     const deps = resolveDependencies(allTasks[1], allTasks);
-    expect(deps).toEqual(["01-setup"]);
+    expect(deps).toEqual(["setup"]);
   });
 
   test("returns empty array for explicit empty deps", () => {
@@ -175,25 +192,28 @@ describe("resolveDependencies", () => {
     expect(deps).toEqual([]);
   });
 
-  test("resolves null deps to implicit sequential (N-1)", () => {
+  test("resolves implicit sequential dep (N-1) to task id", () => {
+    // dependsOnNumbers: [2] -> resolves to id of task order 2
     const deps = resolveDependencies(allTasks[2], allTasks);
-    expect(deps).toEqual(["02-core"]);
+    expect(deps).toEqual(["core"]);
   });
 
-  test("returns empty array for first task with null deps", () => {
-    const firstWithNull: ParsedTask = {
+  test("returns empty array for first task with no deps", () => {
+    const firstTask: ParsedTask = {
+      id: "first",
       folder: "01-first",
       order: 1,
       name: "First",
       description: "",
-      dependsOnNumbers: null,
+      dependsOnNumbers: [],
     };
-    const deps = resolveDependencies(firstWithNull, allTasks);
+    const deps = resolveDependencies(firstTask, allTasks);
     expect(deps).toEqual([]);
   });
 
-  test("resolves multiple explicit dependencies", () => {
+  test("resolves multiple explicit dependencies to task ids", () => {
     const task: ParsedTask = {
+      id: "multi",
       folder: "04-multi",
       order: 4,
       name: "Multi",
@@ -201,7 +221,7 @@ describe("resolveDependencies", () => {
       dependsOnNumbers: [1, 2],
     };
     const deps = resolveDependencies(task, allTasks);
-    expect(deps).toEqual(["01-setup", "02-core"]);
+    expect(deps).toEqual(["setup", "core"]);
   });
 });
 

@@ -7,14 +7,15 @@ import {
 import type { TaskWithDeps } from '../../tasks/graph/dependency.ts';
 
 /**
- * Build task list. Pass `null` for deps to use implicit sequential ordering
- * (buildEffectiveDependencies infers from task number). Pass `[]` for explicit no-deps.
+ * Build task list. `id` defaults to `folder` (already a slug).
+ * Pass `[]` for explicit no-deps.
  */
-function makeTasks(...specs: Array<[string, string[] | null]>): TaskWithDeps[] {
+function makeTasks(...specs: Array<[string, string[]]>): TaskWithDeps[] {
   return specs.map(([folder, deps]) => ({
+    id: folder,
     folder,
     status: 'done' as const,
-    dependsOn: deps === null ? undefined : deps,
+    dependsOn: deps,
   }));
 }
 
@@ -103,8 +104,8 @@ describe('scoreDependencyProximity', () => {
 
   test('no relationship (explicit no-deps) returns 0', () => {
     const tasks: TaskWithDeps[] = [
-      { folder: '01-first', status: 'done', dependsOn: [] },
-      { folder: '02-second', status: 'done', dependsOn: [] },
+      { id: '01-first', folder: '01-first', status: 'done', dependsOn: [] },
+      { id: '02-second', folder: '02-second', status: 'done', dependsOn: [] },
     ];
     const ds = buildDownstreamMap(tasks);
     expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0);
@@ -124,8 +125,13 @@ describe('scoreDependencyProximity', () => {
     expect(scoreDependencyProximity('01-root', '04-merge', ds)).toBe(0.35);
   });
 
-  test('implicit sequential dependencies (no explicit dependsOn)', () => {
-    const tasks = makeTasks(['01-first', null], ['02-second', null], ['03-third', null]);
+  test('sequential dependencies are explicit (no implicit ordering)', () => {
+    // All deps are now explicit -- pass them directly rather than relying on implicit inference
+    const tasks = makeTasks(
+      ['01-first', []],
+      ['02-second', ['01-first']],
+      ['03-third', ['02-second']],
+    );
     const ds = buildDownstreamMap(tasks);
     expect(scoreDependencyProximity('01-first', '02-second', ds)).toBe(0.35);
     expect(scoreDependencyProximity('01-first', '03-third', ds)).toBe(0.15);

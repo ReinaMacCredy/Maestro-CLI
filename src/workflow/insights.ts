@@ -56,10 +56,16 @@ export async function executionInsights(
   const execMemories = allMemories.filter(m => isExecutionMemory(m.name));
 
   const allTasks = await taskPort.list(featureName, { includeAll: true });
+  // Bidirectional translation between folder and id
+  const folderToId = new Map(allTasks.map(t => [t.folder, t.id ?? t.folder]));
+  const idToFolder = new Map(allTasks.map(t => [t.id ?? t.folder, t.folder]));
+
+  // Normalize dependsOn: translate any folder references to ids so the graph is id-consistent
   const taskDeps: TaskWithDeps[] = allTasks.map(t => ({
+    id: t.id ?? t.folder,
     folder: t.folder,
     status: t.status,
-    dependsOn: t.dependsOn,
+    dependsOn: (t.dependsOn ?? []).map(dep => folderToId.get(dep) ?? dep),
   }));
 
   const downstream = buildDownstreamMap(taskDeps);
@@ -69,16 +75,19 @@ export async function executionInsights(
   const insights: ExecutionInsight[] = [];
 
   for (const mem of execMemories) {
-    const sourceTask = extractSourceTask(mem.name);
-    if (!sourceTask || !taskFolders.has(sourceTask)) continue;
+    const sourceFolder = extractSourceTask(mem.name);
+    if (!sourceFolder || !taskFolders.has(sourceFolder)) continue;
 
-    execTaskFolders.add(sourceTask);
+    execTaskFolders.add(sourceFolder);
     const parsed = parseExecMemory(mem.content);
 
-    const downstreamTasks = downstream.get(sourceTask) ?? [];
+    // downstream is keyed by id -- translate folder to id for lookup, then back to folders
+    const sourceId = folderToId.get(sourceFolder) ?? sourceFolder;
+    const downstreamIds = downstream.get(sourceId) ?? [];
+    const downstreamTasks = downstreamIds.map(id => idToFolder.get(id) ?? id);
 
     insights.push({
-      sourceTask,
+      sourceTask: sourceFolder,
       summary: parsed.summary,
       filesChanged: parsed.filesChanged,
       verificationPassed: parsed.verificationPassed,
@@ -92,12 +101,14 @@ export async function executionInsights(
   const percent = totalTasks > 0 ? Math.round((withExecMemory / totalTasks) * 100) : 0;
 
   const knowledgeFlow: Array<{ from: string; to: string; proximity: number }> = [];
-  for (const sourceTask of execTaskFolders) {
-    for (const target of taskFolders) {
-      if (target === sourceTask) continue;
-      const proximity = scoreDependencyProximity(sourceTask, target, downstream);
+  for (const sourceFolder of execTaskFolders) {
+    const sourceId = folderToId.get(sourceFolder) ?? sourceFolder;
+    for (const targetFolder of taskFolders) {
+      if (targetFolder === sourceFolder) continue;
+      const targetId = folderToId.get(targetFolder) ?? targetFolder;
+      const proximity = scoreDependencyProximity(sourceId, targetId, downstream);
       if (proximity > 0) {
-        knowledgeFlow.push({ from: sourceTask, to: target, proximity });
+        knowledgeFlow.push({ from: sourceFolder, to: targetFolder, proximity });
       }
     }
   }

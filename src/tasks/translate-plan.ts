@@ -52,6 +52,8 @@ export async function translatePlan(
 
   const existingTasks = await taskPort.list(featureName, { includeAll: true });
   const existingByFolder = new Map(existingTasks.map(t => [t.folder, t]));
+  const existingById = new Map(existingTasks.map(t => [t.id, t]));
+  const parsedIdSet = new Set(parsedTasks.map(p => p.id));
   const parsedFolderSet = new Set(parsedTasks.map(p => p.folder));
 
   // Completed tasks deliberately omitted from bead descriptions.
@@ -77,7 +79,7 @@ export async function translatePlan(
       continue;
     }
 
-    const stillInPlan = parsedFolderSet.has(existing.folder);
+    const stillInPlan = parsedFolderSet.has(existing.folder) || parsedIdSet.has(existing.id);
     if (!stillInPlan) {
       await taskPort.remove(featureName, existing.folder);
       result.removed.push(existing.folder);
@@ -88,7 +90,7 @@ export async function translatePlan(
 
   // Create rich beads from plan sections
   for (const parsedTask of parsedTasks) {
-    if (existingByFolder.has(parsedTask.folder)) continue;
+    if (existingByFolder.has(parsedTask.folder) || existingById.has(parsedTask.id)) continue;
 
     const dependsOn = resolveDependencies(parsedTask, parsedTasks);
 

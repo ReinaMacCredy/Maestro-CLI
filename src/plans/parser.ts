@@ -6,15 +6,18 @@
  * annotations, validates the dependency graph, and detects cycles.
  */
 
-import { buildTaskFolder } from '../core/slug.ts';
+import { buildTaskFolder, titleToSlug } from '../core/slug.ts';
 
 export interface ParsedTask {
+  /** Primary identifier -- slug derived from title. */
+  id: string;
+  /** Storage folder name (e.g., "01-setup-auth"). */
   folder: string;
   order: number;
   name: string;
   description: string;
-  /** Raw dependency numbers parsed from plan. null = not specified (use implicit), [] = explicit none */
-  dependsOnNumbers: number[] | null;
+  /** Dependency numbers. Always explicit after parsing (never null). */
+  dependsOnNumbers: number[];
 }
 
 /**
@@ -56,12 +59,14 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
       }
 
       currentTask = {
+        id: titleToSlug(rawName.replace(/\[depends?:.*?\]/i, '').trim()),
         folder,
         order,
         name: rawName,
         description: '',
-        dependsOnNumbers: titleDeps,
+        dependsOnNumbers: titleDeps ?? [],
       };
+      if (titleDeps !== null) markExplicitDeps(currentTask);
       descriptionLines = [];
     } else if (currentTask) {
       if (line.match(/^##\s+/) || line.match(/^###\s+[^0-9]/)) {
@@ -82,6 +87,7 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
               .filter(n => !isNaN(n));
             currentTask.dependsOnNumbers = numbers;
           }
+          markExplicitDeps(currentTask);
         }
         descriptionLines.push(line);
       }
@@ -93,8 +99,22 @@ export function parseTasksFromPlan(content: string): ParsedTask[] {
     tasks.push(currentTask);
   }
 
+  // Resolve implicit sequential deps: tasks without explicit deps depend on N-1
+  for (const task of tasks) {
+    if (task.dependsOnNumbers.length === 0 && !hasExplicitDeps(task)) {
+      if (task.order > 1) {
+        task.dependsOnNumbers = [task.order - 1];
+      }
+    }
+  }
+
   return tasks;
 }
+
+/** Track which tasks had explicitly declared deps vs defaulted. */
+const _explicitDepsSet = new WeakSet<ParsedTask>();
+function markExplicitDeps(task: ParsedTask): void { _explicitDepsSet.add(task); }
+function hasExplicitDeps(task: ParsedTask): boolean { return _explicitDepsSet.has(task); }
 
 /**
  * Validate the dependency graph for errors.
@@ -104,10 +124,6 @@ export function validateDependencyGraph(tasks: ParsedTask[], featureName: string
   const taskNumbers = new Set(tasks.map(t => t.order));
 
   for (const task of tasks) {
-    if (task.dependsOnNumbers === null) {
-      continue;
-    }
-
     for (const depNum of task.dependsOnNumbers) {
       if (depNum === task.order) {
         throw new Error(
@@ -136,13 +152,7 @@ export function detectCycles(tasks: ParsedTask[]): void {
   const taskByOrder = new Map(tasks.map(t => [t.order, t]));
 
   const getDependencies = (task: ParsedTask): number[] => {
-    if (task.dependsOnNumbers !== null) {
-      return task.dependsOnNumbers;
-    }
-    if (task.order === 1) {
-      return [];
-    }
-    return [task.order - 1];
+    return task.dependsOnNumbers;
   };
 
   const visited = new Map<number, number>();
@@ -213,26 +223,12 @@ export function extractPlanOutline(content: string): { preview: string; headings
 }
 
 /**
- * Resolve dependency numbers to folder names.
- * - null = not specified --> implicit sequential (depend on N-1)
- * - [] = explicit "none" --> no dependencies
- * - [N, M] = explicit dependencies
+ * Resolve dependency numbers to task IDs.
+ * Dependencies are always explicit after parsing (no implicit ordering).
  */
 export function resolveDependencies(task: ParsedTask, allTasks: ParsedTask[]): string[] {
-  if (task.dependsOnNumbers !== null && task.dependsOnNumbers.length === 0) {
-    return [];
-  }
-
-  if (task.dependsOnNumbers !== null) {
-    return task.dependsOnNumbers
-      .map(num => allTasks.find(t => t.order === num)?.folder)
-      .filter((folder): folder is string => folder !== undefined);
-  }
-
-  if (task.order === 1) {
-    return [];
-  }
-
-  const previousTask = allTasks.find(t => t.order === task.order - 1);
-  return previousTask ? [previousTask.folder] : [];
+  if (task.dependsOnNumbers.length === 0) return [];
+  return task.dependsOnNumbers
+    .map(num => allTasks.find(t => t.order === num)?.id)
+    .filter((id): id is string => id !== undefined);
 }

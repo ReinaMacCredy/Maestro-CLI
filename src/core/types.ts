@@ -44,6 +44,9 @@ export interface TaskStatus {
 }
 
 export interface TaskInfo extends Omit<TaskStatus, 'schemaVersion'> {
+  /** Primary identifier. Decoupled from storage. */
+  id: string;
+  /** @deprecated Internal storage path segment. Use `id` for public identity. */
   folder: string;
   name: string;
 }
