@@ -1,5 +1,6 @@
 {
   "name": "br",
+  "transport": "cli",
   "description": "Beads Rust task backend with sync, graph queries, and batch ops",
   "binary": "br",
   "detect": "br --version",

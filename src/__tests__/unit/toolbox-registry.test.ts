@@ -139,6 +139,28 @@ describe('ToolboxRegistry', () => {
     expect(statuses).toHaveLength(2);
     expect(statuses.every(s => s.manifest && typeof s.installed === 'boolean')).toBe(true);
   });
+
+  it('getTransport returns correct transport for tools', () => {
+    const manifests = [
+      makeManifest({ name: 'fs-tasks', provides: 'tasks', priority: 0 }),
+      makeManifest({ name: 'br', provides: 'tasks', priority: 100, binary: 'br', detect: 'echo ok' }),
+      makeManifest({ name: 'am', provides: 'handoff', priority: 100, transport: 'http' as const }),
+    ];
+    const registry = new ToolboxRegistry(manifests, DEFAULT_SETTINGS);
+    expect(registry.getTransport('fs-tasks')).toBe('builtin');
+    expect(registry.getTransport('br')).toBe('cli');
+    expect(registry.getTransport('am')).toBe('http');
+    expect(registry.getTransport('unknown')).toBeNull();
+  });
+
+  it('getStatus includes transport field', () => {
+    const manifests = [
+      makeManifest({ name: 'br', provides: 'tasks', priority: 100, binary: 'br', detect: 'echo ok', transport: 'cli' as const }),
+    ];
+    const registry = new ToolboxRegistry(manifests, DEFAULT_SETTINGS);
+    const statuses = registry.getStatus();
+    expect(statuses[0].transport).toBe('cli');
+  });
 });
 
 // ============================================================================

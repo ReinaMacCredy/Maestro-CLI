@@ -53,6 +53,8 @@ export interface ToolStatus {
   version?: string;
   settingsState: 'allowed' | 'denied' | 'default';
   detectError?: string;
+  /** Resolved transport type (explicit or inferred). */
+  transport: TransportType;
 }
 
 // ============================================================================

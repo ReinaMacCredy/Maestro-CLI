@@ -1,5 +1,6 @@
 {
   "name": "cass",
+  "transport": "cli",
   "description": "Code-aware semantic search for session and context retrieval",
   "binary": "cass",
   "detect": "cass --version",

@@ -4,8 +4,9 @@
 
 import { isToolAllowed } from '../core/settings.ts';
 import type { MaestroSettings } from '../core/settings.ts';
-import { scanBuiltInManifests, detectTool, clearDetectCache } from './loader.ts';
+import { scanBuiltInManifests, detectTool, inferTransport } from './loader.ts';
 import type { ToolManifest, ToolStatus } from './types.ts';
+import type { TransportType } from './sdk/types.ts';
 
 export class ToolboxRegistry {
   private statuses: ToolStatus[];
@@ -14,7 +15,10 @@ export class ToolboxRegistry {
   constructor(manifests: ToolManifest[], settings: MaestroSettings) {
     const allowDeny = { allow: settings.toolbox.allow, deny: settings.toolbox.deny };
 
-    this.statuses = manifests.map((m) => detectTool(m, allowDeny));
+    this.statuses = manifests.map((m) => ({
+      ...detectTool(m, allowDeny),
+      transport: inferTransport(m),
+    }));
     this.byName = new Map(this.statuses.map((s) => [s.manifest.name, s]));
   }
 
@@ -49,6 +53,11 @@ export class ToolboxRegistry {
   /** Get manifest by tool name. */
   getManifest(toolName: string): ToolManifest | null {
     return this.byName.get(toolName)?.manifest ?? null;
+  }
+
+  /** Get resolved transport type for a tool. */
+  getTransport(toolName: string): TransportType | null {
+    return this.byName.get(toolName)?.transport ?? null;
   }
 }
 

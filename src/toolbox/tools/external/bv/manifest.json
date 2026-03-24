@@ -1,5 +1,6 @@
 {
   "name": "bv",
+  "transport": "cli",
   "description": "Beads Visualizer for task dependency graphs and insights",
   "binary": "bv",
   "detect": "bv --version",
