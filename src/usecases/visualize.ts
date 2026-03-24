@@ -7,13 +7,13 @@ import type {
   MemoryMapData,
   ExecutionTimelineData,
   DoctrineNetworkData,
-} from '../utils/visual/types.ts';
-import { renderPage, writeVisual } from '../utils/visual/renderer.ts';
-import { renderPlanGraph } from '../utils/visual/templates/plan-graph.ts';
-import { renderStatusDashboard } from '../utils/visual/templates/status-dashboard.ts';
-import { renderMemoryMap } from '../utils/visual/templates/memory-map.ts';
-import { renderExecutionTimeline } from '../utils/visual/templates/execution-timeline.ts';
-import { renderDoctrineNetwork } from '../utils/visual/templates/doctrine-network.ts';
+} from '../visual/types.ts';
+import { renderPage, writeVisual } from '../visual/renderer.ts';
+import { renderPlanGraph } from '../visual/templates/plan-graph.ts';
+import { renderStatusDashboard } from '../visual/templates/status-dashboard.ts';
+import { renderMemoryMap } from '../visual/templates/memory-map.ts';
+import { renderExecutionTimeline } from '../visual/templates/execution-timeline.ts';
+import { renderDoctrineNetwork } from '../visual/templates/doctrine-network.ts';
 import { checkStatus } from './check-status.ts';
 import { executionInsights } from './execution-insights.ts';
 import { MaestroError } from '../core/errors.ts';

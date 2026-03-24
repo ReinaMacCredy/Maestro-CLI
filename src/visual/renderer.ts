@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { execFile } from 'child_process';
-import { writeAtomic, ensureDir } from '../../core/fs-io.ts';
+import { writeAtomic, ensureDir } from '../core/fs-io.ts';
 import { MAESTRO_CSS, GOOGLE_FONTS_LINK } from './css.ts';
 import type { VisualType, VisualResult } from './types.ts';
 

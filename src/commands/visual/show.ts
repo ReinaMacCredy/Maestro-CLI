@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { visualize } from '../../usecases/visualize.ts';
-import type { MaestroVisualType, VisualResult } from '../../utils/visual/types.ts';
-import { MAESTRO_VISUAL_TYPES } from '../../utils/visual/types.ts';
+import type { MaestroVisualType, VisualResult } from '../../visual/types.ts';
+import { MAESTRO_VISUAL_TYPES } from '../../visual/types.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
