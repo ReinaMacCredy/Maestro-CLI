@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { scoreRelevance, extractKeywords } from '../../utils/relevance.ts';
+import { scoreRelevance, extractKeywords } from '../../dcp/relevance.ts';
 import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 
 function makeMemory(overrides: Partial<MemoryFileWithMeta> & { bodyContent?: string } = {}): MemoryFileWithMeta {

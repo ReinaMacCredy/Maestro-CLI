@@ -10,7 +10,7 @@ import type { DoctrineItem, DoctrinePort, DoctrineStatus } from './port.ts';
 import { getDoctrinePath, getDoctrineItemPath } from '../core/paths.ts';
 import { readJson, writeJsonAtomic } from '../core/fs-io.ts';
 import { acquireLockSync } from '../core/locking.ts';
-import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../utils/relevance.ts';
+import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../dcp/relevance.ts';
 
 export const CURRENT_SCHEMA_VERSION = 1;
 const RELEVANCE_THRESHOLD = 0.2;

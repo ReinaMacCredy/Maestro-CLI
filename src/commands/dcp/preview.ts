@@ -8,7 +8,7 @@ import { output, renderTable } from '../../core/output.ts';
 import { MaestroError, handleCommandError } from '../../core/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
 import { pruneContext } from '../../usecases/prune-context.ts';
-import { resolveDcpConfig } from '../../utils/dcp-config.ts';
+import { resolveDcpConfig } from '../../dcp/config.ts';
 import { WORKER_RULES } from '../../utils/worker-rules.ts';
 
 export default defineCommand({

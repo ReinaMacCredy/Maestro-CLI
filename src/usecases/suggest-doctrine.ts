@@ -8,7 +8,7 @@ import type { MemoryPort } from '../memory/port.ts';
 import type { DoctrineItem, DoctrineConditions } from '../doctrine/port.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
-import { extractKeywords } from '../utils/relevance.ts';
+import { extractKeywords } from '../dcp/relevance.ts';
 import { titleToSlug } from '../core/slug.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import type { HiveConfig } from '../core/types.ts';

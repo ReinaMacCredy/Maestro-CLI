@@ -15,7 +15,7 @@ import { computeRunnableAndBlocked } from '../utils/task-dependency-graph.ts';
 import { MaestroError } from '../core/errors.ts';
 import type { ConfigPort } from '../core/config.ts';
 import { type TaskInfo, type FeatureStatusType, type PlanComment } from '../core/types.ts';
-import { resolveDcpConfig } from '../utils/dcp-config.ts';
+import { resolveDcpConfig } from '../dcp/config.ts';
 
 export interface StatusServices {
   taskPort: TaskPort;

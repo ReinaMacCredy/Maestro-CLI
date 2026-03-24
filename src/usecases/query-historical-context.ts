@@ -11,7 +11,7 @@ import type { MemoryPort } from '../memory/port.ts';
 import type { MemoryFileWithMeta } from '../core/types.ts';
 import { isExecutionMemory } from '../utils/execution-memory.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../utils/parse-exec-memory.ts';
-import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../utils/relevance.ts';
+import { extractKeywords, TAG_WEIGHT, KEYWORD_WEIGHT } from '../dcp/relevance.ts';
 
 export interface HistoricalPitfall {
   pattern: string;

@@ -7,10 +7,10 @@ import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { MaestroError, handleCommandError } from '../../core/errors.ts';
-import { selectMemories } from '../../utils/context-selector.ts';
-import { resolveDcpConfig } from '../../utils/dcp-config.ts';
+import { selectMemories } from '../../dcp/selector.ts';
+import { resolveDcpConfig } from '../../dcp/config.ts';
 import { estimateTokens } from '../../core/tokens.ts';
-import { fitWithinBudget } from '../../utils/budget-fill.ts';
+import { fitWithinBudget } from '../../dcp/budget.ts';
 import type { MemoryFileWithMeta } from '../../core/types.ts';
 
 function parseBudget(raw: string): number {

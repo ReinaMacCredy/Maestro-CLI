@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { selectMemories } from '../../utils/context-selector.ts';
+import { selectMemories } from '../../dcp/selector.ts';
 import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 
 function makeMemory(name: string, bodyContent: string, overrides: Partial<MemoryFileWithMeta> = {}): MemoryFileWithMeta {

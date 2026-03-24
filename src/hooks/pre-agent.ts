@@ -18,7 +18,7 @@ import { initServices } from '../services.ts';
 import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 import { deriveFolderTags } from '../utils/execution-memory.ts';
-import { extractKeywords } from '../utils/relevance.ts';
+import { extractKeywords } from '../dcp/relevance.ts';
 import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
 import type { DoctrineItem } from '../doctrine/port.ts';
 import type { TaskInfo } from '../core/types.ts';

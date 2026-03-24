@@ -10,7 +10,7 @@ import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam, taskParam } from './_utils/params.ts';
 import { pruneContext } from '../usecases/prune-context.ts';
-import { resolveDcpConfig } from '../utils/dcp-config.ts';
+import { resolveDcpConfig } from '../dcp/config.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
 
 export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void {

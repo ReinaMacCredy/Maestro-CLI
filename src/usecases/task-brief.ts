@@ -10,16 +10,16 @@ import type { DoctrinePort } from '../doctrine/port.ts';
 import type { ConfigPort } from '../core/config.ts';
 import type { MemoryFileWithMeta } from '../core/types.ts';
 import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
-import { selectMemories, type SelectedContext } from '../utils/context-selector.ts';
+import { selectMemories, type SelectedContext } from '../dcp/selector.ts';
 import { deriveFolderTags } from '../utils/execution-memory.ts';
-import { extractKeywords } from '../utils/relevance.ts';
+import { extractKeywords } from '../dcp/relevance.ts';
 import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
 import { WORKER_RULES } from '../utils/worker-rules.ts';
-import { resolveDcpConfig } from '../utils/dcp-config.ts';
+import { resolveDcpConfig } from '../dcp/config.ts';
 import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
 import { MaestroError } from '../core/errors.ts';
 import { estimateTokens } from '../core/tokens.ts';
-import { fitWithinBudget } from '../utils/budget-fill.ts';
+import { fitWithinBudget } from '../dcp/budget.ts';
 
 export interface TaskBriefParams {
   taskPort: TaskPort;
