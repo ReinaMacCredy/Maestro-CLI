@@ -1,9 +1,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir, EVENTS_FILE } from './_helpers.ts';
-import { writeJsonAtomic, ensureDir } from '../core/fs-io.ts';
+import { writeJsonAtomic, ensureDir, writeText } from '../core/fs-io.ts';
 import { initServices } from '../services.ts';
 import { checkStatus } from '../workflow/status.ts';
+import { getHandoffsPath } from '../core/paths.ts';
 
 const HOOK_NAME = 'precompact';
 
@@ -92,7 +93,58 @@ async function main(): Promise<void> {
   };
 
   writeJsonAtomic(snapshotPath, snapshot);
+
+  // -- Auto-generate lightweight handoff for session continuity --
+  generateSessionHandoff(projectDir, featureName, status, snapshot.timestamp);
+
   writeOutput({});
+}
+
+/**
+ * Generate a lightweight handoff document when a session compacts.
+ * Goal is inferred from the most recent in-progress or done task.
+ */
+function generateSessionHandoff(
+  projectDir: string,
+  featureName: string,
+  status: { tasks: { items: Array<{ folder: string; name: string; status: string }> }; runnable: string[] },
+  timestamp: string,
+): void {
+  try {
+    // Infer goal from recent task activity
+    const recentTask = status.tasks.items.find(t => t.status === 'claimed')
+      ?? status.tasks.items.find(t => t.status === 'done');
+    if (!recentTask) return; // No task activity -- skip handoff
+
+    const goal = `Continue work on: ${recentTask.name}`;
+    const sessionId = `session-${timestamp.replace(/[:.]/g, '-').slice(0, 19)}`;
+
+    const sections: string[] = [
+      `## Session Handoff: ${timestamp.slice(0, 19).replace('T', ' ')}`,
+      '',
+      `**Goal:** ${goal}`,
+      `**Feature:** ${featureName}`,
+      `**Last task:** ${recentTask.folder} (${recentTask.status})`,
+      '',
+    ];
+
+    if (status.runnable.length > 0) {
+      sections.push('### Runnable Tasks');
+      for (const r of status.runnable) sections.push(`- ${r}`);
+      sections.push('');
+    }
+
+    sections.push('### Handoff Context');
+    sections.push(`1. Call \`maestro_status\` to get current state.`);
+    sections.push(`2. Review task \`${recentTask.folder}\` for continuation.`);
+    sections.push('');
+
+    const handoffsDir = getHandoffsPath(projectDir, featureName);
+    ensureDir(handoffsDir);
+    writeText(path.join(handoffsDir, `${sessionId}.md`), sections.join('\n'));
+  } catch {
+    // Best-effort -- don't fail the hook
+  }
 }
 
 try {
