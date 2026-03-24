@@ -16,43 +16,41 @@ function requireSearchPort(thunk: ServicesThunk) {
 
 export function registerSearchTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
-    'maestro_search_sessions',
-    {
-      description: 'Search past agent session history via CASS.',
-      inputSchema: {
-        query: z.string().describe('Search query'),
-        agent: z.string().optional().describe('Filter to specific agent (claude, codex, cursor, etc.)'),
-        limit: limitParam(10),
-        days: z.number().optional().describe('Limit to recent N days'),
-      },
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async (input) => {
-      const port = requireSearchPort(thunk);
-      const results = await port.searchSessions(input.query, {
-        agent: input.agent,
-        limit: input.limit,
-        days: input.days,
-      });
-      return respond({ results });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_search_related',
+    'maestro_search',
     {
       description:
-        'Find past agent sessions that worked on a specific file.',
+        'Session history search via CASS. Actions: sessions (full-text search of past agent sessions), ' +
+        'related (find sessions that worked on a specific file).',
       inputSchema: {
-        file_path: z.string().describe('File path to search for'),
-        limit: limitParam(5),
+        action: z.enum(['sessions', 'related']).describe('Action to perform'),
+        query: z.string().optional().describe('Search query (required for sessions)'),
+        agent: z.string().optional().describe('Filter to specific agent -- claude, codex, cursor, etc. (sessions only)'),
+        limit: limitParam(10),
+        days: z.number().optional().describe('Limit to recent N days (sessions only)'),
+        file_path: z.string().optional().describe('File path to search for (required for related)'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
       const port = requireSearchPort(thunk);
-      const results = await port.findRelatedSessions(input.file_path, input.limit);
-      return respond({ results });
+      switch (input.action) {
+        case 'sessions': {
+          if (!input.query) return respond({ error: 'query is required for action: sessions' });
+          const results = await port.searchSessions(input.query, {
+            agent: input.agent,
+            limit: input.limit,
+            days: input.days,
+          });
+          return respond({ results });
+        }
+        case 'related': {
+          if (!input.file_path) return respond({ error: 'file_path is required for action: related' });
+          const results = await port.findRelatedSessions(input.file_path, input.limit);
+          return respond({ results });
+        }
+        default:
+          return respond({ error: `Unknown action: ${(input as { action: string }).action}` });
+      }
     }),
   );
 }

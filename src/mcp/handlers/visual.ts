@@ -13,56 +13,43 @@ export function registerVisualTools(server: McpServer, thunk: ServicesThunk): vo
     'maestro_visual',
     {
       description:
-        'Render maestro state as an interactive HTML visualization. Writes to ~/.maestro/visuals/. ' +
-        'Types: plan-graph (task dependency flowchart), status-dashboard (KPI cards + progress), ' +
+        'Render HTML visualizations. Type selects the visualization kind. ' +
+        'Maestro state types: plan-graph (task dependency flowchart), status-dashboard (KPI cards + progress), ' +
         'memory-map (category grid + distribution), execution-timeline (task events + knowledge flow), ' +
-        'doctrine-network (doctrine relationships + effectiveness).',
+        'doctrine-network (doctrine relationships + effectiveness). ' +
+        'Debug types (require data): component-tree, state-flow, error-cascade, network-waterfall, dom-diff, console-timeline. ' +
+        'Writes to ~/.maestro/visuals/.',
       inputSchema: {
-        type: z.enum(['plan-graph', 'status-dashboard', 'memory-map', 'execution-timeline', 'doctrine-network'])
-          .describe('Visualization type'),
+        type: z.enum([
+          'plan-graph', 'status-dashboard', 'memory-map', 'execution-timeline', 'doctrine-network',
+          'component-tree', 'state-flow', 'error-cascade', 'network-waterfall', 'dom-diff', 'console-timeline',
+        ]).describe('Visualization type'),
         feature: featureParam(),
         autoOpen: z.boolean().optional().default(true).describe('Open browser automatically'),
+        data: z.record(z.unknown()).optional().describe('Structured data for debug visualizations'),
+        title: z.string().optional().describe('Page title for debug visualizations'),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
+      const debugTypes = ['component-tree', 'state-flow', 'error-cascade', 'network-waterfall', 'dom-diff', 'console-timeline'];
+
+      if (debugTypes.includes(input.type)) {
+        if (!input.data) return respond({ error: 'data is required for debug visualization types' });
+        const result = await debugVisualize(
+          input.type as 'component-tree' | 'state-flow' | 'error-cascade' | 'network-waterfall' | 'dom-diff' | 'console-timeline',
+          input.data, input.title, input.autoOpen,
+        );
+        return respond({ path: result.path, opened: result.opened, type: result.type });
+      }
+
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const result = await visualize(input.type, feature, services, input.autoOpen);
-      return respond({
-        path: result.path,
-        opened: result.opened,
-        type: result.type,
-        feature: result.feature,
-      });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_debug_visual',
-    {
-      description:
-        'Render debug data as an interactive HTML visualization. Writes to ~/.maestro/visuals/. ' +
-        'Agent provides structured data matching the type schema. ' +
-        'Types: component-tree (React/Vue hierarchy), state-flow (mutation timeline), ' +
-        'error-cascade (error boundary tree), network-waterfall (request timing), ' +
-        'dom-diff (expected vs actual), console-timeline (log entries).',
-      inputSchema: {
-        type: z.enum(['component-tree', 'state-flow', 'error-cascade', 'network-waterfall', 'dom-diff', 'console-timeline'])
-          .describe('Debug visualization type'),
-        data: z.record(z.unknown()).describe('Structured data matching the type schema'),
-        title: z.string().optional().describe('Page title (defaults to type name)'),
-        autoOpen: z.boolean().optional().default(true).describe('Open browser automatically'),
-      },
-      annotations: ANNOTATIONS_MUTATING,
-    },
-    withErrorHandling(async (input) => {
-      const result = await debugVisualize(input.type, input.data, input.title, input.autoOpen);
-      return respond({
-        path: result.path,
-        opened: result.opened,
-        type: result.type,
-      });
+      const result = await visualize(
+        input.type as 'plan-graph' | 'status-dashboard' | 'memory-map' | 'execution-timeline' | 'doctrine-network',
+        feature, services, input.autoOpen,
+      );
+      return respond({ path: result.path, opened: result.opened, type: result.type, feature: result.feature });
     }),
   );
 }

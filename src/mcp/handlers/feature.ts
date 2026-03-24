@@ -10,92 +10,78 @@ import { buildTransitionHint } from '../../workflow/playbook.ts';
 import { MaestroError } from '../../core/errors.ts';
 
 export function registerFeatureTools(server: McpServer, thunk: ServicesThunk): void {
+  // Mutating: create | complete
   server.registerTool(
-    'maestro_feature_create',
+    'maestro_feature',
     {
-      description: 'Create a new feature. This sets up the feature directory and makes it the active feature.',
+      description: 'Feature lifecycle mutations. Actions: create (new feature), complete (mark done).',
       inputSchema: {
-        name: z.string().describe('Feature name'),
-        ticket: z.string().optional().describe('Ticket reference'),
+        action: z.enum(['create', 'complete']).describe('Action to perform'),
+        feature: featureParam(),
+        name: z.string().optional().describe('Feature name (required for create)'),
+        ticket: z.string().optional().describe('Ticket reference (optional, create only)'),
       },
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
-      const services = thunk.get();
-      const result = services.featureAdapter.create(input.name, input.ticket);
-      return respond({ feature: result });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_feature_list',
-    {
-      description: 'List all features with their status. Shows which feature is currently active.',
-      inputSchema: {},
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async () => {
-      const services = thunk.get();
-      const features = services.featureAdapter.list();
-      const active = services.featureAdapter.getActive(features);
-      return respond({
-        features,
-        active: active?.name ?? null,
-      });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_feature_complete',
-    {
-      description: 'Mark a feature as completed. All tasks must be done first.',
-      inputSchema: {
-        feature: featureParam(),
-      },
-      annotations: ANNOTATIONS_MUTATING,
-    },
-    withErrorHandling(async (input) => {
-      const services = thunk.get();
-      const feature = requireFeature(services, input.feature);
-      const result = await completeFeature(services, feature);
-      const hint = buildTransitionHint('feature_complete');
-      return respond({ ...result, ...(hint && { transition: hint }) });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_feature_info',
-    {
-      description: 'Get detailed information about a specific feature: status, plan state, comment count.',
-      inputSchema: {
-        feature: featureParam(),
-      },
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async (input) => {
-      const services = thunk.get();
-      const feature = requireFeature(services, input.feature);
-      const info = services.featureAdapter.getInfo(feature);
-      if (!info) {
-        throw new MaestroError(`Feature '${feature}' not found`, [
-          'Use maestro_feature_list to see available features',
-        ]);
+      switch (input.action) {
+        case 'create': {
+          if (!input.name) return respond({ error: 'name is required for action: create' });
+          const services = thunk.get();
+          const result = services.featureAdapter.create(input.name, input.ticket);
+          return respond({ feature: result });
+        }
+        case 'complete': {
+          const services = thunk.get();
+          const feature = requireFeature(services, input.feature);
+          const result = await completeFeature(services, feature);
+          const hint = buildTransitionHint('feature_complete');
+          return respond({ ...result, ...(hint && { transition: hint }) });
+        }
+        default:
+          return respond({ error: `Unknown action: ${(input as { action: string }).action}` });
       }
-      return respond(info);
     }),
   );
 
+  // Read-only: list | info | active
   server.registerTool(
-    'maestro_feature_active',
+    'maestro_feature_read',
     {
-      description: 'Get the currently active feature. Returns null if no feature is active.',
-      inputSchema: {},
+      description: 'Feature read operations. What: list (all features), info (specific feature details), active (current active feature).',
+      inputSchema: {
+        what: z.enum(['list', 'info', 'active']).describe('What to read'),
+        feature: featureParam(),
+      },
       annotations: ANNOTATIONS_READONLY,
     },
-    withErrorHandling(async () => {
-      const services = thunk.get();
-      const active = services.featureAdapter.getActive();
-      return respond({ active: active ?? null });
+    withErrorHandling(async (input) => {
+      switch (input.what) {
+        case 'list': {
+          const services = thunk.get();
+          const features = services.featureAdapter.list();
+          const active = services.featureAdapter.getActive(features);
+          return respond({ features, active: active?.name ?? null });
+        }
+        case 'info': {
+          const services = thunk.get();
+          const feature = requireFeature(services, input.feature);
+          const info = services.featureAdapter.getInfo(feature);
+          if (!info) {
+            throw new MaestroError(`Feature '${feature}' not found`, [
+              'Use maestro_feature_read with what: list to see available features',
+            ]);
+          }
+          return respond(info);
+        }
+        case 'active': {
+          const services = thunk.get();
+          const active = services.featureAdapter.getActive();
+          return respond({ active: active ?? null });
+        }
+        default:
+          return respond({ error: `Unknown what: ${(input as { what: string }).what}` });
+      }
     }),
   );
 }

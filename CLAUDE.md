@@ -57,7 +57,7 @@ maestro is a **pure MCP plugin** -- structured memory + workflow guardrails.
 Claude Code is the orchestrator (spawning agents natively), maestro is the filing cabinet with opinions.
 
 - **6 task states**: pending, claimed, done, blocked, review, revision
-- **53 MCP tools** across 13 groups
+- **25 MCP tools** (21 merged action-based + 4 standalone meta) across 13 groups
 - **Plain file backend** (default), optional br sync
 - **Hooks**: SessionStart (pipeline injection), PreToolUse:Agent (task spec injection)
 - **Doctrine Compiler**: cross-feature learning from execution history, injected into workers via separate budget
@@ -69,61 +69,74 @@ Claude Code is the orchestrator (spawning agents natively), maestro is the filin
 
 | Phase | Trigger | MCP Tools / CLI Commands |
 |-------|---------|--------------------------|
-| Discovery | New feature request | `maestro_feature_create`, `maestro_memory_write` |
-| Research | Feature exists | Agent subagents, `maestro_memory_write` to capture findings |
-| Planning | Research done | `maestro_plan_write`, `maestro_plan_read` |
-| Approval | Plan written | `maestro_plan_approve` |
-| Execution | Plan approved | `maestro_tasks_sync`, `maestro_task_next`, `maestro_task_claim`, `maestro_task_done` |
-| Completion | All tasks done | `maestro_feature_complete`, `maestro_memory_promote`, `maestro_doctrine_approve` |
+| Discovery | New feature request | `maestro_feature action:create`, `maestro_memory action:write` |
+| Research | Feature exists | Agent subagents, `maestro_memory action:write` to capture findings |
+| Planning | Research done | `maestro_plan action:write`, `maestro_plan_read` |
+| Approval | Plan written | `maestro_plan action:approve` |
+| Execution | Plan approved | `maestro_task action:sync`, `maestro_task_read what:next`, `maestro_task action:claim`, `maestro_task action:done` |
+| Completion | All tasks done | `maestro_feature action:complete`, `maestro_memory action:promote`, `maestro_doctrine action:approve` |
 
 ## Planning Mode
 
 1. Load `maestro:design` and `maestro:parallel-exploration` skills
-2. Research the codebase, save findings with `maestro_memory_write`
-3. Write the plan with `maestro_plan_write`
+2. Research the codebase, save findings with `maestro_memory action:write`
+3. Write the plan with `maestro_plan action:write`
 4. Review comments with `maestro_plan_read`
-5. Approve with `maestro_plan_approve`
+5. Approve with `maestro_plan action:approve`
 
 ## Execution Mode
 
-1. `maestro_tasks_sync` -- generate tasks from approved plan
-2. `maestro_task_next` -- find runnable tasks with compiled specs
-3. `maestro_task_claim` -- claim a task for an agent
+1. `maestro_task action:sync` -- generate tasks from approved plan
+2. `maestro_task_read what:next` -- find runnable tasks with compiled specs
+3. `maestro_task action:claim` -- claim a task for an agent
 4. Spawn Agent to implement (pre-agent hook auto-injects spec + worker rules)
-5. `maestro_task_done` -- mark complete with summary
+5. `maestro_task action:done` -- mark complete with summary
 6. Repeat until all tasks done
 
 ## Blocked Tasks
 
 If a worker hits a blocker:
-1. Worker calls `maestro_task_block` with reason
+1. Worker calls `maestro_task action:block` with reason
 2. Review blocker in `maestro_status`
-3. Resolve and call `maestro_task_unblock` with decision
+3. Resolve and call `maestro_task action:unblock` with decision
 
 ## Stale Claims
 
 Claims expire after `claimExpiresMinutes` (default 120). Expired claims are auto-reset to pending when `maestro_task_next` is called.
 
-## MCP Tools (55)
+## MCP Tools (25)
 
-| Group | Tools |
-|-------|-------|
-| Feature (5) | `feature_create`, `feature_list`, `feature_complete`, `feature_info`, `feature_active` |
-| Plan (6) | `plan_write`, `plan_read`, `plan_approve`, `plan_comment`, `plan_revoke`, `plan_comments_clear` |
-| Task (12) | `tasks_sync`, `task_next`, `task_claim`, `task_done`, `task_accept`, `task_reject`, `task_block`, `task_unblock`, `task_list`, `task_info`, `task_spec_read`, `task_report_read` |
-| Brief (1) | `task_brief` -- full agent context for a task (spec, DCP memories, doctrine, graph, revision, worker rules) |
-| Memory (7) | `memory_write`, `memory_read`, `memory_list`, `memory_promote`, `memory_delete`, `memory_stats`, `memory_compile` |
-| Doctrine (6) | `doctrine_list`, `doctrine_read`, `doctrine_write`, `doctrine_deprecate`, `doctrine_approve`, `doctrine_suggest` |
-| Skill (2) | `skill`, `skill_list` |
-| Config (1) | `config_get` |
-| Meta (4) | `status`, `ping`, `init`, `dcp_preview` |
-| Execution (1) | `execution_insights` |
-| Graph (3) | `graph_insights`, `graph_next`, `graph_plan` |
-| Handoff (3) | `handoff_send`, `handoff_receive`, `handoff_ack` |
-| Search (2) | `search_sessions`, `search_related` |
-| Visual (2) | `visual`, `debug_visual` |
+Tools use `action` (mutating) or `what` (read-only) params to route within each merged tool.
 
-All tools are prefixed `maestro_` in MCP (e.g. `maestro_task_claim`).
+| Tool | Type | Actions / What |
+|------|------|----------------|
+| `maestro_feature` | mutating | action: create, complete |
+| `maestro_feature_read` | read-only | what: list, info, active |
+| `maestro_plan` | mutating | action: write, approve, revoke, comment, comments_clear |
+| `maestro_plan_read` | read-only | (reads plan + comments) |
+| `maestro_task` | mutating | action: sync, claim, done, accept, reject, block, unblock, spec_write, report_write |
+| `maestro_task_read` | read-only | what: list, info, spec, report, next, brief |
+| `maestro_memory` | mutating | action: write, delete, promote, compress, consolidate, archive |
+| `maestro_memory_read` | read-only | what: read, list, stats, insights, compile |
+| `maestro_doctrine` | mutating | action: write, approve, suggest, deprecate |
+| `maestro_doctrine_read` | read-only | what: list, read |
+| `maestro_handoff` | mutating | action: send, ack |
+| `maestro_handoff_read` | read-only | what: read, list, status, receive |
+| `maestro_skill` | read-only | action: load, list, install, create, remove, sync |
+| `maestro_graph` | mutating | action: insights, next, plan, discovery, reserve |
+| `maestro_search` | read-only | action: sessions, related |
+| `maestro_visual` | mutating | type: any visualization type |
+| `maestro_dcp` | read-only | action: preview, stats, config |
+| `maestro_status` | read-only | (standalone) |
+| `maestro_ping` | read-only | (standalone) |
+| `maestro_init` | mutating | (standalone) |
+| `maestro_doctor` | read-only | (standalone) |
+| `maestro_history` | read-only | (standalone) |
+| `maestro_execution_insights` | read-only | (standalone) |
+| `maestro_config_get` | read-only | (standalone) |
+| `maestro_config_set` | mutating | (standalone) |
+
+All tools are prefixed `maestro_` in MCP.
 
 ## CLI Commands
 

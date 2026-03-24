@@ -1,8 +1,7 @@
 /**
  * MCP tools for bv graph intelligence.
  * Exposes dependency graph analysis, next-bead recommendation,
- * and parallel execution planning.
- * Also exposes parallel task discovery and batch reservation tools.
+ * parallel execution planning, parallel task discovery, and batch reservation.
  */
 
 import { z } from 'zod';
@@ -19,106 +18,76 @@ function requireGraphPort(thunk: ServicesThunk) {
 
 export function registerGraphTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
-    'maestro_graph_insights',
-    {
-      description: 'Get dependency graph intelligence: bottlenecks, critical path, velocity. Requires bv.',
-      inputSchema: {},
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async () => {
-      const port = requireGraphPort(thunk);
-      const insights = await port.getInsights();
-      return respond({ ...insights });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_graph_next',
-    {
-      description: 'Get the top recommended next bead from bv with scoring rationale.',
-      inputSchema: {},
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async () => {
-      const port = requireGraphPort(thunk);
-      const recommendation = await port.getNextRecommendation();
-      if (!recommendation) {
-        return respond({ message: 'No recommendations available (all beads may be closed)' });
-      }
-      return respond({ ...recommendation });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_graph_plan',
-    {
-      description: 'Get dependency-respecting parallel execution tracks for N agents.',
-      inputSchema: {
-        agents: z.number().optional().default(1).describe('Number of parallel agents (default: 1)'),
-      },
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async (input) => {
-      const port = requireGraphPort(thunk);
-      const plan = await port.getExecutionPlan(input.agents);
-      return respond({ ...plan });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_discovery',
+    'maestro_graph',
     {
       description:
-        'Parallel discovery: get all runnable tasks with their specs for parallel dispatch planning.',
+        'Graph and parallel execution operations. Actions: insights (bottlenecks, critical path, velocity -- requires bv), ' +
+        'next (top recommended next bead with rationale -- requires bv), ' +
+        'plan (parallel execution tracks for N agents -- requires bv), ' +
+        'discovery (all runnable tasks with specs for parallel dispatch), ' +
+        'reserve (batch claim multiple tasks for parallel agents).',
       inputSchema: {
+        action: z.enum(['insights', 'next', 'plan', 'discovery', 'reserve'])
+          .describe('Action to perform'),
         feature: featureParam(),
+        agents: z.number().optional().default(1).describe('Number of parallel agents (plan only)'),
+        tasks: z.array(z.string()).optional().describe('Task IDs to claim (reserve only)'),
       },
-      annotations: ANNOTATIONS_READONLY,
-    },
-    withErrorHandling(async (input) => {
-      const services = thunk.get();
-      const feature = requireFeature(services, input.feature);
-      const runnable = await services.taskPort.getRunnable(feature);
-
-      const tasks = await Promise.all(
-        runnable.map(async (task) => {
-          const spec = await services.taskPort.readSpec(feature, task.id);
-          return { id: task.id, name: task.name, status: task.status, dependsOn: task.dependsOn, spec };
-        }),
-      );
-
-      return respond({ feature, count: tasks.length, tasks });
-    }),
-  );
-
-  server.registerTool(
-    'maestro_reserve',
-    {
-      description:
-        'Batch claim: atomically claim multiple tasks for parallel agents. Best-effort -- failures are reported but do not abort.',
-      inputSchema: {
-        feature: featureParam(),
-        tasks: z.array(z.string()).describe('Task IDs to claim'),
-      },
+      // reserve mutates; use ANNOTATIONS_MUTATING to cover all actions conservatively
       annotations: ANNOTATIONS_MUTATING,
     },
     withErrorHandling(async (input) => {
-      const services = thunk.get();
-      const feature = requireFeature(services, input.feature);
-
-      const claimed: string[] = [];
-      const failed: Array<{ id: string; reason: string }> = [];
-
-      for (const taskId of input.tasks) {
-        try {
-          await services.taskPort.claim(feature, taskId, 'parallel-agent');
-          claimed.push(taskId);
-        } catch (err) {
-          failed.push({ id: taskId, reason: err instanceof Error ? err.message : String(err) });
+      switch (input.action) {
+        case 'insights': {
+          const port = requireGraphPort(thunk);
+          const insights = await port.getInsights();
+          return respond({ ...insights });
         }
+        case 'next': {
+          const port = requireGraphPort(thunk);
+          const recommendation = await port.getNextRecommendation();
+          if (!recommendation) {
+            return respond({ message: 'No recommendations available (all beads may be closed)' });
+          }
+          return respond({ ...recommendation });
+        }
+        case 'plan': {
+          const port = requireGraphPort(thunk);
+          const plan = await port.getExecutionPlan(input.agents);
+          return respond({ ...plan });
+        }
+        case 'discovery': {
+          const services = thunk.get();
+          const feature = requireFeature(services, input.feature);
+          const runnable = await services.taskPort.getRunnable(feature);
+          const tasks = await Promise.all(
+            runnable.map(async (task) => {
+              const spec = await services.taskPort.readSpec(feature, task.id);
+              return { id: task.id, name: task.name, status: task.status, dependsOn: task.dependsOn, spec };
+            }),
+          );
+          return respond({ feature, count: tasks.length, tasks });
+        }
+        case 'reserve': {
+          if (!input.tasks || input.tasks.length === 0) return respond({ error: 'tasks array is required for action: reserve' });
+          const services = thunk.get();
+          const feature = requireFeature(services, input.feature);
+          const claimed: string[] = [];
+          const failed: Array<{ id: string; reason: string }> = [];
+          for (const taskId of input.tasks) {
+            try {
+              await services.taskPort.claim(feature, taskId, 'parallel-agent');
+              claimed.push(taskId);
+            } catch (err) {
+              failed.push({ id: taskId, reason: err instanceof Error ? err.message : String(err) });
+            }
+          }
+          return respond({ feature, claimed, failed });
+        }
+        default:
+          return respond({ error: `Unknown action: ${(input as { action: string }).action}` });
       }
-
-      return respond({ feature, claimed, failed });
     }),
   );
 }
+
