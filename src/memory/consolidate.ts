@@ -5,7 +5,7 @@
 
 import type { MemoryFileWithMeta, MemoryMetadata, MemoryConnection } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
-import { extractKeywords } from '../dcp/relevance.ts';
+import { extractKeywords, computeSetOverlap } from '../dcp/relevance.ts';
 
 const DUPLICATE_THRESHOLD = 0.8;  // 80% keyword overlap = duplicate
 const CONNECTION_THRESHOLD = 0.4; // 40-79% keyword overlap = related
@@ -69,7 +69,7 @@ export function consolidateMemories(
       const b = memories[j];
       if (a.metadata.category !== b.metadata.category) continue;
 
-      const overlap = computeOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!);
+      const overlap = computeSetOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!, 'jaccard');
       if (overlap >= DUPLICATE_THRESHOLD) {
         // Keep higher-priority (lower number), or newer if equal
         const keepA = (a.metadata.priority ?? 2) <= (b.metadata.priority ?? 2);
@@ -132,7 +132,7 @@ export function consolidateMemories(
     for (let j = i + 1; j < active.length; j++) {
       const a = active[i];
       const b = active[j];
-      const overlap = computeOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!);
+      const overlap = computeSetOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!, 'jaccard');
       if (overlap >= CONNECTION_THRESHOLD && overlap < DUPLICATE_THRESHOLD) {
         if (!opts.dryRun) {
           memoryAdapter.connect(feature, a.name, b.name, 'related');
@@ -146,16 +146,6 @@ export function consolidateMemories(
   result.stats.afterConsolidation = memories.length - removed.size;
 
   return result;
-}
-
-function computeOverlap(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 || b.size === 0) return 0;
-  let intersection = 0;
-  for (const word of a) {
-    if (b.has(word)) intersection++;
-  }
-  const union = a.size + b.size - intersection;
-  return union > 0 ? intersection / union : 0;
 }
 
 function compressMemory(content: string): string {

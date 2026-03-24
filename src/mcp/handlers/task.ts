@@ -92,7 +92,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
             });
             const acceptedTask = await services.taskPort.done(feature, input.task, input.summary);
             try {
-              const { prependMetadataFrontmatter } = await import('../utils/frontmatter.ts');
+              const { prependMetadataFrontmatter } = await import('../../core/frontmatter.ts');
               const body = `Task ${input.task} auto-accepted after ${vConfig.maxRevisions} revision(s). Score: ${result.report.score.toFixed(2)}`;
               services.memoryAdapter.write(feature, `verification-auto-accept-${input.task}`,
                 prependMetadataFrontmatter(body, { tags: ['verification', 'auto-accept'], category: 'debug', priority: 1 }));

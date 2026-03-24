@@ -4,7 +4,7 @@
  */
 
 import type { MemoryFileWithMeta } from '../core/types.ts';
-import { extractKeywords } from './relevance.ts';
+import { extractKeywords, computeSetOverlap } from './relevance.ts';
 
 export interface DuplicatePair {
   a: string;
@@ -36,7 +36,7 @@ export function findDuplicates(
     for (let j = i + 1; j < keywordSets.length; j++) {
       const a = keywordSets[i];
       const b = keywordSets[j];
-      const overlap = computeOverlap(a.keywords, b.keywords);
+      const overlap = computeSetOverlap(a.keywords, b.keywords, 'simpson');
       if (overlap >= threshold) {
         pairs.push({ a: a.name, b: b.name, overlap });
       }
@@ -46,13 +46,3 @@ export function findDuplicates(
   return pairs.sort((x, y) => y.overlap - x.overlap);
 }
 
-function computeOverlap(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 || b.size === 0) return 0;
-  let intersection = 0;
-  const smaller = a.size <= b.size ? a : b;
-  const larger = a.size <= b.size ? b : a;
-  for (const word of smaller) {
-    if (larger.has(word)) intersection++;
-  }
-  return intersection / Math.min(a.size, b.size);
-}

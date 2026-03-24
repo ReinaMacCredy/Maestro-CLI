@@ -39,6 +39,24 @@ export function extractKeywords(text: string): Set<string> {
 }
 
 /**
+ * Compute overlap between two keyword sets.
+ * 'simpson' = Szymkiewicz-Simpson coefficient (intersection / min) -- sensitive to subset relationships.
+ * 'jaccard' = Jaccard index (intersection / union) -- stricter, ignores set size imbalance.
+ */
+export function computeSetOverlap(a: Set<string>, b: Set<string>, mode: 'jaccard' | 'simpson' = 'simpson'): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let intersection = 0;
+  const smaller = a.size <= b.size ? a : b;
+  const larger = a.size <= b.size ? b : a;
+  for (const word of smaller) {
+    if (larger.has(word)) intersection++;
+  }
+  if (mode === 'simpson') return intersection / Math.min(a.size, b.size);
+  const union = a.size + b.size - intersection;
+  return union > 0 ? intersection / union : 0;
+}
+
+/**
  * Word-boundary tag matching.
  * Tag "auth" matches word "auth" in context, NOT substring "auth" inside "coauthored".
  * Compiled regexes are cached -- tag cardinality is practically bounded (~250 unique tags).

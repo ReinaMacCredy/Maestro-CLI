@@ -40,12 +40,13 @@ export class FsMemoryAdapter implements MemoryPort {
   delete(featureName: string, fileName: string): boolean {
     const memoryPath = getMemoryPath(this.projectRoot, featureName);
     const filePath = path.join(memoryPath, this.normalizeFileName(fileName));
-
-    if (fileExists(filePath)) {
+    try {
       fs.unlinkSync(filePath);
       return true;
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw err;
     }
-    return false;
   }
 
   compile(featureName: string): string {
@@ -116,12 +117,13 @@ export class FsMemoryAdapter implements MemoryPort {
   deleteGlobal(fileName: string): boolean {
     const globalPath = getGlobalMemoryPath(this.projectRoot);
     const filePath = path.join(globalPath, this.normalizeFileName(fileName));
-
-    if (fileExists(filePath)) {
+    try {
       fs.unlinkSync(filePath);
       return true;
+    } catch (err: unknown) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw err;
     }
-    return false;
   }
 
   // -- Global memory (project-scoped, not feature-scoped) --
