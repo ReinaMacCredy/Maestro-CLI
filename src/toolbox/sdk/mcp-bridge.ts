@@ -1,11 +1,48 @@
 /**
  * MCP Bridge -- maps MCP tool names to port method calls.
- * Scaffolding for Sprint 3; actual port implementations via bridge in Sprint 4.
+ * Production-ready with JSON extraction helpers and error context.
  */
 
 import type { McpTransport, McpToolResult } from './mcp-transport.ts';
 
 export type ToolMapping<T> = (result: McpToolResult) => T;
+
+// ============================================================================
+// Extraction Helpers
+// ============================================================================
+
+/** Safely extract text from the first content item of an MCP tool result. */
+export function extractText(result: McpToolResult): string {
+  return result.content?.[0]?.text ?? '';
+}
+
+/** Extract and parse JSON from the first content item. Throws on parse failure. */
+export function extractJson<T>(result: McpToolResult): T {
+  const text = extractText(result);
+  if (!text) throw new Error('MCP tool returned empty content');
+  return JSON.parse(text) as T;
+}
+
+// ============================================================================
+// Port Method Registry (for discovery suggestions)
+// ============================================================================
+
+const PORT_METHODS: Record<string, string[]> = {
+  search: ['searchSessions', 'findRelatedSessions'],
+  graph: ['getInsights', 'getNextRecommendation', 'getExecutionPlan'],
+  tasks: ['create', 'get', 'list', 'claim', 'done', 'block', 'unblock'],
+  handoff: ['buildHandoff', 'sendHandoff', 'receiveHandoffs', 'acknowledgeHandoff'],
+};
+
+export interface SuggestedMapping {
+  mcpTool: string;
+  portMethod: string;
+  confidence: number;
+}
+
+// ============================================================================
+// McpBridge
+// ============================================================================
 
 /**
  * McpBridge auto-bridges MCP tools to port method calls.
@@ -14,7 +51,7 @@ export type ToolMapping<T> = (result: McpToolResult) => T;
 export class McpBridge {
   private transport: McpTransport;
   private mappings: Map<string, ToolMapping<unknown>> = new Map();
-  private reverseMap: Map<string, string> = new Map(); // portMethod -> mcpTool
+  private reverseMap: Map<string, string> = new Map();
 
   constructor(transport: McpTransport) {
     this.transport = transport;
@@ -22,9 +59,6 @@ export class McpBridge {
 
   /**
    * Register a mapping from MCP tool name to a result transformer.
-   * @param mcpToolName - Name of the MCP tool to call
-   * @param transform - Transforms McpToolResult into the port's expected return type
-   * @param portMethodName - Optional: associate with a port method name for reverse lookup
    */
   mapTool<T>(mcpToolName: string, transform: ToolMapping<T>, portMethodName?: string): this {
     this.mappings.set(mcpToolName, transform as ToolMapping<unknown>);
@@ -36,6 +70,7 @@ export class McpBridge {
 
   /**
    * Call an MCP tool and transform the result.
+   * Wraps transform errors with tool name context.
    */
   async call<T>(mcpToolName: string, args: Record<string, unknown> = {}): Promise<T> {
     const transform = this.mappings.get(mcpToolName);
@@ -43,7 +78,16 @@ export class McpBridge {
       throw new Error(`No mapping registered for MCP tool: ${mcpToolName}`);
     }
     const result = await this.transport.callTool(mcpToolName, args);
-    return transform(result) as T;
+    if (result.isError) {
+      throw new Error(`MCP tool '${mcpToolName}' returned error: ${extractText(result)}`);
+    }
+    try {
+      return transform(result) as T;
+    } catch (e) {
+      throw new Error(
+        `Transform failed for MCP tool '${mcpToolName}': ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   }
 
   /**
@@ -65,6 +109,30 @@ export class McpBridge {
   /** Discover available tools from the MCP server. */
   async discoverTools(): Promise<Array<{ name: string; description?: string }>> {
     return this.transport.listTools();
+  }
+
+  /**
+   * Discover MCP tools and suggest port method mappings based on name similarity.
+   */
+  async discoverAndSuggest(portName: string): Promise<SuggestedMapping[]> {
+    const methods = PORT_METHODS[portName];
+    if (!methods) return [];
+
+    const tools = await this.discoverTools();
+    const suggestions: SuggestedMapping[] = [];
+
+    for (const tool of tools) {
+      const toolNorm = tool.name.toLowerCase().replace(/[_-]/g, '');
+      for (const method of methods) {
+        const methodNorm = method.toLowerCase();
+        // Simple substring match for suggestion
+        if (toolNorm.includes(methodNorm) || methodNorm.includes(toolNorm)) {
+          suggestions.push({ mcpTool: tool.name, portMethod: method, confidence: 0.8 });
+        }
+      }
+    }
+
+    return suggestions;
   }
 
   /** Close the underlying transport. */
