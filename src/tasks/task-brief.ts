@@ -7,7 +7,7 @@
 import type { TaskPort, RichTaskFields } from './port.ts';
 import type { GraphPort } from '../tasks/graph/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
-import type { ConfigPort } from '../core/config.ts';
+import type { SettingsPort } from '../core/settings.ts';
 import type { MemoryFileWithMeta } from '../core/types.ts';
 import type { TaskWithDeps } from '../tasks/graph/dependency.ts';
 import { selectMemories, type SelectedContext } from '../dcp/selector.ts';
@@ -25,7 +25,7 @@ export interface TaskBriefParams {
   taskPort: TaskPort;
   featureAdapter: { get(name: string): { name: string; createdAt?: string } | null };
   memoryAdapter: { listWithMeta(feature: string): MemoryFileWithMeta[] };
-  configAdapter: ConfigPort;
+  settingsPort: SettingsPort;
   directory: string;
   graphPort?: GraphPort;
   doctrinePort?: DoctrinePort;
@@ -62,7 +62,7 @@ export async function taskBrief(
   feature: string,
   taskFolder: string,
 ): Promise<TaskBriefResult> {
-  const { taskPort, featureAdapter, memoryAdapter, configAdapter, directory } = params;
+  const { taskPort, featureAdapter, memoryAdapter, settingsPort, directory } = params;
 
   // 1. Get task -- fail if not found
   const task = await taskPort.get(feature, taskFolder);
@@ -134,8 +134,8 @@ export async function taskBrief(
   }
 
   // 8. DCP-scored memories
-  const config = configAdapter.get();
-  const dcpConfig = resolveDcpConfig(config.dcp);
+  const settings = settingsPort.get();
+  const dcpConfig = resolveDcpConfig(settings.dcp);
   const allTasks: TaskWithDeps[] = allTasksResult.status === 'fulfilled'
     ? allTasksResult.value.map(t => ({ folder: t.folder, status: t.status, dependsOn: t.dependsOn }))
     : [];
@@ -172,7 +172,7 @@ export async function taskBrief(
   let doctrine: Array<{ name: string; rule: string; rationale: string }> = [];
   try {
     if (params.doctrinePort) {
-      const doctrineConfig = resolveDoctrineConfig(config.doctrine);
+      const doctrineConfig = resolveDoctrineConfig(settings.doctrine);
       if (doctrineConfig.enabled) {
         const derivedTags = deriveFolderTags(taskFolder);
         const specKeywords = extractKeywords(spec);

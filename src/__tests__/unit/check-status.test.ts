@@ -39,8 +39,8 @@ describe('checkStatus', () => {
       memoryAdapter: {
         stats: () => ({ count: 0, totalBytes: 0 }),
       },
-      configAdapter: {
-        get: () => ({ claimExpiresMinutes: 120 }),
+      settingsPort: {
+        get: () => ({ tasks: { claimExpiresMinutes: 120, backend: 'auto' }, dcp: { enabled: true, memoryBudgetTokens: 1024, completedTaskBudgetTokens: 512, relevanceThreshold: 0.1, observationMasking: true, handoffDecisionBudgetTokens: 512 } }),
       },
       directory: tmpDir,
     } as any;

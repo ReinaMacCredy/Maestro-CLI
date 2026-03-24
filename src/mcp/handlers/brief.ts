@@ -32,7 +32,7 @@ export function registerBriefTools(server: McpServer, thunk: ServicesThunk): voi
         taskPort: services.taskPort,
         featureAdapter: services.featureAdapter,
         memoryAdapter: services.memoryAdapter,
-        configAdapter: services.configAdapter,
+        settingsPort: services.settingsPort,
         directory: services.directory,
         graphPort: services.graphPort,
         doctrinePort: services.doctrinePort,

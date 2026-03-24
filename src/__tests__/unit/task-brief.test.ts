@@ -10,7 +10,7 @@ function makeParams(overrides?: Partial<TaskBriefParams>): TaskBriefParams {
       get: () => ({ name: 'feat', createdAt: new Date().toISOString() }),
     },
     memoryAdapter: { listWithMeta: () => [] },
-    configAdapter: { get: () => ({}) },
+    settingsPort: { get: () => ({ dcp: { enabled: true, memoryBudgetTokens: 1024, completedTaskBudgetTokens: 512, relevanceThreshold: 0.1, observationMasking: true, handoffDecisionBudgetTokens: 512 }, doctrine: { enabled: true, doctrineBudgetTokens: 256, maxSuggestionsPerFeature: 5, crossFeatureScanLimit: 20, minSampleSize: 5 }, verification: { enabled: true, autoReject: true, maxRevisions: 2, scoreThreshold: 0.7, buildTimeoutMs: 30000 }, toolbox: { allow: [], deny: [], config: {} }, agentTools: { allow: [], deny: [], config: {} }, tasks: { claimExpiresMinutes: 120, backend: 'auto' as const } }), getToolConfig: () => ({}) },
     directory: '/tmp/test-brief',
     ...overrides,
   };

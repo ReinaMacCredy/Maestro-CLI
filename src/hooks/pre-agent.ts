@@ -203,10 +203,10 @@ async function main(): Promise<void> {
       .filter(t => t.status === 'done' && t.summary)
       .map(t => ({ name: t.name, summary: t.summary! }));
 
-    // Read configs
-    const config = services.configAdapter.get();
-    const dcpConfig = config.dcp;
-    const doctrineConfig = config.doctrine;
+    // Read configs from settings (v2)
+    const settings = services.settingsPort.get();
+    const dcpConfig = settings.dcp;
+    const doctrineConfig = settings.doctrine;
 
     // Get feature creation time for recency scoring (from activeFeature, already fetched)
     const featureCreatedAt = activeFeature.createdAt;

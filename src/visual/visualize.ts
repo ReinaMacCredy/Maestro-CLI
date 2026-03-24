@@ -105,13 +105,13 @@ async function gatherMemoryMap(feature: string, services: MaestroServices): Prom
 }
 
 async function gatherExecutionTimeline(feature: string, services: MaestroServices): Promise<ExecutionTimelineData> {
-  const config = services.configAdapter.get();
+  const settings = services.settingsPort.get();
   const result = await executionInsights(
     feature,
     services.taskPort,
     services.memoryAdapter,
     services.doctrinePort,
-    config.doctrine,
+    settings.doctrine,
   );
 
   return {

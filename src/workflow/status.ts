@@ -13,7 +13,7 @@ import type { HandoffPort } from '../handoff/port.ts';
 import { countTaskStatuses, getNextAction } from './stages.ts';
 import { computeRunnableAndBlocked } from '../tasks/graph/dependency.ts';
 import { MaestroError } from '../core/errors.ts';
-import type { ConfigPort } from '../core/config.ts';
+import type { SettingsPort } from '../core/settings.ts';
 import { type TaskInfo, type FeatureStatusType, type PlanComment } from '../core/types.ts';
 import { resolveDcpConfig } from '../dcp/config.ts';
 
@@ -22,7 +22,7 @@ export interface StatusServices {
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
-  configAdapter: ConfigPort;
+  settingsPort: SettingsPort;
   directory: string;
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
@@ -72,7 +72,7 @@ export async function checkStatus(
   services: StatusServices,
   featureName: string,
 ): Promise<StatusResult> {
-  const { taskPort, featureAdapter, planAdapter, memoryAdapter, configAdapter } = services;
+  const { taskPort, featureAdapter, planAdapter, memoryAdapter, settingsPort } = services;
   const feature = featureAdapter.get(featureName);
   if (!feature) {
     throw new MaestroError(`Feature '${featureName}' not found`);
@@ -83,10 +83,10 @@ export async function checkStatus(
   const memoryStats = memoryAdapter.stats(featureName);
   const comments = plan?.comments || [];
 
-  const config = configAdapter.get();
+  const settings = settingsPort.get();
 
   // Detect expired claims
-  const claimExpiresMinutes = config.claimExpiresMinutes ?? 120;
+  const claimExpiresMinutes = settings.tasks.claimExpiresMinutes;
   const expiryMs = claimExpiresMinutes * 60 * 1000;
   const now = Date.now();
   const expiredClaims = tasks
@@ -110,7 +110,7 @@ export async function checkStatus(
     runnableFolders,
   );
 
-  const dcpCfg = resolveDcpConfig(config.dcp);
+  const dcpCfg = resolveDcpConfig(settings.dcp);
 
   return {
     feature: {
