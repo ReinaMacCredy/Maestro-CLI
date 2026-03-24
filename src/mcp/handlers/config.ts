@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
+import type { ServicesThunk } from '../services-thunk.ts';
+import { respond, withErrorHandling } from '../respond.ts';
+import { ANNOTATIONS_READONLY } from '../annotations.ts';
 
 const REDACT_PATTERN = /apiKey|token|secret|password/i;
 

@@ -3,7 +3,7 @@
  * Forked from packages/claude-hive/src/utils/respond.ts
  */
 
-import { MaestroError } from '../../core/errors.ts';
+import { MaestroError } from '../core/errors.ts';
 
 type McpResponse = { content: Array<{ type: 'text'; text: string }> };
 

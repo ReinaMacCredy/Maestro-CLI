@@ -4,14 +4,14 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
-import { requireFeature } from './_utils/resolve.ts';
-import { featureParam, taskParam } from './_utils/params.ts';
-import { pruneContext } from '../dcp/prune-context.ts';
-import { resolveDcpConfig } from '../dcp/config.ts';
-import { WORKER_RULES } from '../tasks/worker-rules.ts';
+import type { ServicesThunk } from '../services-thunk.ts';
+import { respond, withErrorHandling } from '../respond.ts';
+import { ANNOTATIONS_READONLY } from '../annotations.ts';
+import { requireFeature } from './_resolve.ts';
+import { featureParam, taskParam } from '../params.ts';
+import { pruneContext } from '../../dcp/prune-context.ts';
+import { resolveDcpConfig } from '../../dcp/config.ts';
+import { WORKER_RULES } from '../../tasks/worker-rules.ts';
 
 export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

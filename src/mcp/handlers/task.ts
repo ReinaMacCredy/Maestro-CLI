@@ -1,19 +1,19 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { requireFeature } from './_utils/resolve.ts';
-import { featureParam, taskParam } from './_utils/params.ts';
-import { syncPlan } from '../tasks/sync-plan.ts';
-import { translatePlan } from '../tasks/translate-plan.ts';
-import { verifyTask } from '../tasks/verify-task.ts';
-import { resolveVerificationConfig } from '../tasks/verification/config.ts';
-import type { ListOpts, TaskPort } from '../tasks/port.ts';
-import type { TaskStatusType } from '../core/types.ts';
-import { writeExecutionMemory } from '../memory/execution/writer.ts';
-import { resolveTaskBackend } from '../core/resolve-backend.ts';
-import { buildTransitionHint, type TransitionHint } from '../workflow/playbook.ts';
+import type { ServicesThunk } from '../services-thunk.ts';
+import { respond, withErrorHandling } from '../respond.ts';
+import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
+import { requireFeature } from './_resolve.ts';
+import { featureParam, taskParam } from '../params.ts';
+import { syncPlan } from '../../tasks/sync-plan.ts';
+import { translatePlan } from '../../tasks/translate-plan.ts';
+import { verifyTask } from '../../tasks/verify-task.ts';
+import { resolveVerificationConfig } from '../../tasks/verification/config.ts';
+import type { ListOpts, TaskPort } from '../../tasks/port.ts';
+import type { TaskStatusType } from '../../core/types.ts';
+import { writeExecutionMemory } from '../../memory/execution/writer.ts';
+import { resolveTaskBackend } from '../../core/resolve-backend.ts';
+import { buildTransitionHint, type TransitionHint } from '../../workflow/playbook.ts';
 
 async function maybeFinalTaskHint(
   taskPort: TaskPort, feature: string, tool: 'task_done' | 'task_accept',

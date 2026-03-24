@@ -1,16 +1,16 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_MUTATING, ANNOTATIONS_DESTRUCTIVE, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
-import { requireFeature } from './_utils/resolve.ts';
-import { featureParam } from './_utils/params.ts';
-import { MaestroError } from '../core/errors.ts';
-import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
-import { validateName } from '../core/validate-name.ts';
-import { selectMemories } from '../dcp/selector.ts';
-import { resolveDcpConfig } from '../dcp/config.ts';
-import { MEMORY_CATEGORIES } from '../core/types.ts';
+import type { ServicesThunk } from '../services-thunk.ts';
+import { respond, withErrorHandling } from '../respond.ts';
+import { ANNOTATIONS_MUTATING, ANNOTATIONS_DESTRUCTIVE, ANNOTATIONS_READONLY } from '../annotations.ts';
+import { requireFeature } from './_resolve.ts';
+import { featureParam } from '../params.ts';
+import { MaestroError } from '../../core/errors.ts';
+import { prependMetadataFrontmatter } from '../../core/frontmatter.ts';
+import { validateName } from '../../core/validate-name.ts';
+import { selectMemories } from '../../dcp/selector.ts';
+import { resolveDcpConfig } from '../../dcp/config.ts';
+import { MEMORY_CATEGORIES } from '../../core/types.ts';
 
 export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

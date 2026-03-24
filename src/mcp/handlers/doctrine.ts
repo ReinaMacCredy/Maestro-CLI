@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ServicesThunk } from './_utils/services-thunk.ts';
-import { respond, withErrorHandling } from './_utils/respond.ts';
-import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
-import { requireDoctrinePort as requireDoctrinePortShared } from '../core/resolve.ts';
-import { buildDoctrineItem } from '../doctrine/factory.ts';
-import { MaestroError } from '../core/errors.ts';
-import { suggestDoctrine } from '../doctrine/suggest.ts';
+import type { ServicesThunk } from '../services-thunk.ts';
+import { respond, withErrorHandling } from '../respond.ts';
+import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
+import { requireDoctrinePort as requireDoctrinePortShared } from '../../core/resolve.ts';
+import { buildDoctrineItem } from '../../doctrine/factory.ts';
+import { MaestroError } from '../../core/errors.ts';
+import { suggestDoctrine } from '../../doctrine/suggest.ts';
 
 function requireDoctrinePort(thunk: ServicesThunk) {
   return requireDoctrinePortShared(thunk.get());

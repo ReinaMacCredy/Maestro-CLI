@@ -6,8 +6,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { initServices, type MaestroServices } from '../../services.ts';
-import { MaestroError } from '../../core/errors.ts';
+import { initServices, type MaestroServices } from '../services.ts';
+import { MaestroError } from '../core/errors.ts';
 
 export interface ServicesThunk {
   /** Get or initialize services. Throws if .maestro/ is missing. */

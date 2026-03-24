@@ -282,7 +282,7 @@ describe('conditional tool registration', () => {
 // ---------------------------------------------------------------------------
 describe('shared Zod params', () => {
   test('featureParam produces correct schema', async () => {
-    const { featureParam } = await import('../../server/_utils/params.ts');
+    const { featureParam } = await import('../../mcp/params.ts');
     const schema = featureParam();
     // Should be optional string
     expect(schema.isOptional()).toBe(true);
@@ -293,7 +293,7 @@ describe('shared Zod params', () => {
   });
 
   test('taskParam produces required string schema', async () => {
-    const { taskParam } = await import('../../server/_utils/params.ts');
+    const { taskParam } = await import('../../mcp/params.ts');
     const schema = taskParam();
     expect(schema.isOptional()).toBe(false);
     const fail = schema.safeParse(undefined);
@@ -303,7 +303,7 @@ describe('shared Zod params', () => {
   });
 
   test('limitParam produces optional number with default', async () => {
-    const { limitParam } = await import('../../server/_utils/params.ts');
+    const { limitParam } = await import('../../mcp/params.ts');
     const schema = limitParam(10);
     expect(schema.isOptional()).toBe(true);
     const result = schema.parse(undefined);

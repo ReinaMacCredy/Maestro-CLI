@@ -31,7 +31,7 @@ async function build() {
   // Step 1: Server bundle (Node target, ESM)
   console.log('[build] Bundling MCP server...');
   checkBuild(await Bun.build({
-    entrypoints: ['./src/server.ts'],
+    entrypoints: ['./src/mcp/index.ts'],
     outdir: './dist',
     target: 'node',
     format: 'esm',
