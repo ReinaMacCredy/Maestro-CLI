@@ -91,3 +91,17 @@ export function selectMemories(
     scores,
   };
 }
+
+/**
+ * Record DCP selections on the memory adapter.
+ * Call after selectMemories() to track selection frequency in frontmatter.
+ */
+export function recordSelections(
+  memoryAdapter: { recordSelection(feature: string, name: string): void },
+  feature: string,
+  selectedNames: string[],
+): void {
+  for (const name of selectedNames) {
+    try { memoryAdapter.recordSelection(feature, name); } catch { /* best-effort */ }
+  }
+}

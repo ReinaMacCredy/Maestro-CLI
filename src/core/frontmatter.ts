@@ -124,12 +124,14 @@ export function serializeFrontmatter(meta: Record<string, unknown>): string {
  */
 export function prependMetadataFrontmatter(
   content: string,
-  opts: { tags?: string[]; priority?: number; category?: string },
+  opts: { tags?: string[]; priority?: number; category?: string; selectionCount?: number; lastSelectedAt?: string },
 ): string {
   const meta: Record<string, unknown> = {};
   if (opts.tags?.length) meta.tags = opts.tags;
   if (opts.priority !== undefined) meta.priority = opts.priority;
   if (opts.category) meta.category = opts.category;
+  if (opts.selectionCount !== undefined) meta.selectionCount = opts.selectionCount;
+  if (opts.lastSelectedAt) meta.lastSelectedAt = opts.lastSelectedAt;
   if (Object.keys(meta).length === 0) return content;
   return serializeFrontmatter(meta) + '\n' + content;
 }

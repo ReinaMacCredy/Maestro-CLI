@@ -10,7 +10,7 @@ import { getMemoryPath, getGlobalMemoryPath } from '../core/paths.ts';
 import { ensureDir, fileExists, readText, writeText } from '../core/fs-io.ts';
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
-import { parseFrontmatterRich, stripFrontmatter } from '../core/frontmatter.ts';
+import { parseFrontmatterRich, stripFrontmatter, prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { inferMetadata } from '../memory/execution/inference.ts';
 
 export class FsMemoryAdapter implements MemoryPort {
@@ -113,6 +113,29 @@ export class FsMemoryAdapter implements MemoryPort {
     return this._list(globalPath);
   }
 
+  /**
+   * Record that a memory was selected by DCP. Increments selectionCount
+   * and updates lastSelectedAt in frontmatter.
+   */
+  recordSelection(featureName: string, fileName: string): void {
+    const memoryPath = getMemoryPath(this.projectRoot, featureName);
+    const filePath = path.join(memoryPath, this.normalizeFileName(fileName));
+    const content = readText(filePath);
+    if (!content) return;
+
+    const parsed = parseFrontmatterRich(content);
+    const metadata: MemoryMetadata = (parsed ?? {}) as MemoryMetadata;
+    const body = stripFrontmatter(content);
+    const newMeta: MemoryMetadata = {
+      ...metadata,
+      selectionCount: (metadata.selectionCount ?? 0) + 1,
+      lastSelectedAt: new Date().toISOString(),
+    };
+
+    const updated = prependMetadataFrontmatter(body, newMeta);
+    writeText(filePath, updated);
+  }
+
   // -- Shared helpers --
 
   private _write(dir: string, fileName: string, content: string): string {
@@ -174,11 +197,20 @@ export class FsMemoryAdapter implements MemoryPort {
     const bodyContent = stripFrontmatter(file.content);
     const parsed = parseFrontmatterRich(file.content);
 
-    // Short-circuit: skip inference when frontmatter provides all fields
+    // Extract lifecycle fields from frontmatter (if present)
+    const selectionCount = parsed && typeof parsed.selectionCount === 'number' ? parsed.selectionCount : undefined;
+    const lastSelectedAt = parsed && typeof parsed.lastSelectedAt === 'string' ? parsed.lastSelectedAt : undefined;
+
+    // Short-circuit: skip inference when frontmatter provides all core fields
     if (parsed && Array.isArray(parsed.tags) && typeof parsed.priority === 'number' && typeof parsed.category === 'string') {
       return {
         ...file, bodyContent,
-        metadata: { tags: parsed.tags as string[], priority: parsed.priority, category: parsed.category as MemoryMetadata['category'] },
+        metadata: {
+          tags: parsed.tags as string[], priority: parsed.priority,
+          category: parsed.category as MemoryMetadata['category'],
+          ...(selectionCount !== undefined ? { selectionCount } : {}),
+          ...(lastSelectedAt !== undefined ? { lastSelectedAt } : {}),
+        },
       };
     }
 
@@ -189,6 +221,8 @@ export class FsMemoryAdapter implements MemoryPort {
       category: parsed && typeof parsed.category === 'string'
         ? parsed.category as MemoryMetadata['category']
         : inferred.category,
+      ...(selectionCount !== undefined ? { selectionCount } : {}),
+      ...(lastSelectedAt !== undefined ? { lastSelectedAt } : {}),
     };
 
     return { ...file, metadata, bodyContent };

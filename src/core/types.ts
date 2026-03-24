@@ -108,6 +108,8 @@ export interface MemoryMetadata {
   tags?: string[];
   priority?: number;       // 0 (highest) to 4 (lowest), default 2
   category?: MemoryCategory;
+  selectionCount?: number;   // DCP selection frequency (incremented on each inclusion)
+  lastSelectedAt?: string;   // ISO timestamp of last DCP selection
 }
 
 export interface MemoryFileWithMeta extends MemoryFile {
