@@ -4,8 +4,8 @@ import {
   validateDependencyGraph,
   resolveDependencies,
   extractPlanOutline,
-} from "../../utils/plan-parser";
-import type { ParsedTask } from "../../utils/plan-parser";
+} from "../../plans/parser.ts";
+import type { ParsedTask } from "../../plans/parser.ts";
 
 describe("parseTasksFromPlan", () => {
   test("parses numbered headings into tasks", () => {

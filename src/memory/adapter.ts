@@ -11,7 +11,7 @@ import { ensureDir, fileExists, readText, writeText } from '../core/fs-io.ts';
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
 import { parseFrontmatterRich, stripFrontmatter } from '../core/frontmatter.ts';
-import { inferMetadata } from '../utils/memory-inference.ts';
+import { inferMetadata } from '../memory/execution/inference.ts';
 
 export class FsMemoryAdapter implements MemoryPort {
   constructor(private projectRoot: string) {}

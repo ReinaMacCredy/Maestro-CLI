@@ -16,10 +16,10 @@ import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir
 import { ensureDir } from '../core/fs-io.ts';
 import { initServices } from '../services.ts';
 import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
-import { WORKER_RULES } from '../utils/worker-rules.ts';
-import { deriveFolderTags } from '../utils/execution-memory.ts';
+import { WORKER_RULES } from '../tasks/worker-rules.ts';
+import { deriveFolderTags } from '../memory/execution/writer.ts';
 import { extractKeywords } from '../dcp/relevance.ts';
-import { appendDoctrineTrace } from '../utils/doctrine-trace.ts';
+import { appendDoctrineTrace } from '../doctrine/trace.ts';
 import type { DoctrineItem } from '../doctrine/port.ts';
 import type { TaskInfo } from '../core/types.ts';
 import type { RichTaskFields } from '../tasks/port.ts';

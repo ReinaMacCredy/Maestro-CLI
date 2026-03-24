@@ -5,7 +5,7 @@
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../../core/types.ts';
 import type { MemoryPort } from '../../memory/port.ts';
 import { parseFrontmatterRich, stripFrontmatter } from '../../core/frontmatter.ts';
-import { inferMetadata } from '../../utils/memory-inference.ts';
+import { inferMetadata } from '../../memory/execution/inference.ts';
 
 interface StoredMemory {
   name: string;

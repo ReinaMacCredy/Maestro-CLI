@@ -15,10 +15,10 @@
 import type { TaskPort } from '../tasks/port.ts';
 import type { VerificationPort, VerificationReport, VerificationCriterion } from '../tasks/verification/port.ts';
 import type { MemoryPort } from '../memory/port.ts';
-import type { ResolvedVerificationConfig } from '../utils/verification-config.ts';
+import type { ResolvedVerificationConfig } from '../tasks/verification/config.ts';
 import type { TaskInfo } from '../core/types.ts';
 import { prependMetadataFrontmatter } from '../core/frontmatter.ts';
-import { writeExecutionMemory } from '../utils/execution-memory.ts';
+import { writeExecutionMemory } from '../memory/execution/writer.ts';
 
 export interface VerifyTaskOpts {
   taskPort: TaskPort;

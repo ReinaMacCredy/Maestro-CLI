@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { formatRichContext, formatGraphContext } from '../../hooks/pre-agent.ts';
-import { WORKER_RULES } from '../../utils/worker-rules.ts';
+import { WORKER_RULES } from '../../tasks/worker-rules.ts';
 import { pruneContext } from '../../usecases/prune-context.ts';
 import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 

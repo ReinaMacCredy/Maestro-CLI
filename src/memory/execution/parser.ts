@@ -4,7 +4,7 @@
  */
 
 import type { FeaturePort } from '../features/port.ts';
-import { parseFrontmatterRich, stripFrontmatter } from '../core/frontmatter.ts';
+import { parseFrontmatterRich, stripFrontmatter } from '../../core/frontmatter.ts';
 
 export interface ParsedExecMemory {
   summary: string;

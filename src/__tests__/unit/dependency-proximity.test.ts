@@ -3,8 +3,8 @@ import {
   scoreDependencyProximity,
   extractSourceTask,
   buildDownstreamMap,
-} from '../../utils/dependency-proximity.ts';
-import type { TaskWithDeps } from '../../utils/task-dependency-graph.ts';
+} from '../../tasks/graph/proximity.ts';
+import type { TaskWithDeps } from '../../tasks/graph/dependency.ts';
 
 /**
  * Build task list. Pass `null` for deps to use implicit sequential ordering

@@ -6,11 +6,11 @@
 import type { TaskPort } from '../tasks/port.ts';
 import type { MemoryPort } from '../memory/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
-import { buildDownstreamMap, extractSourceTask, scoreDependencyProximity } from '../utils/dependency-proximity.ts';
-import type { TaskWithDeps } from '../utils/task-dependency-graph.ts';
-import { isExecutionMemory } from '../utils/execution-memory.ts';
-import { parseExecMemory } from '../utils/parse-exec-memory.ts';
-import { resolveDoctrineConfig } from '../utils/doctrine-config.ts';
+import { buildDownstreamMap, extractSourceTask, scoreDependencyProximity } from '../tasks/graph/proximity.ts';
+import type { TaskWithDeps } from '../tasks/graph/dependency.ts';
+import { isExecutionMemory } from '../memory/execution/writer.ts';
+import { parseExecMemory } from '../memory/execution/parser.ts';
+import { resolveDoctrineConfig } from '../doctrine/config.ts';
 import type { HiveConfig } from '../core/types.ts';
 
 export interface ExecutionInsight {

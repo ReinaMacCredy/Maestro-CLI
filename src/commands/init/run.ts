@@ -7,7 +7,7 @@ import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { getMaestroPath } from '../../core/paths.ts';
 import { ensureDir } from '../../core/fs-io.ts';
-import { findProjectRoot } from '../../utils/detection.ts';
+import { findProjectRoot } from '../../features/detection.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
 import { FsConfigAdapter } from '../../core/config.ts';
 import * as fs from 'fs';

@@ -16,7 +16,7 @@ import { tmpdir } from 'os';
 import { execSync } from 'child_process';
 import { initServices, type MaestroServices } from '../../services.ts';
 import { syncPlan } from '../../usecases/sync-plan.ts';
-import { extractPlanOutline } from '../../utils/plan-parser.ts';
+import { extractPlanOutline } from '../../plans/parser.ts';
 import type { MemoryFile } from '../../core/types.ts';
 
 let dir: string;
@@ -258,7 +258,7 @@ describe('plan_read response modes', () => {
 describe('status response modes', () => {
   test('researchTools detection function exists and returns array', async () => {
     // Import the function used by the status handler
-    const { detectResearchTools } = await import('../../utils/research-tools.ts');
+    const { detectResearchTools } = await import('../../workflow/research-tools.ts');
     const tools = detectResearchTools(dir);
     expect(Array.isArray(tools)).toBe(true);
   });

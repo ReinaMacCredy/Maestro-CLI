@@ -22,7 +22,7 @@ import { checkCli } from './lib/cli-detect.ts';
 import { resolveTaskBackend } from './core/resolve-backend.ts';
 import type { ConfigBackend, ResolvedBackend } from './core/resolve-backend.ts';
 import { FsVerificationAdapter } from './tasks/verification/adapter.ts';
-import { resolveVerificationConfig } from './utils/verification-config.ts';
+import { resolveVerificationConfig } from './tasks/verification/config.ts';
 import type { TaskPort } from './tasks/port.ts';
 import type { VerificationPort } from './tasks/verification/port.ts';
 import type { FeaturePort } from './features/port.ts';

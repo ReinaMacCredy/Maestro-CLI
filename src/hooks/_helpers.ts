@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { findProjectRoot } from '../utils/detection.ts';
+import { findProjectRoot } from '../features/detection.ts';
 import { ensureDir } from '../core/fs-io.ts';
 
 /** Parse JSON from stdin. Returns {} on parse failure. */

@@ -2,10 +2,10 @@
  * Task dependency checking for maestroCLI.
  */
 
-import { buildEffectiveDependencies } from './task-dependency-graph.ts';
-import type { TaskPort } from '../tasks/transitions.ts';
-import { isDependencySatisfied } from '../tasks/transitions.ts';
-import type { TaskInfo } from '../core/types.ts';
+import { buildEffectiveDependencies } from './dependency.ts';
+import type { TaskPort } from '../port.ts';
+import { isDependencySatisfied } from '../transitions.ts';
+import type { TaskInfo } from '../../core/types.ts';
 
 /**
  * Check if a task's dependencies are satisfied.

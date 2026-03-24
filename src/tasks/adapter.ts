@@ -25,7 +25,7 @@ import type { VerificationReport } from './verification/port.ts';
 import { ensureDir, readJson, readText, writeText } from '../core/fs-io.ts';
 import { writeJsonAtomic } from '../core/fs-io.ts';
 import { buildTaskFolder } from '../core/slug.ts';
-import { extractDesignNotes, extractAcceptanceCriteria } from '../utils/bead-builder.ts';
+import { extractDesignNotes, extractAcceptanceCriteria } from './bead-builder.ts';
 import * as fs from 'fs';
 
 export class FsTaskAdapter implements TaskPort {

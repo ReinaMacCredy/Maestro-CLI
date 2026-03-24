@@ -6,7 +6,7 @@
 
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { translatePlan, type TranslatePlanServices } from '../../usecases/translate-plan.ts';
-import { buildBeadOpts } from '../../utils/bead-builder.ts';
+import { buildBeadOpts } from '../../tasks/bead-builder.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
 import type { PlanPort } from '../../plans/port.ts';

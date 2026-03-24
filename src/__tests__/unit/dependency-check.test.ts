@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { InMemoryTaskPort } from "../mocks/in-memory-task-port";
-import { checkDependencies } from "../../utils/dependency-check";
+import { checkDependencies } from "../../tasks/graph/check.ts";
 
 describe("checkDependencies", () => {
   const feature = "test-feature";

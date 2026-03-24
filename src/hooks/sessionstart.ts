@@ -1,9 +1,9 @@
 import { readStdin, writeOutput, resolveProjectDir, logHookError, HOOK_EVENTS } from './_helpers.ts';
 import { initServices } from '../services.ts';
 import { checkStatus } from '../usecases/check-status.ts';
-import { detectResearchTools } from '../utils/research-tools.ts';
-import { derivePipelineStage, type PipelineStage } from '../utils/workflow.ts';
-import { buildPlaybook, buildPlaybookWithExternalSkills } from '../utils/playbook.ts';
+import { detectResearchTools } from '../workflow/research-tools.ts';
+import { derivePipelineStage, type PipelineStage } from '../workflow/stages.ts';
+import { buildPlaybook, buildPlaybookWithExternalSkills } from '../workflow/playbook.ts';
 
 const HOOK_NAME = 'sessionstart';
 

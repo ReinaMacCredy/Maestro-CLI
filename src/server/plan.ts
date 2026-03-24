@@ -8,8 +8,8 @@ import { featureParam } from './_utils/params.ts';
 import { writePlan } from '../usecases/write-plan.ts';
 import { approvePlan } from '../usecases/approve-plan.ts';
 import { MaestroError } from '../core/errors.ts';
-import { buildTransitionHint } from '../utils/playbook.ts';
-import { extractPlanOutline } from '../utils/plan-parser.ts';
+import { buildTransitionHint } from '../workflow/playbook.ts';
+import { extractPlanOutline } from '../plans/parser.ts';
 
 export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

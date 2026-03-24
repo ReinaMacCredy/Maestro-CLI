@@ -4,7 +4,7 @@
  */
 
 import type { MemoryFileWithMeta, TaskInfo } from '../core/types.ts';
-import { extractSourceTask, scoreDependencyProximity } from '../utils/dependency-proximity.ts';
+import { extractSourceTask, scoreDependencyProximity } from '../tasks/graph/proximity.ts';
 
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'will', 'are',

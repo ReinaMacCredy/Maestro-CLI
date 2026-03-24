@@ -8,12 +8,12 @@ import { featureParam, taskParam } from './_utils/params.ts';
 import { syncPlan } from '../usecases/sync-plan.ts';
 import { translatePlan } from '../usecases/translate-plan.ts';
 import { verifyTask } from '../usecases/verify-task.ts';
-import { resolveVerificationConfig } from '../utils/verification-config.ts';
+import { resolveVerificationConfig } from '../tasks/verification/config.ts';
 import type { ListOpts, TaskPort } from '../tasks/port.ts';
 import type { TaskStatusType } from '../core/types.ts';
-import { writeExecutionMemory } from '../utils/execution-memory.ts';
+import { writeExecutionMemory } from '../memory/execution/writer.ts';
 import { resolveTaskBackend } from '../core/resolve-backend.ts';
-import { buildTransitionHint, type TransitionHint } from '../utils/playbook.ts';
+import { buildTransitionHint, type TransitionHint } from '../workflow/playbook.ts';
 
 async function maybeFinalTaskHint(
   taskPort: TaskPort, feature: string, tool: 'task_done' | 'task_accept',

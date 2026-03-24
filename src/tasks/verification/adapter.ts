@@ -9,7 +9,7 @@
  */
 
 import type { VerificationPort, VerifyParams, VerificationReport, VerificationCriterion } from './port.ts';
-import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
+import type { ResolvedVerificationConfig } from './config.ts';
 import { spawn } from 'child_process';
 import simpleGit from 'simple-git';
 import * as fs from 'fs';

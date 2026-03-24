@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test';
-import { buildPlaybook, buildTransitionHint } from '../../utils/playbook';
+import { buildPlaybook, buildTransitionHint } from '../../workflow/playbook.ts';
 import { BUILTIN_SKILL_NAMES } from '../../skills/registry';
-import type { PipelineStage } from '../../utils/workflow';
+import type { PipelineStage } from '../../workflow/stages.ts';
 
 const ALL_STAGES: PipelineStage[] = ['discovery', 'research', 'planning', 'approval', 'execution', 'done'];
 

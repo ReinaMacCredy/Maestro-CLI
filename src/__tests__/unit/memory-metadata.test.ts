@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { inferMetadata } from '../../utils/memory-inference.ts';
+import { inferMetadata } from '../../memory/execution/inference.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
 
 describe('inferMetadata', () => {

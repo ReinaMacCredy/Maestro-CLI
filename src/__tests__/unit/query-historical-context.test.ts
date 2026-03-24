@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { queryHistoricalContext, type HistoricalContextResult } from '../../usecases/query-historical-context.ts';
-import { buildExecutionMemory } from '../../utils/execution-memory.ts';
+import { buildExecutionMemory } from '../../memory/execution/writer.ts';
 import type { FeaturePort } from '../../features/port.ts';
 import type { MemoryPort } from '../../memory/port.ts';
 import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';

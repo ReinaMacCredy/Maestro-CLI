@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
-import { parseExecMemory } from '../../utils/parse-exec-memory.ts';
-import { buildExecutionMemory } from '../../utils/execution-memory.ts';
+import { parseExecMemory } from '../../memory/execution/parser.ts';
+import { buildExecutionMemory } from '../../memory/execution/writer.ts';
 import type { VerificationReport } from '../../tasks/verification/port.ts';
 
 function makeReport(passed: boolean, score = 1): VerificationReport {

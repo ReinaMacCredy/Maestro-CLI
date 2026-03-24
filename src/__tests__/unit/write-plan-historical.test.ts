@@ -4,7 +4,7 @@ import type { PlanPort } from '../../plans/port.ts';
 import type { FeaturePort } from '../../features/port.ts';
 import type { MemoryPort } from '../../memory/port.ts';
 import type { FeatureJson, MemoryFileWithMeta } from '../../core/types.ts';
-import { buildExecutionMemory } from '../../utils/execution-memory.ts';
+import { buildExecutionMemory } from '../../memory/execution/writer.ts';
 
 const VALID_PLAN = [
   '## Discovery',

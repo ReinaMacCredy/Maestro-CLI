@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireDoctrinePort, parseTags } from '../../core/resolve.ts';
-import { buildDoctrineItem } from '../../utils/doctrine-factory.ts';
+import { buildDoctrineItem } from '../../doctrine/factory.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-approve', description: 'Approve a doctrine suggestion' },

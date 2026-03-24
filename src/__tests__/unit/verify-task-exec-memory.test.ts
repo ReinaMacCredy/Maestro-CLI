@@ -8,7 +8,7 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { verifyTask, type VerifyTaskOpts } from '../../usecases/verify-task.ts';
 import type { VerificationPort, VerificationReport, VerifyParams } from '../../tasks/verification/port.ts';
-import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
+import type { ResolvedVerificationConfig } from '../../tasks/verification/config.ts';
 import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
 
 const FEATURE = 'test-feature';

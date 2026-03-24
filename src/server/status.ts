@@ -6,9 +6,9 @@ import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
 import { checkStatus } from '../usecases/check-status.ts';
-import { detectResearchTools } from '../utils/research-tools.ts';
-import { derivePipelineStage } from '../utils/workflow.ts';
-import { buildPlaybookWithExternalSkills } from '../utils/playbook.ts';
+import { detectResearchTools } from '../workflow/research-tools.ts';
+import { derivePipelineStage } from '../workflow/stages.ts';
+import { buildPlaybookWithExternalSkills } from '../workflow/playbook.ts';
 
 export function registerStatusTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

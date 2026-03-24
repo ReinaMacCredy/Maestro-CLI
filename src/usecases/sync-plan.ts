@@ -7,8 +7,8 @@
 import type { TaskPort } from '../tasks/port.ts';
 import { isActiveTask } from '../tasks/transitions.ts';
 import type { PlanPort } from '../plans/port.ts';
-import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../utils/plan-parser.ts';
-import { buildSpecContent } from '../utils/spec-builder.ts';
+import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../plans/parser.ts';
+import { buildSpecContent } from '../tasks/spec-builder.ts';
 import { MaestroError } from '../core/errors.ts';
 import type { TasksSyncResult } from '../core/types.ts';
 

@@ -5,8 +5,8 @@
  * from upstream tasks when scoring for downstream tasks.
  */
 
-import { buildEffectiveDependencies, type TaskWithDeps } from './task-dependency-graph.ts';
-import { EXEC_MEMORY_PREFIX } from './execution-memory.ts';
+import { buildEffectiveDependencies, type TaskWithDeps } from './dependency.ts';
+import { EXEC_MEMORY_PREFIX } from '../../memory/execution/writer.ts';
 
 /**
  * Extract the source task folder from an execution memory name.

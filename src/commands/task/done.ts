@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
-import { writeExecutionMemory } from '../../utils/execution-memory.ts';
+import { writeExecutionMemory } from '../../memory/execution/writer.ts';
 
 export default defineCommand({
   meta: { name: 'task-done', description: 'Mark a task as done' },

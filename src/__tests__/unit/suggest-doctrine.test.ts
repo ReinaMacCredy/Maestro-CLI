@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { suggestDoctrine } from '../../usecases/suggest-doctrine.ts';
-import { buildExecutionMemory } from '../../utils/execution-memory.ts';
+import { buildExecutionMemory } from '../../memory/execution/writer.ts';
 import type { FeaturePort } from '../../features/port.ts';
 import type { MemoryPort } from '../../memory/port.ts';
 import type { DoctrineItem } from '../../doctrine/port.ts';
