@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { listSkills, loadSkill, loadSkillReference, BUILTIN_SKILL_NAMES } from '../../skills/registry.ts';
+import { listSkills, loadSkill, loadSkillReference, BUILTIN_SKILL_NAMES, BUILTIN_SKILLS, getBuiltinSkillsByStage } from '../../skills/registry.ts';
 import { SKILL_ALIASES } from '../../skills/aliases.ts';
 
 describe('skills registry', () => {
@@ -171,6 +171,43 @@ describe('skills registry', () => {
 
     const result = await loadSkill('maestro:brainstorming', tmpDir);
     expect((result as { content: string }).content).toContain('# Custom');
+  });
+
+  test('all built-in skills have audience metadata', () => {
+    for (const name of BUILTIN_SKILL_NAMES) {
+      expect(BUILTIN_SKILLS[name].audience).toBeDefined();
+      expect(['orchestrator', 'worker', 'both']).toContain(BUILTIN_SKILLS[name].audience);
+    }
+  });
+
+  test('listSkills includes audience and stage for builtins', async () => {
+    const skills = await listSkills(tmpDir);
+    const design = skills.find(s => s.name === 'maestro:design');
+    expect(design?.audience).toBe('orchestrator');
+    expect(design?.stage).toBeDefined();
+
+    const tdd = skills.find(s => s.name === 'maestro:tdd');
+    expect(tdd?.audience).toBe('worker');
+  });
+
+  test('listSkills filters by audience when opts provided', async () => {
+    const workerSkills = await listSkills(tmpDir, { audience: 'worker' });
+    // Should include worker + both, exclude orchestrator-only
+    for (const s of workerSkills) {
+      if (s.audience) {
+        expect(['worker', 'both']).toContain(s.audience);
+      }
+    }
+    // orchestrator-only skills should be excluded
+    const orchestratorOnly = workerSkills.find(s => s.audience === 'orchestrator');
+    expect(orchestratorOnly).toBeUndefined();
+  });
+
+  test('getBuiltinSkillsByStage includes audience', () => {
+    const planningSkills = getBuiltinSkillsByStage('planning');
+    for (const s of planningSkills) {
+      expect(s.audience).toBeDefined();
+    }
   });
 
   test('listSkills includes argumentHint from frontmatter', async () => {

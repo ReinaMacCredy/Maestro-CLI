@@ -27,6 +27,7 @@ export function getBuiltinSkillsByStage(stage: string): SkillEntry[] {
       source: 'builtin' as SkillSource,
       argumentHint: BUILTIN_SKILLS[name].argumentHint,
       stage: BUILTIN_SKILLS[name].stage,
+      audience: BUILTIN_SKILLS[name].audience as SkillEntry['audience'],
     }));
 }
 
@@ -190,7 +191,10 @@ export async function loadSkillReference(
   return { error: `Unknown skill: ${resolvedName}` };
 }
 
-export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> {
+export async function listSkills(
+  basePath?: string,
+  opts?: { audience?: 'orchestrator' | 'worker' | 'both' },
+): Promise<Array<SkillEntry>> {
   const projectRoot = basePath || process.cwd();
   const seen = new Set<string>();
   const results: SkillEntry[] = [];
@@ -211,8 +215,19 @@ export async function listSkills(basePath?: string): Promise<Array<SkillEntry>> 
       continue;
     }
     seen.add(name);
-    const { description, argumentHint } = BUILTIN_SKILLS[name];
-    results.push({ name, description, source: 'builtin', argumentHint });
+    const { description, argumentHint, stage, audience } = BUILTIN_SKILLS[name];
+    results.push({
+      name,
+      description,
+      source: 'builtin',
+      argumentHint,
+      stage,
+      audience: audience as SkillEntry['audience'],
+    });
+  }
+
+  if (opts?.audience) {
+    return results.filter(s => !s.audience || s.audience === opts.audience || s.audience === 'both');
   }
 
   return results;
