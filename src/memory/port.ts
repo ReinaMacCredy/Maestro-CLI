@@ -3,7 +3,7 @@
  * Concrete implementation: FsMemoryAdapter.
  */
 
-import type { MemoryFile, MemoryFileWithMeta } from '../core/types.ts';
+import type { MemoryFile, MemoryFileWithMeta, MemoryConnection, MemoryRelation } from '../core/types.ts';
 
 export interface MemoryPort {
   write(featureName: string, fileName: string, content: string): string;
@@ -21,6 +21,12 @@ export interface MemoryPort {
   isCompressed(featureName: string, fileName: string): boolean;
   /** Return the full MemoryFileWithMeta for a named memory, or null if not found. */
   readFull(featureName: string, fileName: string): MemoryFileWithMeta | null;
+  /** Record that a memory was selected by DCP. */
+  recordSelection(featureName: string, fileName: string): void;
+  /** Add a connection between two memories. */
+  connect(featureName: string, sourceName: string, targetName: string, relation: MemoryRelation): void;
+  /** Get connections for a specific memory. */
+  getConnections(featureName: string, name: string): MemoryConnection[];
   /** Global memory (not feature-scoped). */
   writeGlobal(fileName: string, content: string): string;
   readGlobal(fileName: string): string | null;

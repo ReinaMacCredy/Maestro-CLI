@@ -50,6 +50,13 @@ export class CassSearchAdapter implements SearchPort {
   async findRelatedSessions(filePath: string, limit = 5): Promise<SessionSearchResult[]> {
     return this.searchSessions(filePath, { limit });
   }
+
+  async searchSimilar(content: string, opts?: { limit?: number }): Promise<SessionSearchResult[]> {
+    // Extract first 100 chars as query -- CASS handles keyword matching natively
+    const query = content.slice(0, 100).replace(/\n/g, ' ').trim();
+    if (!query) return [];
+    return this.searchSessions(query, { limit: opts?.limit ?? 10 });
+  }
 }
 
 function normalizeHit(hit: CassSearchHit): SessionSearchResult {

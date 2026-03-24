@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { getSessionsDir, EVENTS_FILE } from '../hooks/_helpers.ts';
 import type { SearchPort, SessionSearchResult } from './port.ts';
+import { extractKeywords } from '../dcp/relevance.ts';
 
 export class FsSearchAdapter implements SearchPort {
   private eventsPath: string;
@@ -53,6 +54,43 @@ export class FsSearchAdapter implements SearchPort {
 
   async findRelatedSessions(filePath: string, limit = 5): Promise<SessionSearchResult[]> {
     return this.searchSessions(filePath, { limit });
+  }
+
+  async searchSimilar(content: string, opts?: { limit?: number }): Promise<SessionSearchResult[]> {
+    const limit = opts?.limit ?? 10;
+    const keywords = extractKeywords(content);
+    if (keywords.size === 0) return [];
+
+    const lines = this.readLines();
+    const scored: Array<{ line: string; lineNumber: number; score: number }> = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+
+      const lineKeywords = extractKeywords(line);
+      if (lineKeywords.size === 0) continue;
+
+      let overlap = 0;
+      for (const kw of keywords) {
+        if (lineKeywords.has(kw)) overlap++;
+      }
+      const score = overlap / keywords.size;
+      if (score > 0) {
+        scored.push({ line, lineNumber: i + 1, score });
+      }
+    }
+
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(s => ({
+        sessionPath: this.eventsPath,
+        agent: this.extractAgent(s.line),
+        matchLine: s.line.slice(0, 200),
+        lineNumber: s.lineNumber,
+        score: Math.round(s.score * 1000) / 1000,
+      }));
   }
 
   private readLines(): string[] {

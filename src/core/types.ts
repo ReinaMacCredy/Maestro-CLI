@@ -107,12 +107,20 @@ export interface MemoryFile {
 export const MEMORY_CATEGORIES = ['decision', 'research', 'architecture', 'convention', 'debug', 'execution'] as const;
 export type MemoryCategory = typeof MEMORY_CATEGORIES[number];
 
+export type MemoryRelation = 'related' | 'supersedes' | 'contradicts' | 'extends';
+
+export interface MemoryConnection {
+  target: string;
+  relation: MemoryRelation;
+}
+
 export interface MemoryMetadata {
   tags?: string[];
   priority?: number;       // 0 (highest) to 4 (lowest), default 2
   category?: MemoryCategory;
   selectionCount?: number;   // DCP selection frequency (incremented on each inclusion)
   lastSelectedAt?: string;   // ISO timestamp of last DCP selection
+  connections?: MemoryConnection[];  // relationships to other memories
 }
 
 export interface MemoryFileWithMeta extends MemoryFile {

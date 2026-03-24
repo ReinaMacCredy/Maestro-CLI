@@ -21,4 +21,7 @@ export interface SearchPort {
 
   /** Find sessions related to a specific file path. */
   findRelatedSessions(filePath: string, limit?: number): Promise<SessionSearchResult[]>;
+
+  /** Find sessions with content similar to the provided text (keyword overlap). */
+  searchSimilar(content: string, opts?: { limit?: number }): Promise<SessionSearchResult[]>;
 }

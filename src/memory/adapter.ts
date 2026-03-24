@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getMemoryPath, getGlobalMemoryPath } from '../core/paths.ts';
 import { ensureDir, fileExists, readText, writeText } from '../core/fs-io.ts';
-import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../core/types.ts';
+import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata, MemoryConnection, MemoryRelation } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
 import { parseFrontmatterRich, stripFrontmatter, serializeFrontmatter, prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { inferMetadata } from '../memory/execution/inference.ts';
@@ -163,6 +163,61 @@ export class FsMemoryAdapter implements MemoryPort {
 
     const updated = prependMetadataFrontmatter(body, newMeta);
     writeText(filePath, updated);
+  }
+
+  connect(featureName: string, sourceName: string, targetName: string, relation: MemoryRelation): void {
+    const memoryPath = getMemoryPath(this.projectRoot, featureName);
+    const filePath = path.join(memoryPath, this.normalizeFileName(sourceName));
+    const content = readText(filePath);
+    if (!content) return;
+
+    const parsed = parseFrontmatterRich(content);
+    const body = stripFrontmatter(content);
+
+    // Parse existing connections from frontmatter (stored as flat strings "target:relation")
+    const existing = this.parseConnections(parsed?.connections);
+    const entry = `${targetName}:${relation}`;
+    if (existing.some(c => c.target === targetName && c.relation === relation)) return; // already connected
+
+    const connectionStrings = [...existing.map(c => `${c.target}:${c.relation}`), entry];
+
+    const metadata: MemoryMetadata = (parsed ?? {}) as MemoryMetadata;
+    const meta: Record<string, unknown> = {};
+    if (metadata.tags?.length) meta.tags = metadata.tags;
+    if (metadata.priority !== undefined) meta.priority = metadata.priority;
+    if (metadata.category) meta.category = metadata.category;
+    if (metadata.selectionCount !== undefined) meta.selectionCount = metadata.selectionCount;
+    if (metadata.lastSelectedAt) meta.lastSelectedAt = metadata.lastSelectedAt;
+    meta.connections = connectionStrings;
+
+    const updated = serializeFrontmatter(meta) + '\n' + body;
+    writeText(filePath, updated);
+  }
+
+  getConnections(featureName: string, name: string): MemoryConnection[] {
+    const memoryPath = getMemoryPath(this.projectRoot, featureName);
+    const filePath = path.join(memoryPath, this.normalizeFileName(name));
+    const content = readText(filePath);
+    if (!content) return [];
+
+    const parsed = parseFrontmatterRich(content);
+    return this.parseConnections(parsed?.connections);
+  }
+
+  /** Parse connections from frontmatter value (array of "target:relation" strings). */
+  private parseConnections(raw: unknown): MemoryConnection[] {
+    if (!raw || !Array.isArray(raw)) return [];
+    const VALID_RELATIONS = new Set<MemoryRelation>(['related', 'supersedes', 'contradicts', 'extends']);
+    return (raw as string[])
+      .map(s => {
+        const idx = String(s).lastIndexOf(':');
+        if (idx < 1) return null;
+        const target = String(s).slice(0, idx);
+        const relation = String(s).slice(idx + 1) as MemoryRelation;
+        if (!VALID_RELATIONS.has(relation)) return null;
+        return { target, relation };
+      })
+      .filter((c): c is MemoryConnection => c !== null);
   }
 
   // -- Shared helpers --
