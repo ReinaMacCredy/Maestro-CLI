@@ -14,6 +14,7 @@ import { selectMemories } from '../dcp/selector.ts';
 import { resolveDcpConfig } from '../dcp/config.ts';
 import { getHandoffPath, getHandoffsPath } from '../core/paths.ts';
 import { ensureDir, writeText, readText } from '../core/fs-io.ts';
+import { HttpTransport } from '../toolbox/sdk/http-transport.ts';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -32,6 +33,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   private taskPort: TaskPort;
   private memoryAdapter: MemoryPort;
   private configAdapter: ConfigPort;
+  private transport: HttpTransport;
   private identity: AgentMailIdentity | undefined;
 
   constructor(
@@ -40,12 +42,22 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     memoryAdapter: MemoryPort,
     configAdapter: ConfigPort,
     agentMailUrl?: string,
+    transport?: HttpTransport,
   ) {
     this.projectRoot = projectRoot;
     this.taskPort = taskPort;
     this.memoryAdapter = memoryAdapter;
     this.configAdapter = configAdapter;
     this.baseUrl = agentMailUrl ?? process.env.AGENT_MAIL_URL ?? DEFAULT_AGENT_MAIL_URL;
+    this.transport = transport ?? new HttpTransport({
+      baseUrl: this.baseUrl,
+      timeout: 5000,
+      bestEffort: true,
+      retryDelays: [],
+      authHeaders: process.env.HTTP_BEARER_TOKEN
+        ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` }
+        : undefined,
+    });
   }
 
   async buildHandoff(feature: string, taskId: string): Promise<HandoffDocument> {
@@ -103,26 +115,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   private async rpc(tool: string, args: Record<string, unknown>): Promise<{ isError: boolean; text?: string }> {
-    const response = await fetch(`${this.baseUrl}/mcp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.HTTP_BEARER_TOKEN ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` } : {}),
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: `maestro-${Date.now()}`,
-        method: 'tools/call',
-        params: { name: tool, arguments: args },
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) return { isError: true };
-    const json = await response.json() as { result?: { isError?: boolean; content?: Array<{ text?: string }> } };
-    return {
-      isError: json.result?.isError ?? false,
-      text: json.result?.content?.[0]?.text,
-    };
+    return this.transport.rpc(tool, args);
   }
 
   private async ensureIdentity(): Promise<AgentMailIdentity | undefined> {

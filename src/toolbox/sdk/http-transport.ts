@@ -32,6 +32,7 @@ export class HttpTransport {
       error?: { message?: string };
     }>('POST', '/mcp', {
       jsonrpc: '2.0',
+      id: `rpc-${Date.now()}`,
       method: 'tools/call',
       params: { name: tool, arguments: args },
     });
