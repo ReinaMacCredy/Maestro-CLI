@@ -22,6 +22,7 @@ import { extractKeywords } from '../dcp/relevance.ts';
 import { appendDoctrineTrace } from '../doctrine/trace.ts';
 import type { DoctrineItem } from '../doctrine/port.ts';
 import type { TaskInfo } from '../core/types.ts';
+import { loadSessionState, recordInjection, saveSessionState } from '../dcp/session.ts';
 import type { RichTaskFields } from '../tasks/port.ts';
 
 export { WORKER_RULES };
@@ -58,6 +59,21 @@ export function formatGraphContext(
   if (onCriticalPath) flags.push('on critical path');
   if (isBottleneck) flags.push('bottleneck (blocks other tasks)');
   return `\n## Graph Context\n\n[!] This task is ${flags.join(' and ')}. Prioritize correctness.\n`;
+}
+
+/** Track session DCP state (best-effort). */
+function trackSessionDcp(
+  projectDir: string,
+  metrics: PruneContextResult['metrics'],
+): void {
+  try {
+    const sessionsDir = getSessionsDir(projectDir);
+    const state = loadSessionState(sessionsDir);
+    recordInjection(state, metrics);
+    saveSessionState(sessionsDir, state);
+  } catch {
+    // Best effort
+  }
 }
 
 /** Append DCP metrics to JSONL file (best-effort). */
@@ -243,6 +259,9 @@ async function main(): Promise<void> {
       doctrineInjected: doctrineItems.length > 0,
       doctrineNames: doctrineItems.map(d => d.name),
     });
+
+    // Track session-level DCP state
+    trackSessionDcp(projectDir, metrics);
 
     writeOutput({
       hookSpecificOutput: {
