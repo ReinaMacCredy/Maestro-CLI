@@ -28,6 +28,8 @@ import { registerHistoryTools } from './handlers/history.ts';
 import { VERSION } from '../version.ts';
 import { FsSettingsAdapter } from '../core/settings-adapter.ts';
 import { buildToolbox } from '../toolbox/registry.ts';
+import { WorkflowRegistry } from '../workflow/registry.ts';
+import { declareAllTools } from '../workflow/tool-declarations.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
@@ -39,6 +41,10 @@ export function createMaestroServer(directory: string): McpServer {
   const settings = new FsSettingsAdapter(directory).get();
   const toolbox = buildToolbox(settings);
   const thunk = createServicesThunk(directory, toolbox);
+
+  // Build workflow registry with tool metadata declarations
+  const workflowRegistry = new WorkflowRegistry();
+  declareAllTools(workflowRegistry);
 
   registerStatusTools(server, thunk);
   registerFeatureTools(server, thunk);

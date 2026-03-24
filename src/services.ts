@@ -52,10 +52,11 @@ export interface MaestroServices {
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
   doctrinePort?: DoctrinePort;
-  // v2: toolbox + settings + agent tools
+  // v2: toolbox + settings + agent tools + workflow
   toolbox: ToolboxRegistry;
   settingsPort: SettingsPort;
   agentToolsRegistry: AgentToolsRegistry;
+  workflowRegistry?: import('./workflow/registry.ts').WorkflowRegistry;
   /** Resolved task backend: 'fs' or 'br'. Use this instead of resolveTaskBackend(). */
   taskBackend: 'fs' | 'br';
 }
