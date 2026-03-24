@@ -10,6 +10,7 @@ import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
 import { requireFeature, resolveFeature } from './_resolve.ts';
 import { featureParam } from '../params.ts';
 import { requireHandoffPort as requireHandoffPortShared } from '../../core/resolve.ts';
+import { buildAndSendHandoff } from '../../handoff/usecases.ts';
 
 function requireHandoffPort(thunk: ServicesThunk) {
   return requireHandoffPortShared(thunk.get());
@@ -32,11 +33,10 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       const port = requireHandoffPort(thunk);
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const handoff = await port.buildHandoff(feature, input.task);
-      if (input.additional_context) {
-        handoff.criticalContext = input.additional_context;
-      }
-      const result = await port.sendHandoff(feature, handoff, input.target_agent);
+      const { result } = await buildAndSendHandoff(port, feature, input.task, {
+        targetAgent: input.target_agent,
+        additionalContext: input.additional_context,
+      });
       return respond({ feature, task: input.task, ...result });
     }),
   );
