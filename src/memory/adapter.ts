@@ -110,8 +110,19 @@ export class FsMemoryAdapter implements MemoryPort {
 
   readFull(featureName: string, fileName: string): MemoryFileWithMeta | null {
     const name = fileName.replace(/\.md$/, '');
-    const files = this.listWithMeta(featureName);
-    return files.find(f => f.name === name) ?? null;
+    const memoryPath = getMemoryPath(this.projectRoot, featureName);
+    const filePath = path.join(memoryPath, this.normalizeFileName(name));
+    const content = readText(filePath);
+    if (!content) return null;
+    let stat;
+    try { stat = fs.statSync(filePath); } catch { return null; }
+    const file: MemoryFile = {
+      name,
+      content,
+      updatedAt: stat.mtime.toISOString(),
+      sizeBytes: stat.size,
+    };
+    return this._enrichWithMeta(file);
   }
 
   deleteGlobal(fileName: string): boolean {
@@ -293,7 +304,8 @@ export class FsMemoryAdapter implements MemoryPort {
     const selectionCount = parsed && typeof parsed.selectionCount === 'number' ? parsed.selectionCount : undefined;
     const lastSelectedAt = parsed && typeof parsed.lastSelectedAt === 'string' ? parsed.lastSelectedAt : undefined;
 
-    // Short-circuit: skip inference when frontmatter provides all core fields
+    const connections = this.parseConnections(parsed?.connections);
+
     if (parsed && Array.isArray(parsed.tags) && typeof parsed.priority === 'number' && typeof parsed.category === 'string') {
       return {
         ...file, bodyContent,
@@ -302,6 +314,7 @@ export class FsMemoryAdapter implements MemoryPort {
           category: parsed.category as MemoryMetadata['category'],
           ...(selectionCount !== undefined ? { selectionCount } : {}),
           ...(lastSelectedAt !== undefined ? { lastSelectedAt } : {}),
+          ...(connections.length > 0 ? { connections } : {}),
         },
       };
     }
@@ -315,6 +328,7 @@ export class FsMemoryAdapter implements MemoryPort {
         : inferred.category,
       ...(selectionCount !== undefined ? { selectionCount } : {}),
       ...(lastSelectedAt !== undefined ? { lastSelectedAt } : {}),
+      ...(connections.length > 0 ? { connections } : {}),
     };
 
     return { ...file, metadata, bodyContent };

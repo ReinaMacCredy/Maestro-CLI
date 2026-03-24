@@ -200,16 +200,10 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
           const files = input.brief
             ? richFiles.map(({ name, updatedAt, sizeBytes, metadata }) => ({
                 name, updatedAt, sizeBytes, ...metadata,
-                connections: services.memoryAdapter.getConnections(feature, name),
               }))
             : richFiles.map(({ name, content, updatedAt, sizeBytes, metadata }) => ({
                 name, content, updatedAt, sizeBytes, ...metadata,
-                connections: services.memoryAdapter.getConnections(feature, name),
               }));
-          // Filter out empty connections arrays
-          for (const f of files) {
-            if (f.connections.length === 0) delete (f as Record<string, unknown>).connections;
-          }
           return respond({ feature, files });
         }
         case 'stats': {

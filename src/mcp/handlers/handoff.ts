@@ -120,14 +120,14 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
           const services = thunk.get();
           const feature = requireFeature(services, input.feature);
           const filePath = getHandoffPath(services.directory, feature, input.id);
-          const exists = fileExists(filePath);
-          const acknowledged = exists && fileExists(`${filePath}.ack`);
+          let exists = false;
           let createdAt: string | undefined;
-          if (exists) {
-            try {
-              createdAt = fs.statSync(filePath).mtime.toISOString();
-            } catch { /* ignore */ }
-          }
+          try {
+            const stat = fs.statSync(filePath);
+            exists = true;
+            createdAt = stat.mtime.toISOString();
+          } catch { /* file does not exist */ }
+          const acknowledged = exists && fileExists(`${filePath}.ack`);
           return respond({ feature, id: input.id, exists, acknowledged, filePath, createdAt });
         }
         case 'receive': {

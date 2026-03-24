@@ -58,8 +58,9 @@ export function consolidateMemories(
   }
 
   const removed = new Set<string>();
+  const pendingConnections: Array<{ source: string; target: string }> = [];
 
-  // Step 1: Detect and merge duplicates (80%+ keyword overlap, same category)
+  // Step 1: Pairwise overlap -- classify as duplicate (>=0.8), related (>=0.4), or skip
   for (let i = 0; i < memories.length; i++) {
     if (removed.has(memories[i].name)) continue;
     for (let j = i + 1; j < memories.length; j++) {
@@ -67,20 +68,19 @@ export function consolidateMemories(
 
       const a = memories[i];
       const b = memories[j];
-      if (a.metadata.category !== b.metadata.category) continue;
-
       const overlap = computeSetOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!, 'jaccard');
-      if (overlap >= DUPLICATE_THRESHOLD) {
-        // Keep higher-priority (lower number), or newer if equal
+
+      if (overlap >= DUPLICATE_THRESHOLD && a.metadata.category === b.metadata.category) {
         const keepA = (a.metadata.priority ?? 2) <= (b.metadata.priority ?? 2);
         const kept = keepA ? a : b;
         const dup = keepA ? b : a;
-
         if (!opts.dryRun) {
           memoryAdapter.delete(feature, dup.name);
         }
         removed.add(dup.name);
         result.merged.push({ kept: kept.name, removed: dup.name, reason: `${Math.round(overlap * 100)}% keyword overlap` });
+      } else if (overlap >= CONNECTION_THRESHOLD) {
+        pendingConnections.push({ source: a.name, target: b.name });
       }
     }
   }
@@ -126,21 +126,14 @@ export function consolidateMemories(
     }
   }
 
-  // Step 4: Detect connections between remaining memories (40-79% keyword overlap)
-  const active = memories.filter(m => !removed.has(m.name));
-  for (let i = 0; i < active.length; i++) {
-    for (let j = i + 1; j < active.length; j++) {
-      const a = active[i];
-      const b = active[j];
-      const overlap = computeSetOverlap(keywordSets.get(a.name)!, keywordSets.get(b.name)!, 'jaccard');
-      if (overlap >= CONNECTION_THRESHOLD && overlap < DUPLICATE_THRESHOLD) {
-        if (!opts.dryRun) {
-          memoryAdapter.connect(feature, a.name, b.name, 'related');
-          memoryAdapter.connect(feature, b.name, a.name, 'related');
-        }
-        result.connections.push({ source: a.name, target: b.name, relation: 'related' });
-      }
+  // Step 4: Record connections detected in Step 1 (skip pairs where either was removed)
+  for (const { source, target } of pendingConnections) {
+    if (removed.has(source) || removed.has(target)) continue;
+    if (!opts.dryRun) {
+      memoryAdapter.connect(feature, source, target, 'related');
+      memoryAdapter.connect(feature, target, source, 'related');
     }
+    result.connections.push({ source, target, relation: 'related' });
   }
 
   result.stats.afterConsolidation = memories.length - removed.size;
