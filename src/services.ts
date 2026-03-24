@@ -24,6 +24,7 @@ import { FsSettingsAdapter } from './core/settings-adapter.ts';
 import { FsTaskAdapter } from './tasks/adapter.ts';
 import { buildToolbox, ToolboxRegistry } from './toolbox/registry.ts';
 import { getAdapterFactory } from './toolbox/loader.ts';
+import { buildAgentToolsRegistry, AgentToolsRegistry } from './toolbox/agents/registry.ts';
 import type { AdapterContext } from './toolbox/types.ts';
 import type { MaestroSettings, SettingsPort } from './core/settings.ts';
 import type { TaskPort } from './tasks/port.ts';
@@ -51,9 +52,10 @@ export interface MaestroServices {
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
   doctrinePort?: DoctrinePort;
-  // v2: toolbox + settings
+  // v2: toolbox + settings + agent tools
   toolbox: ToolboxRegistry;
   settingsPort: SettingsPort;
+  agentToolsRegistry: AgentToolsRegistry;
   /** Resolved task backend: 'fs' or 'br'. Use this instead of resolveTaskBackend(). */
   taskBackend: 'fs' | 'br';
 }
@@ -161,6 +163,7 @@ export function initServices(
     doctrinePort: new FsDoctrineAdapter(directory),
     toolbox: tb,
     settingsPort: settingsAdapter,
+    agentToolsRegistry: buildAgentToolsRegistry(settings.agentTools),
   };
 
   return _services;

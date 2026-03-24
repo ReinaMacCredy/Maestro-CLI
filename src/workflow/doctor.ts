@@ -12,6 +12,7 @@ import type { HandoffPort } from '../handoff/port.ts';
 import type { SearchPort } from '../search/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
 import type { ToolboxRegistry } from '../toolbox/registry.ts';
+import type { AgentToolsRegistry } from '../toolbox/agents/registry.ts';
 
 export interface DoctorServices {
   configAdapter: ConfigPort;
@@ -19,6 +20,7 @@ export interface DoctorServices {
   taskPort: TaskPort;
   directory: string;
   toolbox: ToolboxRegistry;
+  agentToolsRegistry: AgentToolsRegistry;
   taskBackend: 'fs' | 'br';
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
@@ -87,6 +89,17 @@ export async function doctor(services: DoctorServices): Promise<DoctorReport> {
       checks.push({ name, status: 'warn', message: `Not installed${ts.manifest.install ? ` -- ${ts.manifest.install}` : ''}` });
     } else {
       checks.push({ name, status: 'ok', message: `Available${ts.version ? ` (${ts.version})` : ''}` });
+    }
+  }
+
+  // 5. Agent tools
+  const agentTools = services.agentToolsRegistry.getAll();
+  for (const at of agentTools) {
+    const name = `${at.manifest.name} (${at.manifest.category})`;
+    if (!at.installed) {
+      checks.push({ name, status: 'warn', message: 'Not installed' });
+    } else {
+      checks.push({ name, status: 'ok', message: `Available${at.version ? ` (${at.version})` : ''}` });
     }
   }
 

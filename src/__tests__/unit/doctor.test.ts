@@ -32,6 +32,7 @@ function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServic
     } as unknown as DoctorServices['taskPort'],
     directory: '/tmp/test',
     toolbox: makeToolbox(),
+    agentToolsRegistry: { getAll: () => [], getInstalled: () => [], isAvailable: () => false } as any,
     taskBackend: 'fs',
     graphPort: undefined,
     handoffPort: undefined,
