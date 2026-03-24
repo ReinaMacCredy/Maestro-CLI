@@ -54,7 +54,7 @@ export default defineCommand({
   },
   async run({ args }) {
     try {
-      const { memoryAdapter, taskPort, featureAdapter, configAdapter } = getServices();
+      const { memoryAdapter, taskPort, featureAdapter, settingsPort } = getServices();
 
       if (args.task) {
         // DCP-scored compile
@@ -64,7 +64,7 @@ export default defineCommand({
         }
         const memories = memoryAdapter.listWithMeta(args.feature);
         requireMemories(memories, args.feature);
-        const cfg = resolveDcpConfig(configAdapter.get().dcp);
+        const cfg = resolveDcpConfig(settingsPort.get().dcp);
         const budget = args.budget ? parseBudget(args.budget) : cfg.memoryBudgetTokens;
         const featureCreatedAt = featureAdapter.get(args.feature)?.createdAt;
         const selected = selectMemories(

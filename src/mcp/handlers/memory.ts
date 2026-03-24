@@ -108,7 +108,7 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
         if (!task) {
           return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
         }
-        const cfg = resolveDcpConfig(services.configAdapter.get().dcp);
+        const cfg = resolveDcpConfig(services.settingsPort.get().dcp);
         const budget = input.budget ?? cfg.memoryBudgetTokens;
         const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
         const selected = selectMemories(

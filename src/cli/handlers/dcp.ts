@@ -38,7 +38,7 @@ export default defineCommand({
 
       const spec = await services.taskPort.readSpec(feature, args.task) ?? '(no spec)';
       const memories = services.memoryAdapter.listWithMeta(feature);
-      const resolvedDcp = resolveDcpConfig(services.configAdapter.get().dcp);
+      const resolvedDcp = resolveDcpConfig(services.settingsPort.get().dcp);
 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;

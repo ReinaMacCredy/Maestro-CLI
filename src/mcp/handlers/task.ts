@@ -103,8 +103,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const config = services.configAdapter.get();
-      const vConfig = resolveVerificationConfig(config.verification);
+      const vConfig = resolveVerificationConfig(services.settingsPort.get().verification);
 
       const result = await verifyTask({
         taskPort: services.taskPort,

@@ -75,7 +75,7 @@ export default defineCommand({
         services.taskPort,
         services.memoryAdapter,
         services.doctrinePort,
-        services.configAdapter.get().doctrine,
+        services.settingsPort.get().doctrine,
       );
       output(result, formatInsights);
     } catch (err) {

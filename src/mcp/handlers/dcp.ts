@@ -35,7 +35,7 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
 
       const spec = await services.taskPort.readSpec(feature, input.task) ?? '(no spec)';
       const memories = services.memoryAdapter.listWithMeta(feature);
-      const resolvedDcp = resolveDcpConfig(services.configAdapter.get().dcp);
+      const resolvedDcp = resolveDcpConfig(services.settingsPort.get().dcp);
 
       const featureInfo = services.featureAdapter.get(feature);
       const featureCreatedAt = featureInfo?.createdAt;

@@ -18,7 +18,7 @@ export default defineCommand({
       const doctrinePort = requireDoctrinePort(services);
 
       const existing = doctrinePort.list({ status: 'active' });
-      const config = services.configAdapter.get().doctrine;
+      const config = services.settingsPort.get().doctrine;
       const result = suggestDoctrine(services.featureAdapter, services.memoryAdapter, existing, config);
 
       output(result, (r) => {

@@ -156,7 +156,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
       const services = thunk.get();
       const port = requireDoctrinePort(thunk);
       const existing = port.list({ status: 'active' });
-      const config = services.configAdapter.get().doctrine;
+      const config = services.settingsPort.get().doctrine;
       const result = suggestDoctrine(services.featureAdapter, services.memoryAdapter, existing, config);
       return respond(result);
     }),
