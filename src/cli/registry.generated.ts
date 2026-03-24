@@ -62,7 +62,10 @@ import cmdTaskSync from './handlers/task/sync.ts';
 import cmdTaskUnblock from './handlers/task/unblock.ts';
 import cmdToolboxAdd from './handlers/toolbox/add.ts';
 import cmdToolboxCreate from './handlers/toolbox/create.ts';
+import cmdToolboxInstall from './handlers/toolbox/install.ts';
 import cmdToolboxList from './handlers/toolbox/toolbox.ts';
+import cmdToolboxRemove from './handlers/toolbox/remove.ts';
+import cmdToolboxTest from './handlers/toolbox/test.ts';
 import cmdUpdate from './handlers/update/update.ts';
 import cmdVisual from './handlers/visual.ts';
 
@@ -130,7 +133,10 @@ export const subCommands = {
   'task-unblock': cmdTaskUnblock,
   'toolbox-add': cmdToolboxAdd,
   'toolbox-create': cmdToolboxCreate,
+  'toolbox-install': cmdToolboxInstall,
   'toolbox-list': cmdToolboxList,
+  'toolbox-remove': cmdToolboxRemove,
+  'toolbox-test': cmdToolboxTest,
   'update': cmdUpdate,
   'visual': cmdVisual,
 } as const;
