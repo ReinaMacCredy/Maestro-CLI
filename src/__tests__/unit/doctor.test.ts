@@ -1,5 +1,25 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeEach } from 'bun:test';
 import { doctor, type DoctorServices } from '../../workflow/doctor.ts';
+import { ToolboxRegistry } from '../../toolbox/registry.ts';
+import { clearDetectCache } from '../../toolbox/loader.ts';
+import { DEFAULT_SETTINGS } from '../../core/settings.ts';
+import type { ToolManifest } from '../../toolbox/types.ts';
+
+function makeManifest(overrides: Partial<ToolManifest> & { name: string }): ToolManifest {
+  return { binary: null, detect: null, provides: null, priority: 0, adapter: 'test.ts', ...overrides };
+}
+
+function makeToolbox(manifests?: ToolManifest[]): ToolboxRegistry {
+  return new ToolboxRegistry(
+    manifests ?? [
+      makeManifest({ name: 'fs-tasks', provides: 'tasks', priority: 0 }),
+      makeManifest({ name: 'bv', provides: 'graph', priority: 100, detect: 'echo ok' }),
+      makeManifest({ name: 'cass', provides: 'search', priority: 100, detect: 'echo ok' }),
+      makeManifest({ name: 'agent-mail', provides: 'handoff', priority: 100 }),
+    ],
+    DEFAULT_SETTINGS,
+  );
+}
 
 function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServices {
   return {
@@ -11,6 +31,8 @@ function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServic
       list: async () => [],
     } as unknown as DoctorServices['taskPort'],
     directory: '/tmp/test',
+    toolbox: makeToolbox(),
+    taskBackend: 'fs',
     graphPort: undefined,
     handoffPort: undefined,
     searchPort: undefined,
@@ -20,14 +42,15 @@ function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServic
 }
 
 describe('doctor use case', () => {
+  beforeEach(() => {
+    clearDetectCache();
+  });
+
   test('returns ok checks when everything is healthy', async () => {
-    const services = makeMockServices({
-      graphPort: {} as DoctorServices['graphPort'],
-      searchPort: {} as DoctorServices['searchPort'],
-    });
+    const services = makeMockServices();
     const report = await doctor(services);
 
-    expect(report.checks.length).toBeGreaterThanOrEqual(7);
+    expect(report.checks.length).toBeGreaterThanOrEqual(5);
     expect(report.summary.fail).toBe(0);
 
     const configCheck = report.checks.find((c) => c.name === 'config');
@@ -66,21 +89,35 @@ describe('doctor use case', () => {
     expect(report.summary.fail).toBeGreaterThanOrEqual(1);
   });
 
-  test('reports integration availability correctly', async () => {
-    const services = makeMockServices({
-      graphPort: {} as DoctorServices['graphPort'],
-      doctrinePort: {} as DoctorServices['doctrinePort'],
-    });
+  test('reports toolbox status for integrations', async () => {
+    const services = makeMockServices();
     const report = await doctor(services);
 
-    const graphCheck = report.checks.find((c) => c.name === 'graph (bv)');
-    expect(graphCheck?.status).toBe('ok');
+    // bv and cass are detected (detect: 'echo ok'), agent-mail is built-in
+    const bvCheck = report.checks.find((c) => c.name.includes('bv'));
+    expect(bvCheck?.status).toBe('ok');
 
-    const handoffCheck = report.checks.find((c) => c.name === 'handoff (agent-mail)');
-    expect(handoffCheck?.status).toBe('warn');
+    const cassCheck = report.checks.find((c) => c.name.includes('cass'));
+    expect(cassCheck?.status).toBe('ok');
 
-    const doctrineCheck = report.checks.find((c) => c.name === 'doctrine');
-    expect(doctrineCheck?.status).toBe('ok');
+    const amCheck = report.checks.find((c) => c.name.includes('agent-mail'));
+    expect(amCheck?.status).toBe('ok');
+  });
+
+  test('reports denied tools as warn', async () => {
+    const toolbox = new ToolboxRegistry(
+      [
+        makeManifest({ name: 'fs-tasks', provides: 'tasks', priority: 0 }),
+        makeManifest({ name: 'bv', provides: 'graph', priority: 100, detect: 'echo ok' }),
+      ],
+      { ...DEFAULT_SETTINGS, toolbox: { allow: [], deny: ['bv'], config: {} } },
+    );
+    const services = makeMockServices({ toolbox });
+    const report = await doctor(services);
+
+    const bvCheck = report.checks.find((c) => c.name.includes('bv'));
+    expect(bvCheck?.status).toBe('warn');
+    expect(bvCheck?.message).toContain('Denied');
   });
 
   test('summary counts match checks', async () => {

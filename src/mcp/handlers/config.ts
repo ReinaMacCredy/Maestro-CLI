@@ -20,26 +20,44 @@ function redactSecrets(obj: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
+function getNestedValue(obj: unknown, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== 'object') {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
 export function registerConfigTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
     'maestro_config_get',
     {
-      description: 'Read maestro configuration. Optionally return a specific field. Sensitive fields (apiKey, token, secret, password) are redacted.',
+      description: 'Read maestro configuration. Supports dot notation (e.g. "dcp.enabled", "tasks.backend"). Returns settings (v2) with legacy config fallback.',
       inputSchema: {
-        key: z.string().optional().describe('Specific config key to return (e.g. "dcp", "claimExpiresMinutes"). Omit for full config.'),
+        key: z.string().optional().describe('Specific config key (supports dot notation, e.g. "dcp.enabled", "toolbox.deny"). Omit for full settings.'),
       },
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
       const services = thunk.get();
-      const raw = services.configAdapter.get();
-      const config = redactSecrets(raw as unknown as Record<string, unknown>);
+      const settings = services.settingsPort.get();
+      const redacted = redactSecrets(settings as unknown as Record<string, unknown>);
 
       if (input.key) {
-        const value = config[input.key];
+        let value = getNestedValue(redacted, input.key);
+        // Fall back to legacy config for unmigrated keys
+        if (value === undefined) {
+          const raw = services.configAdapter.get();
+          const config = redactSecrets(raw as unknown as Record<string, unknown>);
+          value = getNestedValue(config, input.key);
+        }
         return respond({ key: input.key, value: value ?? null });
       }
-      return respond({ config });
+      return respond({ settings: redacted });
     }),
   );
 }

@@ -1,6 +1,7 @@
 /**
  * doctor use case.
  * Validates config, checks integrations, reports health.
+ * v2: uses toolbox status for richer per-tool output.
  */
 
 import type { ConfigPort } from '../core/config.ts';
@@ -10,12 +11,15 @@ import type { GraphPort } from '../tasks/graph/port.ts';
 import type { HandoffPort } from '../handoff/port.ts';
 import type { SearchPort } from '../search/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
+import type { ToolboxRegistry } from '../toolbox/registry.ts';
 
 export interface DoctorServices {
   configAdapter: ConfigPort;
   featureAdapter: FeaturePort;
   taskPort: TaskPort;
   directory: string;
+  toolbox: ToolboxRegistry;
+  taskBackend: 'fs' | 'br';
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
@@ -46,7 +50,7 @@ export async function doctor(services: DoctorServices): Promise<DoctorReport> {
     checks.push({ name: 'config', status: 'fail', message: 'Config failed to load' });
   }
 
-  // 2. Active feature check + 3. Task backend check (share getActive result)
+  // 2. Active feature check + 3. Task backend check
   let active: ReturnType<typeof services.featureAdapter.getActive> = null;
   try {
     active = services.featureAdapter.getActive();
@@ -62,7 +66,7 @@ export async function doctor(services: DoctorServices): Promise<DoctorReport> {
   try {
     if (active) {
       await services.taskPort.list(active.name);
-      checks.push({ name: 'task-backend', status: 'ok', message: 'Task backend reachable' });
+      checks.push({ name: 'task-backend', status: 'ok', message: `Task backend reachable (${services.taskBackend})` });
     } else {
       checks.push({ name: 'task-backend', status: 'warn', message: 'No active feature to test tasks' });
     }
@@ -70,20 +74,20 @@ export async function doctor(services: DoctorServices): Promise<DoctorReport> {
     checks.push({ name: 'task-backend', status: 'fail', message: 'Task backend unreachable' });
   }
 
-  // 4. Integration checks
-  const integrations: Array<[string, unknown]> = [
-    ['graph (bv)', services.graphPort],
-    ['handoff (agent-mail)', services.handoffPort],
-    ['search (cass)', services.searchPort],
-    ['doctrine', services.doctrinePort],
-  ];
+  // 4. Toolbox-driven integration checks
+  const toolStatuses = services.toolbox.getStatus();
+  for (const ts of toolStatuses) {
+    // Skip the task providers (already checked above)
+    if (ts.manifest.provides === 'tasks') continue;
 
-  for (const [name, port] of integrations) {
-    checks.push({
-      name,
-      status: port ? 'ok' : 'warn',
-      message: port ? 'Available' : 'Not available',
-    });
+    const name = `${ts.manifest.name} (${ts.manifest.provides ?? 'utility'})`;
+    if (ts.settingsState === 'denied') {
+      checks.push({ name, status: 'warn', message: 'Denied by settings' });
+    } else if (!ts.installed) {
+      checks.push({ name, status: 'warn', message: `Not installed${ts.manifest.install ? ` -- ${ts.manifest.install}` : ''}` });
+    } else {
+      checks.push({ name, status: 'ok', message: `Available${ts.version ? ` (${ts.version})` : ''}` });
+    }
   }
 
   // Compute summary
