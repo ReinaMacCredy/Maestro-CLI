@@ -1,0 +1,11 @@
+{
+  "name": "cass",
+  "description": "Code-aware semantic search for session and context retrieval",
+  "binary": "cass",
+  "detect": "cass --version",
+  "install": "cargo install cass",
+  "homepage": "https://github.com/user/cass",
+  "provides": "search",
+  "priority": 100,
+  "adapter": "tools/external/cass/adapter.ts"
+}

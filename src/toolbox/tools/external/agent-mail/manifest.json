@@ -1,0 +1,10 @@
+{
+  "name": "agent-mail",
+  "description": "Agent Mail handoff protocol for inter-agent task delegation",
+  "binary": null,
+  "detect": null,
+  "provides": "handoff",
+  "priority": 100,
+  "adapter": "tools/external/agent-mail/adapter.ts",
+  "inject": ["projectRoot", "taskPort", "memoryPort", "configPort"]
+}
