@@ -41,7 +41,11 @@ export function selectMemories(
 
   const taskCtx = buildTaskContext(task, planSection);
   const proximityCtx: ProximityContext | undefined = allTasks
-    ? { downstreamMap: buildDownstreamMap(allTasks), taskFolders: new Set(allTasks.map(t => t.folder)) }
+    ? {
+        downstreamMap: buildDownstreamMap(allTasks),
+        // Include both id and folder for backward compat (old exec-01-slug, new exec-slug)
+        taskFolders: new Set(allTasks.flatMap(t => [t.id, t.folder])),
+      }
     : undefined;
 
   if (budgetTokens <= 0) {

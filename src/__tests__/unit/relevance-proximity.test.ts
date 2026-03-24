@@ -20,6 +20,7 @@ function makeMemory(name: string, overrides: Partial<MemoryFileWithMeta> = {}): 
 
 function makeTask(overrides: Partial<TaskInfo> = {}): TaskInfo {
   return {
+    id: '02-add-endpoints',
     folder: '02-add-endpoints',
     name: 'Add API endpoints',
     status: 'claimed',
@@ -37,7 +38,7 @@ function makeTaskDeps(): TaskWithDeps[] {
 }
 
 function makeProximityCtx(tasks: TaskWithDeps[]): ProximityContext {
-  return { downstreamMap: buildDownstreamMap(tasks), taskFolders: new Set(tasks.map(t => t.folder)) };
+  return { downstreamMap: buildDownstreamMap(tasks), taskFolders: new Set(tasks.flatMap(t => [t.id, t.folder])) };
 }
 
 describe('scoreRelevance with proximity', () => {

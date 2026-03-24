@@ -19,6 +19,9 @@ export function isExecutionMemory(name: string): boolean {
 }
 
 export interface ExecutionMemoryParams {
+  /** Task ID (slug). Falls back to taskFolder for backward compat. */
+  taskId?: string;
+  /** @deprecated Use taskId. Kept for backward compat. */
   taskFolder: string;
   taskName: string;
   summary: string;
@@ -100,16 +103,17 @@ function formatDuration(claimedAt?: string, completedAt?: string): string {
  */
 export function buildExecutionMemory(params: ExecutionMemoryParams): ExecutionMemoryResult {
   const {
-    taskFolder, taskName, summary, verificationReport,
+    taskId, taskFolder, taskName, summary, verificationReport,
     claimedAt, completedAt, revisionCount,
     changedFiles = [], specContent,
   } = params;
+  const effectiveId = taskId ?? taskFolder;
 
   // --- Tags (strict priority, capped at 8, deduplicated) ---
   const tags: string[] = ['execution'];
   const seen = new Set<string>(tags);
 
-  const folderTags = deriveFolderTags(taskFolder);
+  const folderTags = deriveFolderTags(effectiveId);
   for (const t of folderTags) {
     if (tags.length >= 4 || seen.has(t)) continue; // 1 + up to 3
     tags.push(t);
@@ -134,7 +138,7 @@ export function buildExecutionMemory(params: ExecutionMemoryParams): ExecutionMe
 
   // --- Body ---
   const parts: string[] = [
-    `Task **${taskFolder}** completed.`,
+    `Task **${effectiveId}** completed.`,
     '',
     `**Summary**: ${summary}`,
   ];
@@ -168,7 +172,7 @@ export function buildExecutionMemory(params: ExecutionMemoryParams): ExecutionMe
   });
 
   return {
-    fileName: `${EXEC_MEMORY_PREFIX}${taskFolder}`,
+    fileName: `${EXEC_MEMORY_PREFIX}${effectiveId}`,
     content,
     tags,
   };
@@ -196,6 +200,7 @@ export async function writeExecutionMemory(params: WriteExecutionMemoryParams): 
     const sinceISO = task.claimedAt ?? featureCreatedAt;
     const changedFiles = await getChangedFilesSince(projectRoot, sinceISO);
     const result = buildExecutionMemory({
+      taskId: task.id,
       taskFolder,
       taskName: task.name ?? taskFolder,
       summary,

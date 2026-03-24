@@ -76,7 +76,7 @@ describe('verifyTask execution memory', () => {
 
     const execMem = mem.written.find(w => w.name.startsWith('exec-'));
     expect(execMem).toBeDefined();
-    expect(execMem!.name).toBe('exec-01-setup-auth');
+    expect(execMem!.name).toBe('exec-setup-auth');
     expect(execMem!.content).toContain('category: execution');
     expect(execMem!.content).toContain('Implemented auth module');
   });
@@ -92,7 +92,7 @@ describe('verifyTask execution memory', () => {
 
     const execMem = mem.written.find(w => w.name.startsWith('exec-'));
     expect(execMem).toBeDefined();
-    expect(execMem!.name).toBe('exec-01-setup-auth');
+    expect(execMem!.name).toBe('exec-setup-auth');
   });
 
   test('does NOT write execution memory when verification fails (review)', async () => {
@@ -140,7 +140,7 @@ describe('verifyTask execution memory', () => {
 
     const execMem = mem.written.find(w => w.name.startsWith('exec-'));
     expect(execMem).toBeDefined();
-    expect(execMem!.name).toBe('exec-03-database-migration');
+    expect(execMem!.name).toBe('exec-database-migration');
   });
 
   test('execution memory is written to the correct feature', async () => {

@@ -5,9 +5,9 @@
 
 export interface BuildSpecParams {
   featureName: string;
-  task: { folder: string; name: string; order: number; description?: string };
+  task: { id?: string; folder: string; name: string; order: number; description?: string };
   dependsOn: string[];
-  allTasks: Array<{ folder: string; name: string; order: number }>;
+  allTasks: Array<{ id?: string; folder: string; name: string; order: number }>;
   planContent?: string | null;
 }
 
@@ -18,7 +18,7 @@ export function buildSpecContent(params: BuildSpecParams): string {
   const { featureName, task, dependsOn, allTasks, planContent } = params;
 
   const specLines: string[] = [
-    `# Task: ${task.folder}`,
+    `# Task: ${task.id ?? task.folder}`,
     '',
     `## Feature: ${featureName}`,
     '',
@@ -28,7 +28,7 @@ export function buildSpecContent(params: BuildSpecParams): string {
 
   if (dependsOn.length > 0) {
     for (const dep of dependsOn) {
-      const depTask = allTasks.find(t => t.folder === dep);
+      const depTask = allTasks.find(t => (t.id ?? t.folder) === dep || t.folder === dep);
       if (depTask) {
         specLines.push(`- **${depTask.order}. ${depTask.name}** (${dep})`);
       } else {

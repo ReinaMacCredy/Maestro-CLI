@@ -165,7 +165,7 @@ export function scoreRelevance(
   if (proximityCtx) {
     const source = extractSourceTask(memory.name);
     if (source && proximityCtx.taskFolders.has(source)) {
-      score = Math.min(1.0, score + scoreDependencyProximity(source, task.folder, proximityCtx.downstreamMap));
+      score = Math.min(1.0, score + scoreDependencyProximity(source, task.id, proximityCtx.downstreamMap));
     }
   }
 

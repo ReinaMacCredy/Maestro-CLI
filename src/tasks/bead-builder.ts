@@ -7,7 +7,7 @@
  * verification plan.
  */
 
-import type { ParsedTask } from './plan-parser.ts';
+import type { ParsedTask } from '../plans/parser.ts';
 import { extractPlanSection, getTaskType } from './spec-builder.ts';
 import type { CreateOpts } from '../tasks/port.ts';
 

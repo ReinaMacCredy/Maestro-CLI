@@ -9,7 +9,12 @@ export function titleToSlug(title: string): string {
   return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
-/** Build a zero-padded task folder name from order/id and title. */
+/** Build a task ID (slug) from a human-readable title. */
+export function buildTaskId(title: string): string {
+  return titleToSlug(title);
+}
+
+/** @deprecated Internal -- use buildTaskId for public identity. Build a zero-padded task folder name. */
 export function buildTaskFolder(order: number | string, title: string): string {
   return `${String(order).padStart(2, '0')}-${titleToSlug(title)}`;
 }
