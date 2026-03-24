@@ -6,11 +6,13 @@
 import type { GraphPort } from '../tasks/graph/port.ts';
 import type { HandoffPort } from '../handoff/port.ts';
 import type { SearchPort } from '../search/port.ts';
+import type { AgentToolsRegistry } from '../toolbox/agents/registry.ts';
 import { VERSION } from '../version.ts';
 
 export interface PingServices {
   directory: string;
   taskBackend: 'fs' | 'br';
+  agentToolsRegistry: AgentToolsRegistry;
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
@@ -26,9 +28,17 @@ export interface PingResult {
     cass: boolean;
     agentMail: boolean;
   };
+  agentTools: {
+    installed: number;
+    total: number;
+    names: string[];
+  };
 }
 
 export function ping(services: PingServices): PingResult {
+  const agentAll = services.agentToolsRegistry.getAll();
+  const agentInstalled = services.agentToolsRegistry.getInstalled();
+
   return {
     version: VERSION,
     projectRoot: services.directory,
@@ -38,6 +48,11 @@ export function ping(services: PingServices): PingResult {
       bv: !!services.graphPort,
       cass: !!services.searchPort,
       agentMail: !!services.handoffPort,
+    },
+    agentTools: {
+      installed: agentInstalled.length,
+      total: agentAll.length,
+      names: agentInstalled.map(a => a.manifest.name),
     },
   };
 }
