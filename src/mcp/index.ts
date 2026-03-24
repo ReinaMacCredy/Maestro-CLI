@@ -30,6 +30,8 @@ import { FsSettingsAdapter } from '../core/settings-adapter.ts';
 import { buildToolbox } from '../toolbox/registry.ts';
 import { WorkflowRegistry } from '../workflow/registry.ts';
 import { declareAllTools } from '../workflow/tool-declarations.ts';
+import { createWorkflowEngine } from '../workflow/engine.ts';
+import { registerWorkflowTools } from './handlers/workflow.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
@@ -43,10 +45,11 @@ export function createMaestroServer(directory: string): McpServer {
   // Build workflow registry with tool metadata declarations
   const workflowRegistry = new WorkflowRegistry();
   declareAllTools(workflowRegistry);
+  const { engine } = createWorkflowEngine(workflowRegistry);
 
   const thunk = createServicesThunk(directory, toolbox, workflowRegistry);
 
-  registerStatusTools(server, thunk);
+  registerStatusTools(server, thunk, engine);
   registerFeatureTools(server, thunk);
   registerPlanTools(server, thunk);
   registerTaskTools(server, thunk);
@@ -63,6 +66,7 @@ export function createMaestroServer(directory: string): McpServer {
   registerVisualTools(server, thunk);
   registerDoctorTools(server, thunk);
   registerHistoryTools(server, thunk);
+  registerWorkflowTools(server, thunk);
 
   // Conditional: only register graph/search tools when available + not denied
   if (toolbox.isAvailable('bv')) registerGraphTools(server, thunk);

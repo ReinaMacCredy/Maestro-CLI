@@ -9,8 +9,9 @@ import { checkStatus } from '../../workflow/status.ts';
 import { detectResearchTools } from '../../workflow/research-tools.ts';
 import { derivePipelineStage } from '../../workflow/stages.ts';
 import { buildPlaybookWithExternalSkills } from '../../workflow/playbook.ts';
+import type { WorkflowEngine } from '../../workflow/engine.ts';
 
-export function registerStatusTools(server: McpServer, thunk: ServicesThunk): void {
+export function registerStatusTools(server: McpServer, thunk: ServicesThunk, engine?: WorkflowEngine): void {
   server.registerTool(
     'maestro_status',
     {
@@ -41,6 +42,8 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       const { items: _items, ...tasksSummary } = result.tasks;
       const { comments: _comments, ...planSummary } = result.plan;
 
+      const recommendation = engine?.getRecommendation(pipelineStage, result, services.toolbox);
+
       return respond({
         ...result,
         plan: planSummary,
@@ -48,6 +51,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
         pipelineStage,
         ...(input.verbose && { researchTools }),
         playbook,
+        ...(recommendation && { recommendation }),
         skills: { recommended: playbook.skills }, // backward compat
       });
     }),
