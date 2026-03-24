@@ -354,4 +354,42 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       return respond({ feature, task: input.task, report: report ?? null });
     }),
   );
+
+  server.registerTool(
+    'maestro_task_spec_write',
+    {
+      description: 'Write or update the spec document for a task.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+        content: z.string().describe('Spec content (markdown)'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      await services.taskPort.writeSpec(feature, input.task, input.content);
+      return respond({ feature, task: input.task, written: true });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_task_report_write',
+    {
+      description: 'Write or update the completion report for a task.',
+      inputSchema: {
+        feature: featureParam(),
+        task: taskParam(),
+        content: z.string().describe('Report content (markdown)'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      await services.taskPort.writeReport(feature, input.task, input.content);
+      return respond({ feature, task: input.task, written: true });
+    }),
+  );
 }

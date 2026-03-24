@@ -2,7 +2,9 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
-import { ANNOTATIONS_READONLY } from '../annotations.ts';
+import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
+import { readJson, writeJsonAtomic, ensureDir } from '../../core/fs-io.ts';
+import * as path from 'path';
 
 const REDACT_PATTERN = /apiKey|token|secret|password/i;
 
@@ -58,6 +60,42 @@ export function registerConfigTools(server: McpServer, thunk: ServicesThunk): vo
         return respond({ key: input.key, value: value ?? null });
       }
       return respond({ settings: redacted });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_config_set',
+    {
+      description: 'Set a settings value using dot notation (e.g. "tasks.backend", "dcp.enabled"). Writes to project settings.json.',
+      inputSchema: {
+        key: z.string().describe('Settings key with dot notation (e.g. "tasks.backend", "toolbox.deny")'),
+        value: z.string().describe('Value to set (JSON for objects/arrays, plain string otherwise)'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      let parsed: unknown;
+      try { parsed = JSON.parse(input.value); } catch { parsed = input.value; }
+
+      const settingsPath = path.join(services.directory, '.maestro', 'settings.json');
+      const existing = readJson<Record<string, unknown>>(settingsPath) ?? {};
+
+      const parts = input.key.split('.');
+      let current: Record<string, unknown> = existing;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (current[parts[i]] === undefined || typeof current[parts[i]] !== 'object') {
+          current[parts[i]] = {};
+        }
+        current = current[parts[i]] as Record<string, unknown>;
+      }
+      current[parts[parts.length - 1]] = parsed;
+
+      ensureDir(path.dirname(settingsPath));
+      writeJsonAtomic(settingsPath, existing);
+      (services.settingsPort as any).invalidate?.();
+
+      return respond({ key: input.key, value: parsed });
     }),
   );
 }

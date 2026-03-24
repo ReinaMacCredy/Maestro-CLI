@@ -231,4 +231,21 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
       return respond({ feature, compiled });
     }),
   );
+
+  server.registerTool(
+    'maestro_memory_archive',
+    {
+      description: 'Archive all memory files for a feature into a timestamped archive directory.',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_DESTRUCTIVE,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const result = services.memoryAdapter.archive(feature);
+      return respond({ feature, ...result });
+    }),
+  );
 }
