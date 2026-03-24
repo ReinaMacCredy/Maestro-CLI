@@ -1,18 +1,35 @@
 /**
- * maestro config-set -- set a config value by key.
+ * maestro config-set -- set a settings value by dot-notation key.
+ * Writes to .maestro/settings.json (project) by default.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { defineCommand } from 'citty';
 import { getServices } from '../../../services.ts';
 import { output } from '../../../core/output.ts';
 import { handleCommandError } from '../../../core/errors.ts';
+import { ensureDir, writeJsonAtomic, readJson } from '../../../core/fs-io.ts';
+import { homedir } from 'os';
+
+function setNestedValue(obj: Record<string, unknown>, dotPath: string, value: unknown): void {
+  const parts = dotPath.split('.');
+  let current: Record<string, unknown> = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (current[parts[i]] === undefined || typeof current[parts[i]] !== 'object') {
+      current[parts[i]] = {};
+    }
+    current = current[parts[i]] as Record<string, unknown>;
+  }
+  current[parts[parts.length - 1]] = value;
+}
 
 export default defineCommand({
-  meta: { name: 'config-set', description: 'Set a config value' },
+  meta: { name: 'config-set', description: 'Set a settings value' },
   args: {
     key: {
       type: 'string',
-      description: 'Config key (e.g. sandbox, dockerImage)',
+      description: 'Settings key with dot notation (e.g. tasks.backend, dcp.enabled, toolbox.deny)',
       required: true,
     },
     value: {
@@ -20,12 +37,15 @@ export default defineCommand({
       description: 'Value to set (JSON for objects/arrays, plain string otherwise)',
       required: true,
     },
+    global: {
+      type: 'boolean',
+      description: 'Write to global ~/.maestro/settings.json instead of project',
+      default: false,
+    },
   },
   async run({ args }) {
     try {
-      const { configAdapter } = getServices();
-
-      // Try to parse as JSON for objects/arrays/booleans/numbers
+      // Parse value
       let parsed: unknown;
       try {
         parsed = JSON.parse(args.value);
@@ -33,8 +53,25 @@ export default defineCommand({
         parsed = args.value;
       }
 
-      const updated = configAdapter.set({ [args.key]: parsed });
-      output(updated, () => `[ok] config '${args.key}' set`);
+      // Determine target file
+      const services = getServices();
+      const settingsPath = args.global
+        ? path.join(homedir(), '.maestro', 'settings.json')
+        : path.join(services.directory, '.maestro', 'settings.json');
+
+      // Read existing, apply change, write back
+      const existing = readJson<Record<string, unknown>>(settingsPath) ?? {};
+      setNestedValue(existing, args.key, parsed);
+      ensureDir(path.dirname(settingsPath));
+      writeJsonAtomic(settingsPath, existing);
+
+      // Invalidate settings cache
+      (services.settingsPort as any).invalidate?.();
+
+      output(
+        { key: args.key, value: parsed, path: settingsPath },
+        () => `[ok] settings '${args.key}' set in ${args.global ? 'global' : 'project'} settings`,
+      );
     } catch (err) {
       handleCommandError('config-set', err);
     }

@@ -19,11 +19,11 @@ describe('config', () => {
     await harness.run('init');
 
     // Set a string value
-    const setResult = await harness.run('config-set', '--key', 'taskBackend', '--value', 'fs');
+    const setResult = await harness.run('config-set', '--key', 'tasks.backend', '--value', 'fs');
     expect(setResult.exitCode).toBe(0);
 
     // Get it back
-    const getResult = await harness.run('config-get', '--key', 'taskBackend');
+    const getResult = await harness.run('config-get', '--key', 'tasks.backend');
     expect(getResult.exitCode).toBe(0);
     const value = JSON.parse(getResult.stdout);
     expect(value).toBe('fs');

@@ -53,7 +53,7 @@ const PARALLEL_PLAN = [
 async function setupWithTasks(h: TestHarness, plan: string, featureName = 'test-feature') {
   // Force fs backend so folder names are deterministic (01-xxx, 02-xxx, ...)
   await h.run('init');
-  await h.run('config-set', '--key', 'taskBackend', '--value', 'fs');
+  await h.run('config-set', '--key', 'tasks.backend', '--value', 'fs');
   await h.run('feature-create', featureName);
   await h.run('plan-write', '--feature', featureName, '--content', plan);
   await h.run('plan-approve', '--feature', featureName);
@@ -95,7 +95,7 @@ describe('task sync', () => {
   test('rejects sync without approved plan', async () => {
     harness = await createTestHarness();
     await harness.run('init');
-    await harness.run('config-set', '--key', 'taskBackend', '--value', 'fs');
+    await harness.run('config-set', '--key', 'tasks.backend', '--value', 'fs');
     await harness.run('feature-create', 'test-feature');
     const plan = '## Discovery\nWe investigated the codebase thoroughly and found that the current implementation needs significant refactoring to support the new feature requirements.\n\n### 1. Setup\nSetup things';
     await harness.run('plan-write', '--feature', 'test-feature', '--content', plan);
