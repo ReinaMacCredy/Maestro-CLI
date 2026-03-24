@@ -6,6 +6,7 @@ import { MaestroError } from '../core/errors.ts';
 import type { FeatureJson } from '../core/types.ts';
 import type { DoctrineSettings } from '../core/settings.ts';
 import { suggestDoctrine, type DoctrineSuggestion } from '../doctrine/suggest.ts';
+import { consolidateMemories, type ConsolidationResult } from '../memory/consolidate.ts';
 
 export interface CompleteFeatureServices {
   taskPort: TaskPort;
@@ -18,7 +19,8 @@ export interface CompleteFeatureServices {
 export interface CompleteFeatureResult {
   feature: FeatureJson;
   tasksSummary: { total: number; done: number };
-  suggestPromote: string[];
+  promoted: string[];
+  consolidation?: ConsolidationResult;
   doctrineSuggestions?: DoctrineSuggestion[];
 }
 
@@ -57,9 +59,13 @@ export async function completeFeature(
     );
   }
 
-  // Suggest promoting feature memories to global
-  const featureMemories = memoryAdapter.list(featureName);
-  const suggestPromote = featureMemories.map(m => m.name);
+  // Consolidate memories: merge duplicates, compress stale, auto-promote qualifying
+  let consolidation: ConsolidationResult | undefined;
+  try {
+    consolidation = consolidateMemories(memoryAdapter, featureName, { autoPromote: true });
+  } catch {
+    // Best-effort -- never block feature completion
+  }
 
   const updated = featureAdapter.complete(featureName);
 
@@ -77,5 +83,11 @@ export async function completeFeature(
     }
   }
 
-  return { feature: updated, tasksSummary: { total: tasks.length, done }, suggestPromote, doctrineSuggestions };
+  return {
+    feature: updated,
+    tasksSummary: { total: tasks.length, done },
+    promoted: consolidation?.promoted ?? [],
+    consolidation,
+    doctrineSuggestions,
+  };
 }
