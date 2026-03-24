@@ -60,6 +60,9 @@ import cmdTaskSpecRead from './handlers/task/spec-read.ts';
 import cmdTaskSpecWrite from './handlers/task/spec-write.ts';
 import cmdTaskSync from './handlers/task/sync.ts';
 import cmdTaskUnblock from './handlers/task/unblock.ts';
+import cmdToolboxAdd from './handlers/toolbox/add.ts';
+import cmdToolboxCreate from './handlers/toolbox/create.ts';
+import cmdToolboxList from './handlers/toolbox/toolbox.ts';
 import cmdUpdate from './handlers/update/update.ts';
 import cmdVisual from './handlers/visual.ts';
 
@@ -125,6 +128,9 @@ export const subCommands = {
   'task-spec-write': cmdTaskSpecWrite,
   'task-sync': cmdTaskSync,
   'task-unblock': cmdTaskUnblock,
+  'toolbox-add': cmdToolboxAdd,
+  'toolbox-create': cmdToolboxCreate,
+  'toolbox-list': cmdToolboxList,
   'update': cmdUpdate,
   'visual': cmdVisual,
 } as const;
