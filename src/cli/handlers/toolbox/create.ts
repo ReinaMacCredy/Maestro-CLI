@@ -45,18 +45,63 @@ function generateManifest(name: string, transport: TransportType, provides?: str
   return JSON.stringify(base, null, 2);
 }
 
-function generateAdapter(name: string, transport: TransportType): string {
+const PORT_METHODS: Record<string, Array<{ method: string; mcpTool: string }>> = {
+  search: [
+    { method: 'searchSessions', mcpTool: 'search_sessions' },
+    { method: 'findRelatedSessions', mcpTool: 'find_related' },
+  ],
+  graph: [
+    { method: 'getInsights', mcpTool: 'get_insights' },
+    { method: 'getNextRecommendation', mcpTool: 'get_next_recommendation' },
+    { method: 'getExecutionPlan', mcpTool: 'get_execution_plan' },
+  ],
+  tasks: [
+    { method: 'create', mcpTool: 'create_task' },
+    { method: 'list', mcpTool: 'list_tasks' },
+    { method: 'get', mcpTool: 'get_task' },
+  ],
+};
+
+function generateAdapter(name: string, transport: TransportType, provides?: string): string {
+  const isMcp = transport === 'mcp-stdio' || transport === 'mcp-http';
+  const methods = provides ? PORT_METHODS[provides] : undefined;
+
+  // MCP transport with known port: generate bridge adapter
+  if (isMcp && methods) {
+    const mappingsStr = methods.map(m =>
+      `  {\n    mcpTool: '${m.mcpTool}',\n    portMethod: '${m.method}',\n    transform: (result) => extractJson(result),\n  },`
+    ).join('\n');
+
+    return `/**
+ * MCP Bridge adapter for ${name}.
+ * Maps MCP tools to ${provides} port methods via McpBridge.
+ */
+
+import { createMcpPortAdapter, extractJson } from '../../../sdk/bridge-adapter.ts';
+import type { BridgeMapping } from '../../../sdk/bridge-adapter.ts';
+import type { AdapterContext, AdapterFactory } from '../../../types.ts';
+
+const MAPPINGS: BridgeMapping[] = [
+${mappingsStr}
+];
+
+export const createAdapter: AdapterFactory = (ctx: AdapterContext) => {
+  return createMcpPortAdapter(ctx, MAPPINGS);
+};
+`;
+  }
+
+  // Non-MCP or unknown port: generate basic skeleton
   const importLine = transport === 'cli'
     ? "import { CliTransport } from '../../../sdk/cli-transport.ts';"
     : transport === 'http'
       ? "import { HttpTransport } from '../../../sdk/http-transport.ts';"
-      : transport === 'mcp-stdio' || transport === 'mcp-http'
+      : isMcp
         ? "import { McpTransport } from '../../../sdk/mcp-transport.ts';"
         : '';
 
   return `/**
  * Adapter factory for ${name}.
- * TODO: implement port interface methods.
  */
 
 ${importLine}
@@ -109,7 +154,7 @@ export default defineCommand({
 
       fs.mkdirSync(toolDir, { recursive: true });
       fs.writeFileSync(path.join(toolDir, 'manifest.json'), generateManifest(args.name, transport, args.provides));
-      fs.writeFileSync(path.join(toolDir, 'adapter.ts'), generateAdapter(args.name, transport));
+      fs.writeFileSync(path.join(toolDir, 'adapter.ts'), generateAdapter(args.name, transport, args.provides));
 
       output(
         { name: args.name, transport, path: toolDir },
