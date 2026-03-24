@@ -161,24 +161,3 @@ export function getAdapterFactory(toolName: string): AdapterFactory | null {
   return ADAPTER_FACTORIES[toolName] ?? null;
 }
 
-/**
- * Async registry for future external/dynamic tool loading.
- * @deprecated Use ADAPTER_FACTORIES for built-in tools.
- */
-export const ADAPTER_REGISTRY: Record<string, () => Promise<{ createAdapter: AdapterFactory }>> = {
-  'fs-tasks': () => import('./tools/built-in/fs-tasks/adapter.ts'),
-  'br': () => import('./tools/external/br/adapter.ts'),
-  'bv': () => import('./tools/external/bv/adapter.ts'),
-  'cass': () => import('./tools/external/cass/adapter.ts'),
-  'agent-mail': () => import('./tools/external/agent-mail/adapter.ts'),
-};
-
-/**
- * Load an adapter factory by tool name.
- */
-export async function loadAdapterFactory(toolName: string): Promise<AdapterFactory | null> {
-  const loader = ADAPTER_REGISTRY[toolName];
-  if (!loader) return null;
-  const mod = await loader();
-  return mod.createAdapter;
-}

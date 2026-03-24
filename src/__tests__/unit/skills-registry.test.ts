@@ -130,8 +130,8 @@ describe('skills registry', () => {
     expect(result).toHaveProperty('error');
   });
 
-  test('all 20 built-in skills load without error', async () => {
-    expect(BUILTIN_SKILL_NAMES).toHaveLength(20);
+  test('all 21 built-in skills load without error', async () => {
+    expect(BUILTIN_SKILL_NAMES).toHaveLength(21);
     for (const name of BUILTIN_SKILL_NAMES) {
       const result = await loadSkill(name, tmpDir);
       expect(result).toHaveProperty('content');

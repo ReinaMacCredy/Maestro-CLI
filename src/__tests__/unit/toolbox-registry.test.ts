@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 
 import { ToolboxRegistry, buildToolbox } from '../../toolbox/registry.ts';
-import { clearDetectCache, ADAPTER_REGISTRY, loadAdapterFactory } from '../../toolbox/loader.ts';
+import { clearDetectCache, ADAPTER_FACTORIES, getAdapterFactory } from '../../toolbox/loader.ts';
 import { DEFAULT_SETTINGS } from '../../core/settings.ts';
 import type { MaestroSettings } from '../../core/settings.ts';
 import type { ToolManifest } from '../../toolbox/types.ts';
@@ -184,22 +184,22 @@ describe('buildToolbox', () => {
 });
 
 // ============================================================================
-// ADAPTER_REGISTRY + loadAdapterFactory
+// ADAPTER_FACTORIES + getAdapterFactory
 // ============================================================================
 
-describe('ADAPTER_REGISTRY', () => {
+describe('ADAPTER_FACTORIES', () => {
   it('has entries for all 5 tools', () => {
-    const names = Object.keys(ADAPTER_REGISTRY).sort();
+    const names = Object.keys(ADAPTER_FACTORIES).sort();
     expect(names).toEqual(['agent-mail', 'br', 'bv', 'cass', 'fs-tasks']);
   });
 
-  it('loadAdapterFactory returns a function for known tools', async () => {
-    const factory = await loadAdapterFactory('fs-tasks');
+  it('getAdapterFactory returns a function for known tools', () => {
+    const factory = getAdapterFactory('fs-tasks');
     expect(typeof factory).toBe('function');
   });
 
-  it('loadAdapterFactory returns null for unknown tools', async () => {
-    const factory = await loadAdapterFactory('nonexistent');
+  it('getAdapterFactory returns null for unknown tools', () => {
+    const factory = getAdapterFactory('nonexistent');
     expect(factory).toBeNull();
   });
 });
