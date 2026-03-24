@@ -11,8 +11,6 @@ import {
   type MaestroSettings,
 } from '../../core/settings.ts';
 import { FsSettingsAdapter, migrateFromConfig } from '../../core/settings-adapter.ts';
-import type { HiveConfig } from '../../core/types.ts';
-
 // ============================================================================
 // mergeSettings
 // ============================================================================

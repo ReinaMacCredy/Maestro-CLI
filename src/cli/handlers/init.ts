@@ -9,7 +9,7 @@ import { getMaestroPath } from '../../core/paths.ts';
 import { ensureDir } from '../../core/fs-io.ts';
 import { findProjectRoot } from '../../features/detection.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
-import { FsConfigAdapter } from '../../core/config.ts';
+import { FsSettingsAdapter } from '../../core/settings-adapter.ts';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -42,8 +42,8 @@ export default defineCommand({
         brInitialized = true;
       }
 
-      const configAdapter = new FsConfigAdapter();
-      const configured = configAdapter.get().taskBackend;
+      const settingsAdapter = new FsSettingsAdapter(projectRoot);
+      const configured = settingsAdapter.get().tasks.backend;
       const resolvedBackend = resolveTaskBackend(configured, projectRoot);
 
       const result = {

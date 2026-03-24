@@ -123,7 +123,7 @@ describe('toolbox integration with initServices', () => {
     expect(services.featureAdapter).toBeDefined();
     expect(services.planAdapter).toBeDefined();
     expect(services.memoryAdapter).toBeDefined();
-    expect(services.configAdapter).toBeDefined();
+    expect(services.settingsPort).toBeDefined();
     expect(services.verificationPort).toBeDefined();
     expect(services.doctrinePort).toBeDefined();
   });

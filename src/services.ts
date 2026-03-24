@@ -14,7 +14,6 @@
 import { FsFeatureAdapter } from './features/adapter.ts';
 import { FsPlanAdapter } from './plans/adapter.ts';
 import { FsMemoryAdapter } from './memory/adapter.ts';
-import { FsConfigAdapter } from './core/config.ts';
 import { AgentsMdAdapter } from './features/agents-md.ts';
 import { MaestroError } from './core/errors.ts';
 import { FsVerificationAdapter } from './tasks/verification/adapter.ts';
@@ -36,15 +35,12 @@ import type { GraphPort } from './tasks/graph/port.ts';
 import type { HandoffPort } from './handoff/port.ts';
 import type { SearchPort } from './search/port.ts';
 import type { DoctrinePort } from './doctrine/port.ts';
-import type { ConfigPort } from './core/config.ts';
-
 export interface MaestroServices {
   taskPort: TaskPort;
   verificationPort: VerificationPort;
   featureAdapter: FeaturePort;
   planAdapter: PlanPort;
   memoryAdapter: MemoryPort;
-  configAdapter: ConfigPort;
   agentsMdAdapter: AgentsMdAdapter;
   directory: string;
   // Optional ports -- initialized based on toolbox availability
@@ -133,7 +129,6 @@ export function initServices(
 
   // Always built-in (not toolbox-driven)
   const memoryAdapter = new FsMemoryAdapter(directory);
-  const configAdapter = new FsConfigAdapter();
   const verificationConfig = resolveVerificationConfig(settings.verification);
 
   // Phase 1: independent ports (no cross-port deps)
@@ -155,7 +150,6 @@ export function initServices(
     featureAdapter: new FsFeatureAdapter(directory),
     planAdapter: new FsPlanAdapter(directory),
     memoryAdapter,
-    configAdapter,
     agentsMdAdapter: new AgentsMdAdapter(directory, memoryAdapter),
     directory,
     graphPort,

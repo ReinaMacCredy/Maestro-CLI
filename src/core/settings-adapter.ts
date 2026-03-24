@@ -15,7 +15,42 @@ import {
   type MaestroSettings,
   type SettingsPort,
 } from './settings.ts';
-import type { HiveConfig } from './types.ts';
+/** Legacy config.json shape -- inlined for migration only. */
+interface LegacyConfig {
+  enableToolsFor?: string[];
+  disableMcps?: string[];
+  claimExpiresMinutes?: number;
+  taskBackend?: 'fs' | 'br' | 'auto';
+  agents?: Record<string, { model?: string; temperature?: number; skills?: string[]; autoLoadSkills?: string[]; variant?: string }>;
+  dcp?: {
+    enabled?: boolean;
+    memoryBudgetBytes?: number;
+    memoryBudgetTokens?: number;
+    completedTaskBudgetBytes?: number;
+    completedTaskBudgetTokens?: number;
+    observationMasking?: boolean;
+    relevanceThreshold?: number;
+    handoffDecisionBudgetBytes?: number;
+    handoffDecisionBudgetTokens?: number;
+  };
+  verification?: {
+    enabled?: boolean;
+    autoReject?: boolean;
+    maxRevisions?: number;
+    autoAcceptTypes?: string[];
+    buildCommand?: string;
+    buildTimeoutMs?: number;
+    scoreThreshold?: number;
+  };
+  doctrine?: {
+    enabled?: boolean;
+    doctrineBudgetBytes?: number;
+    doctrineBudgetTokens?: number;
+    maxSuggestionsPerFeature?: number;
+    crossFeatureScanLimit?: number;
+    minSampleSize?: number;
+  };
+}
 
 export class FsSettingsAdapter implements SettingsPort {
   private globalPath: string;
@@ -39,7 +74,7 @@ export class FsSettingsAdapter implements SettingsPort {
     // If neither settings.json exists, try migrating from config.json
     const hasSettings = Object.keys(globalOverlay).length > 0 || Object.keys(projectOverlay).length > 0;
     if (!hasSettings) {
-      const legacy = readJson<Partial<HiveConfig>>(this.legacyConfigPath);
+      const legacy = readJson<Partial<LegacyConfig>>(this.legacyConfigPath);
       if (legacy) {
         const migrated = migrateFromConfig(legacy);
         this.cached = mergeSettings(DEFAULT_SETTINGS, migrated);
@@ -85,7 +120,7 @@ export class FsSettingsAdapter implements SettingsPort {
  * Map legacy HiveConfig fields to MaestroSettings.
  * Read-time only -- never writes to disk.
  */
-export function migrateFromConfig(config: Partial<HiveConfig>): Partial<MaestroSettings> {
+export function migrateFromConfig(config: Partial<LegacyConfig>): Partial<MaestroSettings> {
   const result: Partial<MaestroSettings> = {};
 
   // tasks section
