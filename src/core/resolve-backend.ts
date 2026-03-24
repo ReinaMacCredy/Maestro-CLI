@@ -2,12 +2,11 @@
  * Resolve taskBackend config ('auto' | 'fs' | 'br') to a concrete backend.
  */
 
-import type { HiveConfig } from './types.ts';
 import { checkCli } from './cli-detect.ts';
 import { fileExists } from './fs-io.ts';
 import { join } from 'path';
 
-export type ConfigBackend = NonNullable<HiveConfig['taskBackend']>;
+export type ConfigBackend = 'fs' | 'br' | 'auto';
 export type ResolvedBackend = Exclude<ConfigBackend, 'auto'>;
 
 /**

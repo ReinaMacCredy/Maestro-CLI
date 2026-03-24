@@ -96,7 +96,6 @@ describe('taskBrief', () => {
         deprecate: () => ({ } as any),
         recordInjection: () => {},
       } as any,
-      configAdapter: { get: () => ({ doctrine: { enabled: true } }) },
     });
     await seedClaimedTask(params);
 

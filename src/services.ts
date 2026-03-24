@@ -144,7 +144,7 @@ export function initServices(
 
   // Phase 2: dependent ports (need Phase 1 results)
   const makeCtxWithPorts = buildContext(tb, settings, directory, {
-    taskPort, memoryPort: memoryAdapter, configPort: configAdapter,
+    taskPort, memoryPort: memoryAdapter, settingsPort: settingsAdapter, taskBackend,
   });
   const handoffPort = resolveOptionalPort<HandoffPort>(tb, 'handoff', makeCtxWithPorts);
 

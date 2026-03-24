@@ -3,6 +3,7 @@ import { doctor, type DoctorServices } from '../../workflow/doctor.ts';
 import { ToolboxRegistry } from '../../toolbox/registry.ts';
 import { clearDetectCache } from '../../toolbox/loader.ts';
 import { DEFAULT_SETTINGS } from '../../core/settings.ts';
+import type { SettingsPort } from '../../core/settings.ts';
 import type { ToolManifest } from '../../toolbox/types.ts';
 
 function makeManifest(overrides: Partial<ToolManifest> & { name: string }): ToolManifest {
@@ -21,9 +22,17 @@ function makeToolbox(manifests?: ToolManifest[]): ToolboxRegistry {
   );
 }
 
+function makeSettingsPort(overrides?: Partial<typeof DEFAULT_SETTINGS>): SettingsPort {
+  const settings = { ...DEFAULT_SETTINGS, ...overrides };
+  return {
+    get: () => settings,
+    getToolConfig: (name: string) => settings.toolbox.config[name] ?? {},
+  };
+}
+
 function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServices {
   return {
-    configAdapter: { get: () => ({}) } as DoctorServices['configAdapter'],
+    settingsPort: makeSettingsPort(),
     featureAdapter: {
       getActive: () => ({ name: 'test-feature', status: 'executing', createdAt: '2026-01-01' }),
     } as unknown as DoctorServices['featureAdapter'],
@@ -77,11 +86,12 @@ describe('doctor use case', () => {
     expect(taskCheck?.status).toBe('warn');
   });
 
-  test('fails when config throws', async () => {
+  test('fails when settings throws', async () => {
     const services = makeMockServices({
-      configAdapter: {
-        get: () => { throw new Error('bad config'); },
-      } as unknown as DoctorServices['configAdapter'],
+      settingsPort: {
+        get: () => { throw new Error('bad settings'); },
+        getToolConfig: () => ({}),
+      },
     });
     const report = await doctor(services);
 

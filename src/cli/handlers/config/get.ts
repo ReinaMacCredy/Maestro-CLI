@@ -1,6 +1,6 @@
 /**
  * maestro config-get -- get a config value by key.
- * Reads from settings (v2) first, falls back to config (legacy).
+ * Reads from settings (v2).
  */
 
 import { defineCommand } from 'citty';
@@ -33,15 +33,8 @@ export default defineCommand({
     try {
       const services = getServices();
 
-      // Try settings (v2) first with dot notation
       const settings = services.settingsPort.get();
-      let value = getNestedValue(settings, args.key);
-
-      // Fall back to legacy config for unmigrated fields
-      if (value === undefined) {
-        const config = services.configAdapter.get();
-        value = getNestedValue(config, args.key);
-      }
+      const value = getNestedValue(settings, args.key);
 
       if (value === undefined) {
         throw new MaestroError(`key '${args.key}' not found`);

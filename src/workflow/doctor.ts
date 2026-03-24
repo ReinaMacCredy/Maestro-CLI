@@ -4,7 +4,7 @@
  * v2: uses toolbox status for richer per-tool output.
  */
 
-import type { ConfigPort } from '../core/config.ts';
+import type { SettingsPort } from '../core/settings.ts';
 import type { FeaturePort } from '../features/port.ts';
 import type { TaskPort } from '../tasks/port.ts';
 import type { GraphPort } from '../tasks/graph/port.ts';
@@ -15,7 +15,7 @@ import type { ToolboxRegistry } from '../toolbox/registry.ts';
 import type { AgentToolsRegistry } from '../toolbox/agents/registry.ts';
 
 export interface DoctorServices {
-  configAdapter: ConfigPort;
+  settingsPort: SettingsPort;
   featureAdapter: FeaturePort;
   taskPort: TaskPort;
   directory: string;
@@ -46,7 +46,7 @@ export async function doctor(services: DoctorServices): Promise<DoctorReport> {
 
   // 1. Config check
   try {
-    services.configAdapter.get();
+    services.settingsPort.get();
     checks.push({ name: 'config', status: 'ok', message: 'Config loaded' });
   } catch {
     checks.push({ name: 'config', status: 'fail', message: 'Config failed to load' });

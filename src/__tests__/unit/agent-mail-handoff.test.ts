@@ -6,9 +6,8 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import { AgentMailHandoffAdapter } from '../../toolbox/tools/external/agent-mail/adapter.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
-import type { FsConfigAdapter } from '../../core/config.ts';
-import type { HiveConfig } from '../../core/types.ts';
-import { DEFAULT_HIVE_CONFIG } from '../../core/types.ts';
+import type { SettingsPort } from '../../core/settings.ts';
+import { DEFAULT_SETTINGS } from '../../core/settings.ts';
 import type { HandoffDocument } from '../../handoff/port.ts';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,12 +19,11 @@ import * as os from 'os';
 
 const FEATURE = 'test-handoff-routing';
 
-function makeConfigAdapter(overrides?: Partial<HiveConfig>): FsConfigAdapter {
-  const config: HiveConfig = { ...DEFAULT_HIVE_CONFIG, ...overrides };
+function makeSettingsPort(): SettingsPort {
   return {
-    get: () => config,
-    getPath: () => '/mock/config.json',
-  } as unknown as FsConfigAdapter;
+    get: () => DEFAULT_SETTINGS,
+    getToolConfig: (name: string) => DEFAULT_SETTINGS.toolbox.config[name] ?? {},
+  };
 }
 
 function makeHandoff(beadId: string): HandoffDocument {
@@ -62,7 +60,7 @@ describe('sendHandoff routing', () => {
   test('sendHandoff writes local file even when Agent Mail unreachable', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
     const handoff = makeHandoff('task-01');
@@ -77,7 +75,7 @@ describe('sendHandoff routing', () => {
   test('handoff doc uses maestro commands, not br/cass', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
     const handoff = makeHandoff('task-02');
@@ -95,7 +93,7 @@ describe('sendHandoff routing', () => {
   test('handoff doc uses br commands when taskBackend is br', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter({ taskBackend: 'br' }),
+      makeSettingsPort(), 'br',
       'http://unreachable:9999',
     );
     const handoff = makeHandoff('task-03');
@@ -108,7 +106,7 @@ describe('sendHandoff routing', () => {
   test('handoff doc says "Task:" not "Bead:"', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
     const handoff = makeHandoff('task-04');
@@ -143,7 +141,7 @@ describe('receiveHandoffs', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
 
@@ -156,7 +154,7 @@ describe('receiveHandoffs', () => {
   test('returns empty for no feature', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
 
@@ -167,7 +165,7 @@ describe('receiveHandoffs', () => {
   test('returns empty when no handoffs dir and Agent Mail unreachable', async () => {
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
 
@@ -182,7 +180,7 @@ describe('receiveHandoffs', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       tmpDir, taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(), 'fs',
       'http://unreachable:9999',
     );
 

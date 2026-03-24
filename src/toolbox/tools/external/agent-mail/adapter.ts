@@ -9,7 +9,7 @@
 import type { HandoffPort, HandoffDocument, HandoffResult } from '../../../../handoff/port.ts';
 import type { TaskPort, RichTaskFields } from '../../../../tasks/port.ts';
 import type { MemoryPort } from '../../../../memory/port.ts';
-import type { ConfigPort } from '../../../../core/config.ts';
+import type { SettingsPort } from '../../../../core/settings.ts';
 import { selectMemories } from '../../../../dcp/selector.ts';
 import { scoreByGoal } from '../../../../handoff/scorer.ts';
 import { resolveDcpConfig } from '../../../../dcp/config.ts';
@@ -19,7 +19,6 @@ import { HttpTransport } from '../../../sdk/http-transport.ts';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveTaskBackend } from '../../../../core/resolve-backend.ts';
 import type { AdapterContext, AdapterFactory } from '../../../types.ts';
 
 const DEFAULT_AGENT_MAIL_URL = 'http://localhost:8765';
@@ -34,7 +33,8 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   private projectRoot: string;
   private taskPort: TaskPort;
   private memoryAdapter: MemoryPort;
-  private configAdapter: ConfigPort;
+  private settingsPort: SettingsPort;
+  private taskBackend: 'fs' | 'br';
   private transport: HttpTransport;
   private identity: AgentMailIdentity | undefined;
 
@@ -42,14 +42,16 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     projectRoot: string,
     taskPort: TaskPort,
     memoryAdapter: MemoryPort,
-    configAdapter: ConfigPort,
+    settingsPort: SettingsPort,
+    taskBackend: 'fs' | 'br',
     agentMailUrl?: string,
     transport?: HttpTransport,
   ) {
     this.projectRoot = projectRoot;
     this.taskPort = taskPort;
     this.memoryAdapter = memoryAdapter;
-    this.configAdapter = configAdapter;
+    this.settingsPort = settingsPort;
+    this.taskBackend = taskBackend;
     this.baseUrl = agentMailUrl ?? process.env.AGENT_MAIL_URL ?? DEFAULT_AGENT_MAIL_URL;
     this.transport = transport ?? new HttpTransport({
       baseUrl: this.baseUrl,
@@ -68,7 +70,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       ? await this.taskPort.getRichFields(feature, taskId)
       : null;
 
-    const cfg = resolveDcpConfig(this.configAdapter.get().dcp);
+    const cfg = resolveDcpConfig(this.settingsPort.get().dcp);
 
     let decisions: Array<{ key: string; value: string }>;
 
@@ -166,8 +168,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
   }
 
   async sendHandoff(feature: string, handoff: HandoffDocument, targetAgent?: string): Promise<HandoffResult> {
-    const taskBackend = resolveTaskBackend(this.configAdapter.get().taskBackend, this.projectRoot);
-    const body = this.formatHandoffMessage(handoff, feature, taskBackend);
+    const body = this.formatHandoffMessage(handoff, feature, this.taskBackend);
 
     const filePath = getHandoffPath(this.projectRoot, feature, handoff.beadId);
     ensureDir(path.dirname(filePath));
@@ -342,7 +343,8 @@ export class AgentMailHandoffAdapter implements HandoffPort {
 export const createAdapter: AdapterFactory<HandoffPort> = (ctx: AdapterContext) => {
   const taskPort = ctx.ports.taskPort as TaskPort;
   const memoryPort = ctx.ports.memoryPort as MemoryPort;
-  const configPort = ctx.ports.configPort as ConfigPort;
+  const settingsPort = ctx.ports.settingsPort as SettingsPort;
+  const taskBackend = (ctx.ports.taskBackend as 'fs' | 'br') ?? 'fs';
   const baseUrl = ctx.manifest.baseUrl ?? process.env.AGENT_MAIL_URL ?? DEFAULT_AGENT_MAIL_URL;
   const transport = new HttpTransport({
     baseUrl,
@@ -353,5 +355,5 @@ export const createAdapter: AdapterFactory<HandoffPort> = (ctx: AdapterContext) 
       ? { Authorization: `Bearer ${process.env.HTTP_BEARER_TOKEN}` }
       : undefined,
   });
-  return new AgentMailHandoffAdapter(ctx.projectRoot, taskPort, memoryPort, configPort, undefined, transport);
+  return new AgentMailHandoffAdapter(ctx.projectRoot, taskPort, memoryPort, settingsPort, taskBackend, undefined, transport);
 };

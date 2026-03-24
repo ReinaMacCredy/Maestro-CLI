@@ -38,7 +38,7 @@ export function registerConfigTools(server: McpServer, thunk: ServicesThunk): vo
   server.registerTool(
     'maestro_config_get',
     {
-      description: 'Read maestro configuration. Supports dot notation (e.g. "dcp.enabled", "tasks.backend"). Returns settings (v2) with legacy config fallback.',
+      description: 'Read maestro configuration. Supports dot notation (e.g. "dcp.enabled", "tasks.backend"). Returns settings (v2).',
       inputSchema: {
         key: z.string().optional().describe('Specific config key (supports dot notation, e.g. "dcp.enabled", "toolbox.deny"). Omit for full settings.'),
       },
@@ -50,13 +50,7 @@ export function registerConfigTools(server: McpServer, thunk: ServicesThunk): vo
       const redacted = redactSecrets(settings as unknown as Record<string, unknown>);
 
       if (input.key) {
-        let value = getNestedValue(redacted, input.key);
-        // Fall back to legacy config for unmigrated keys
-        if (value === undefined) {
-          const raw = services.configAdapter.get();
-          const config = redactSecrets(raw as unknown as Record<string, unknown>);
-          value = getNestedValue(config, input.key);
-        }
+        const value = getNestedValue(redacted, input.key);
         return respond({ key: input.key, value: value ?? null });
       }
       return respond({ settings: redacted });

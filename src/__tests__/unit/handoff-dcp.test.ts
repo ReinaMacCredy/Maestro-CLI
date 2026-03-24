@@ -10,9 +10,8 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import { AgentMailHandoffAdapter } from '../../toolbox/tools/external/agent-mail/adapter.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
-import type { FsConfigAdapter } from '../../core/config.ts';
-import type { HiveConfig } from '../../core/types.ts';
-import { DEFAULT_HIVE_CONFIG } from '../../core/types.ts';
+import type { SettingsPort, DcpSettings } from '../../core/settings.ts';
+import { DEFAULT_SETTINGS } from '../../core/settings.ts';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -20,15 +19,15 @@ import { DEFAULT_HIVE_CONFIG } from '../../core/types.ts';
 
 const FEATURE = 'test-handoff-dcp';
 
-function makeConfigAdapter(overrides?: Partial<HiveConfig['dcp']>): FsConfigAdapter {
-  const config: HiveConfig = {
-    ...DEFAULT_HIVE_CONFIG,
-    dcp: { ...DEFAULT_HIVE_CONFIG.dcp, ...overrides },
+function makeSettingsPort(dcpOverrides?: Partial<DcpSettings>): SettingsPort {
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    dcp: { ...DEFAULT_SETTINGS.dcp, ...dcpOverrides },
   };
   return {
-    get: () => config,
-    getPath: () => '/mock/config.json',
-  } as unknown as FsConfigAdapter;
+    get: () => settings,
+    getToolConfig: (name: string) => settings.toolbox.config[name] ?? {},
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +58,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter({ handoffDecisionBudgetBytes: 200 }),
+      makeSettingsPort({ handoffDecisionBudgetTokens: 50 }),
+      'fs',
       'http://unreachable:9999', // prevent actual HTTP calls
     );
 
@@ -71,7 +71,7 @@ describe('handoff DCP scoring', () => {
     expect(handoff.decisions.length).toBeLessThanOrEqual(2);
   });
 
-  test('budget enforced: handoffDecisionBudgetBytes limits total content', async () => {
+  test('budget enforced: handoffDecisionBudgetTokens limits total content', async () => {
     const task = await taskPort.create(FEATURE, 'Build API');
 
     // Seed many memories to exceed budget
@@ -83,7 +83,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter({ handoffDecisionBudgetBytes: 1024 }),
+      makeSettingsPort({ handoffDecisionBudgetTokens: 256 }),
+      'fs',
       'http://unreachable:9999',
     );
 
@@ -103,7 +104,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter({ handoffDecisionBudgetBytes: 4096 }),
+      makeSettingsPort({ handoffDecisionBudgetTokens: 1024 }),
+      'fs',
       'http://unreachable:9999',
     );
 
@@ -123,7 +125,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter({ handoffDecisionBudgetBytes: 8192 }),
+      makeSettingsPort({ handoffDecisionBudgetTokens: 2048 }),
+      'fs',
       'http://unreachable:9999',
     );
 
@@ -142,7 +145,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter({ enabled: false }),
+      makeSettingsPort({ enabled: false }),
+      'fs',
       'http://unreachable:9999',
     );
 
@@ -158,7 +162,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(),
+      'fs',
       'http://unreachable:9999',
     );
 
@@ -174,7 +179,8 @@ describe('handoff DCP scoring', () => {
 
     const adapter = new AgentMailHandoffAdapter(
       '/mock/project', taskPort, memoryPort,
-      makeConfigAdapter(),
+      makeSettingsPort(),
+      'fs',
       'http://unreachable:9999',
     );
 
