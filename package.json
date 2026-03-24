@@ -34,7 +34,7 @@
     "test": "bun test src/",
     "typecheck": "tsc --noEmit",
     "check": "bun run typecheck && bun run test",
-    "dev": "bun src/cli.ts",
+    "dev": "bun src/cli/index.ts",
     "prepublishOnly": "bun run check && bun run build"
   },
   "dependencies": {
