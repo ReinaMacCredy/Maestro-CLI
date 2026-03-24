@@ -10,7 +10,7 @@ import { getMemoryPath, getGlobalMemoryPath } from '../core/paths.ts';
 import { ensureDir, fileExists, readText, writeText } from '../core/fs-io.ts';
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../core/types.ts';
 import type { MemoryPort } from './port.ts';
-import { parseFrontmatterRich, stripFrontmatter, prependMetadataFrontmatter } from '../core/frontmatter.ts';
+import { parseFrontmatterRich, stripFrontmatter, serializeFrontmatter, prependMetadataFrontmatter } from '../core/frontmatter.ts';
 import { inferMetadata } from '../memory/execution/inference.ts';
 
 export class FsMemoryAdapter implements MemoryPort {
@@ -82,6 +82,35 @@ export class FsMemoryAdapter implements MemoryPort {
   stats(featureName: string): { count: number; totalBytes: number; oldest?: string; newest?: string } {
     const memoryPath = getMemoryPath(this.projectRoot, featureName);
     return this._stats(memoryPath);
+  }
+
+  compress(featureName: string, fileName: string): boolean {
+    const content = this.read(featureName, fileName);
+    if (!content) return false;
+
+    const parsed = parseFrontmatterRich(content) ?? {};
+    const body = stripFrontmatter(content);
+    const summary = body.slice(0, 200);
+    const newMeta = { ...parsed, compressed: true };
+    const updated = serializeFrontmatter(newMeta as Record<string, unknown>) + '\n' + summary;
+
+    const memoryPath = getMemoryPath(this.projectRoot, featureName);
+    const filePath = path.join(memoryPath, this.normalizeFileName(fileName));
+    writeText(filePath, updated);
+    return true;
+  }
+
+  isCompressed(featureName: string, fileName: string): boolean {
+    const content = this.read(featureName, fileName);
+    if (!content) return false;
+    const parsed = parseFrontmatterRich(content);
+    return parsed !== null && parsed.compressed === true;
+  }
+
+  readFull(featureName: string, fileName: string): MemoryFileWithMeta | null {
+    const name = fileName.replace(/\.md$/, '');
+    const files = this.listWithMeta(featureName);
+    return files.find(f => f.name === name) ?? null;
   }
 
   deleteGlobal(fileName: string): boolean {

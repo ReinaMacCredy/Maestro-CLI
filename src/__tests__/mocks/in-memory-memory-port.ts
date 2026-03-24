@@ -4,7 +4,7 @@
 
 import type { MemoryFile, MemoryFileWithMeta, MemoryMetadata } from '../../core/types.ts';
 import type { MemoryPort } from '../../memory/port.ts';
-import { parseFrontmatterRich, stripFrontmatter } from '../../core/frontmatter.ts';
+import { parseFrontmatterRich, stripFrontmatter, serializeFrontmatter } from '../../core/frontmatter.ts';
 import { inferMetadata } from '../../memory/execution/inference.ts';
 
 interface StoredMemory {
@@ -115,6 +115,38 @@ export class InMemoryMemoryPort implements MemoryPort {
   deleteGlobal(fileName: string): boolean {
     const name = fileName.replace(/\.md$/, '');
     return this.globalMemories.delete(name);
+  }
+
+  compress(featureName: string, fileName: string): boolean {
+    const name = fileName.replace(/\.md$/, '');
+    const mem = this.getFeatureMap(featureName).get(name);
+    if (!mem) return false;
+
+    const parsed = parseFrontmatterRich(mem.content) ?? {};
+    const body = stripFrontmatter(mem.content);
+    const summary = body.slice(0, 200);
+    const newMeta = { ...parsed, compressed: true };
+    const updated = serializeFrontmatter(newMeta as Record<string, unknown>) + '\n' + summary;
+
+    this.getFeatureMap(featureName).set(name, {
+      ...mem,
+      content: updated,
+      sizeBytes: Buffer.byteLength(updated),
+    });
+    return true;
+  }
+
+  isCompressed(featureName: string, fileName: string): boolean {
+    const name = fileName.replace(/\.md$/, '');
+    const mem = this.getFeatureMap(featureName).get(name);
+    if (!mem) return false;
+    const parsed = parseFrontmatterRich(mem.content);
+    return parsed !== null && parsed.compressed === true;
+  }
+
+  readFull(featureName: string, fileName: string): import('../../core/types.ts').MemoryFileWithMeta | null {
+    const name = fileName.replace(/\.md$/, '');
+    return this.listWithMeta(featureName).find(f => f.name === name) ?? null;
   }
 
   // Test helpers

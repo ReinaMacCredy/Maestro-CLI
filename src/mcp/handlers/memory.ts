@@ -250,6 +250,55 @@ export function registerMemoryTools(server: McpServer, thunk: ServicesThunk): vo
   );
 
   server.registerTool(
+    'maestro_memory_compress',
+    {
+      description: 'Compress a feature memory: truncate body to first 200 chars and mark compressed in frontmatter.',
+      inputSchema: {
+        feature: featureParam(),
+        name: z.string().describe('Memory file name to compress'),
+      },
+      annotations: ANNOTATIONS_MUTATING,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const success = services.memoryAdapter.compress(feature, input.name);
+      if (!success) {
+        throw new MaestroError(`Memory '${input.name}' not found in feature '${feature}'`, [
+          'Use maestro_memory_list to see available memories',
+        ]);
+      }
+      return respond({ feature, name: input.name, compressed: true });
+    }),
+  );
+
+  server.registerTool(
+    'maestro_memory_insights',
+    {
+      description: 'Show memory insights for a feature: duplicate pairs, stats, and compression candidates (files > 2000 chars that are not yet compressed).',
+      inputSchema: {
+        feature: featureParam(),
+      },
+      annotations: ANNOTATIONS_READONLY,
+    },
+    withErrorHandling(async (input) => {
+      const services = thunk.get();
+      const feature = requireFeature(services, input.feature);
+      const { findDuplicates } = await import('../../dcp/dedup.ts');
+
+      const memories = services.memoryAdapter.listWithMeta(feature);
+      const stats = services.memoryAdapter.stats(feature);
+      const duplicates = findDuplicates(memories);
+
+      const compressionCandidates = memories
+        .filter(m => m.sizeBytes > 2000 && !services.memoryAdapter.isCompressed(feature, m.name))
+        .map(m => ({ name: m.name, sizeBytes: m.sizeBytes }));
+
+      return respond({ feature, stats, duplicates, compressionCandidates });
+    }),
+  );
+
+  server.registerTool(
     'maestro_memory_consolidate',
     {
       description: 'Consolidate feature memories: merge duplicates, compress stale, auto-promote qualifying memories to global.',

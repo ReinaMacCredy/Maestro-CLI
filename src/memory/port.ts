@@ -15,6 +15,12 @@ export interface MemoryPort {
   compile(featureName: string): string;
   archive(featureName: string): { archived: string[]; archivePath: string };
   stats(featureName: string): { count: number; totalBytes: number; oldest?: string; newest?: string };
+  /** Compress a memory: truncate body to first 200 chars, mark compressed in frontmatter. */
+  compress(featureName: string, fileName: string): boolean;
+  /** Return true if the memory's frontmatter has compressed: true. */
+  isCompressed(featureName: string, fileName: string): boolean;
+  /** Return the full MemoryFileWithMeta for a named memory, or null if not found. */
+  readFull(featureName: string, fileName: string): MemoryFileWithMeta | null;
   /** Global memory (not feature-scoped). */
   writeGlobal(fileName: string, content: string): string;
   readGlobal(fileName: string): string | null;
