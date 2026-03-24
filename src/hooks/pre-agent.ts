@@ -227,6 +227,17 @@ async function main(): Promise<void> {
       allTasks: taskDeps,
     });
 
+    // Agent tools guidance (code intelligence protocol)
+    let fullInjection = injection;
+    const agentGuidance = services.agentToolsRegistry.assembleProtocol('code-intelligence');
+    if (agentGuidance) {
+      const guidanceBudget = 500 * 4; // 500 tokens ~= 2000 chars
+      const trimmed = agentGuidance.length > guidanceBudget
+        ? agentGuidance.slice(0, guidanceBudget) + '\n[truncated]'
+        : agentGuidance;
+      fullInjection += `\n\n## Code Intelligence Tools\n\n${trimmed}`;
+    }
+
     logDcpMetrics(projectDir, featureName, taskFolder, {
       ...metrics,
       doctrineInjected: doctrineItems.length > 0,
@@ -236,7 +247,7 @@ async function main(): Promise<void> {
     writeOutput({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
-        additionalContext: injection,
+        additionalContext: fullInjection,
       },
     });
   } catch {

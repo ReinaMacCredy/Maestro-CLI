@@ -37,7 +37,8 @@ export function registerBriefTools(server: McpServer, thunk: ServicesThunk): voi
         graphPort: services.graphPort,
         doctrinePort: services.doctrinePort,
       }, feature, input.task);
-      return respond({ ...result });
+      const guidance = services.agentToolsRegistry.assembleProtocol('code-intelligence') ?? undefined;
+      return respond({ ...result, agentToolsGuidance: guidance });
     }),
   );
 }

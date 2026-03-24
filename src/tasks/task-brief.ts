@@ -54,6 +54,7 @@ export interface TaskBriefResult {
     memoriesDropped: number;
     scores: Array<{ name: string; score: number; included: boolean }>;
   };
+  agentToolsGuidance?: string;
   hint?: string;
 }
 
