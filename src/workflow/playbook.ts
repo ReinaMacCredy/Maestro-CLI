@@ -10,6 +10,8 @@
  */
 
 import type { PipelineStage } from './workflow.ts';
+import type { WorkflowRegistry } from './registry.ts';
+import type { ToolboxRegistry } from '../toolbox/registry.ts';
 import { discoverExternalSkillsByStage } from '../skills/external-discovery.ts';
 
 export interface Playbook {
@@ -26,88 +28,78 @@ export interface TransitionHint {
   loadSkill?: string;
 }
 
-const PLAYBOOKS = {
+/** Editorial content per stage -- objectives, skills, anti-patterns. */
+const STAGE_CONTENT: Record<PipelineStage, Omit<Playbook, 'tools'>> = {
   discovery: {
     stage: 'discovery',
     objective: 'Explore scope, brainstorm, capture findings',
-    tools: ['memory_write', 'skill'],
     skills: ['maestro:brainstorming', 'maestro:design', 'maestro:parallel-exploration'],
     nextMilestone: 'Write plan with plan_write',
-    antiPatterns: [
-      "Don't write the plan yet -- explore first",
-      "Don't skip memory_write -- findings are lost without it",
-    ],
+    antiPatterns: ["Don't write the plan yet -- explore first", "Don't skip memory_write -- findings are lost without it"],
   },
   research: {
     stage: 'research',
     objective: 'Deep-dive codebase, save structured findings',
-    tools: ['memory_write', 'memory_read', 'memory_list', 'skill'],
     skills: ['maestro:brainstorming', 'maestro:design', 'maestro:parallel-exploration'],
     nextMilestone: 'Write plan with plan_write',
-    antiPatterns: [
-      "Don't research without saving findings as memory",
-      "Don't start planning before research is sufficient",
-    ],
+    antiPatterns: ["Don't research without saving findings as memory", "Don't start planning before research is sufficient"],
   },
   planning: {
     stage: 'planning',
     objective: 'Write plan with discovery section, non-goals, ghost diffs',
-    tools: ['plan_write', 'plan_read', 'plan_comment', 'memory_read'],
     skills: ['maestro:design'],
     nextMilestone: 'Approve plan with plan_approve',
-    antiPatterns: [
-      "Don't skip ## Discovery section in plan",
-      "Don't approve your own plan without review",
-    ],
+    antiPatterns: ["Don't skip ## Discovery section in plan", "Don't approve your own plan without review"],
   },
   approval: {
     stage: 'approval',
     objective: 'Generate tasks from the approved plan',
-    tools: ['tasks_sync'],
     skills: ['maestro:implement'],
     nextMilestone: 'Call tasks_sync to generate tasks',
-    antiPatterns: [
-      "Don't skip tasks_sync -- jumping to implementation without tasks loses tracking",
-    ],
+    antiPatterns: ["Don't skip tasks_sync -- jumping to implementation without tasks loses tracking"],
   },
   execution: {
     stage: 'execution',
     objective: 'Claim tasks, implement via TDD, verify',
-    tools: [
-      'task_next', 'task_claim', 'task_done',
-      'task_block', 'task_unblock', 'task_accept', 'task_reject', 'task_list',
-      'visual', 'debug_visual',
-    ],
     skills: ['maestro:implement', 'maestro:dispatching', 'maestro:tdd'],
     nextMilestone: 'All tasks done',
-    antiPatterns: [
-      "Don't skip task_claim before working",
-      "Don't mark done without verification",
-    ],
+    antiPatterns: ["Don't skip task_claim before working", "Don't mark done without verification"],
   },
   done: {
     stage: 'done',
     objective: 'Complete feature, promote memories, review doctrine',
-    tools: ['feature_complete', 'memory_promote', 'doctrine_list', 'visual'],
     skills: [],
     nextMilestone: 'Call feature_complete',
-    antiPatterns: [
-      "Don't forget to promote useful memories to global",
-    ],
+    antiPatterns: ["Don't forget to promote useful memories to global"],
   },
-} satisfies Record<PipelineStage, Playbook>;
+};
 
-export function buildPlaybook(stage: PipelineStage): Playbook {
-  return PLAYBOOKS[stage];
+/**
+ * Build playbook using the dynamic workflow registry.
+ * Tools come from the registry; editorial content from STAGE_CONTENT.
+ */
+export function buildPlaybook(
+  stage: PipelineStage,
+  registry?: WorkflowRegistry,
+  toolbox?: ToolboxRegistry,
+): Playbook {
+  const content = STAGE_CONTENT[stage];
+  const tools = registry
+    ? registry.getToolsForStage(stage, toolbox).map(t => t.replace('maestro_', ''))
+    : [];
+  return { ...content, tools };
 }
 
 /**
  * Build playbook with external skills merged in.
- * Discovers skills from external directories tagged for this stage
- * and appends them to the built-in skill list.
  */
-export function buildPlaybookWithExternalSkills(stage: PipelineStage, projectRoot: string): Playbook {
-  const base = buildPlaybook(stage);
+export function buildPlaybookWithExternalSkills(
+  stage: PipelineStage,
+  projectRoot: string,
+  registry?: WorkflowRegistry,
+  toolbox?: ToolboxRegistry,
+): Playbook {
+  const base = buildPlaybook(stage, registry, toolbox);
   const external = discoverExternalSkillsByStage(projectRoot, stage);
   if (external.length === 0) return base;
   const extraNames = external.map(s => s.name).filter(n => !base.skills.includes(n));

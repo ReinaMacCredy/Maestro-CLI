@@ -1,14 +1,23 @@
 import { describe, test, expect } from 'bun:test';
 import { buildPlaybook, buildTransitionHint } from '../../workflow/playbook.ts';
+import { WorkflowRegistry } from '../../workflow/registry.ts';
+import { declareAllTools } from '../../workflow/tool-declarations.ts';
 import { BUILTIN_SKILL_NAMES } from '../../skills/registry';
 import type { PipelineStage } from '../../workflow/stages.ts';
 
 const ALL_STAGES: PipelineStage[] = ['discovery', 'research', 'planning', 'approval', 'execution', 'done'];
 
+function makeRegistry(): WorkflowRegistry {
+  const reg = new WorkflowRegistry();
+  declareAllTools(reg);
+  return reg;
+}
+
 describe('buildPlaybook', () => {
-  test('returns valid shape for all 6 stages', () => {
+  test('returns valid shape for all 6 stages with registry', () => {
+    const registry = makeRegistry();
     for (const stage of ALL_STAGES) {
-      const pb = buildPlaybook(stage);
+      const pb = buildPlaybook(stage, registry);
       expect(pb.stage).toBe(stage);
       expect(pb.objective.length).toBeGreaterThan(0);
       expect(pb.tools.length).toBeGreaterThan(0);
@@ -17,12 +26,12 @@ describe('buildPlaybook', () => {
     }
   });
 
-  test('is a pure function (same input, same output)', () => {
+  test('returns consistent output for same inputs', () => {
+    const registry = makeRegistry();
     for (const stage of ALL_STAGES) {
-      const a = buildPlaybook(stage);
-      const b = buildPlaybook(stage);
+      const a = buildPlaybook(stage, registry);
+      const b = buildPlaybook(stage, registry);
       expect(a).toEqual(b);
-      expect(a).toBe(b); // same reference -- static map
     }
   });
 

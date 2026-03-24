@@ -40,11 +40,11 @@ export function createMaestroServer(directory: string): McpServer {
   // Build toolbox eagerly for conditional tool registration
   const settings = new FsSettingsAdapter(directory).get();
   const toolbox = buildToolbox(settings);
-  const thunk = createServicesThunk(directory, toolbox);
-
   // Build workflow registry with tool metadata declarations
   const workflowRegistry = new WorkflowRegistry();
   declareAllTools(workflowRegistry);
+
+  const thunk = createServicesThunk(directory, toolbox, workflowRegistry);
 
   registerStatusTools(server, thunk);
   registerFeatureTools(server, thunk);

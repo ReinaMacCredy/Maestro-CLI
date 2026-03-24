@@ -35,7 +35,7 @@ export function registerStatusTools(server: McpServer, thunk: ServicesThunk): vo
       });
       const researchTools = input.verbose ? detectResearchTools(services.directory) : undefined;
 
-      const playbook = buildPlaybookWithExternalSkills(pipelineStage, services.directory);
+      const playbook = buildPlaybookWithExternalSkills(pipelineStage, services.directory, services.workflowRegistry, services.toolbox);
 
       // Strip heavy fields for MCP -- agents use task_list / plan_read for details
       const { items: _items, ...tasksSummary } = result.tasks;
