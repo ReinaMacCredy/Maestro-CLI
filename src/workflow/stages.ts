@@ -55,30 +55,30 @@ export function getNextAction(
     return 'Generate tasks from plan with maestro task-sync';
   }
 
-  let claimedFolder: string | undefined;
-  let blockedFolder: string | undefined;
-  let reviewFolder: string | undefined;
-  let revisionFolder: string | undefined;
+  let claimedId: string | undefined;
+  let blockedId: string | undefined;
+  let reviewId: string | undefined;
+  let revisionId: string | undefined;
   let hasPending = false;
   for (const t of tasks) {
-    if (!claimedFolder && t.status === 'claimed') claimedFolder = t.folder;
-    if (!blockedFolder && t.status === 'blocked') blockedFolder = t.folder;
-    if (!reviewFolder && t.status === 'review') reviewFolder = t.folder;
-    if (!revisionFolder && t.status === 'revision') revisionFolder = t.folder;
+    if (!claimedId && t.status === 'claimed') claimedId = t.folder;
+    if (!blockedId && t.status === 'blocked') blockedId = t.folder;
+    if (!reviewId && t.status === 'review') reviewId = t.folder;
+    if (!revisionId && t.status === 'revision') revisionId = t.folder;
     if (!hasPending && t.status === 'pending') hasPending = true;
   }
 
-  if (reviewFolder) {
-    return `Task awaiting review: ${reviewFolder}. Use task_accept or task_reject.`;
+  if (reviewId) {
+    return `Task awaiting review: ${reviewId}. Use task_accept or task_reject.`;
   }
-  if (revisionFolder) {
-    return `Task needs revision -- claim to retry: ${revisionFolder}`;
+  if (revisionId) {
+    return `Task needs revision -- claim to retry: ${revisionId}`;
   }
-  if (claimedFolder) {
-    return `Task in progress: ${claimedFolder}`;
+  if (claimedId) {
+    return `Task in progress: ${claimedId}`;
   }
-  if (blockedFolder) {
-    return `Review blocker on task ${blockedFolder} and unblock with task_unblock`;
+  if (blockedId) {
+    return `Review blocker on task ${blockedId} and unblock with task_unblock`;
   }
   if (runnableTasks.length > 1) {
     return `${runnableTasks.length} tasks ready -- claim with task_claim: ${runnableTasks.join(', ')}`;

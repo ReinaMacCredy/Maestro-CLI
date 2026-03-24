@@ -91,23 +91,23 @@ export async function checkStatus(
   const now = Date.now();
   const expiredClaims = tasks
     .filter(t => t.status === 'claimed' && t.claimedAt && now - new Date(t.claimedAt).getTime() > expiryMs)
-    .map(t => t.folder);
+    .map(t => t.id);
 
   // Derive blocked from task list
   const blocked = tasks
     .filter((t) => t.status === 'blocked')
-    .map((t) => t.folder);
+    .map((t) => t.id);
 
   // Compute runnable from already-fetched task list (avoids second list() call)
-  const { runnable: runnableFolders } = computeRunnableAndBlocked(tasks);
+  const { runnable: runnableIds } = computeRunnableAndBlocked(tasks);
 
   const counts = countTaskStatuses(tasks);
 
   const planStatus = plan ? (plan.status === 'approved' ? 'approved' : 'draft') : null;
   const nextAction = getNextAction(
     planStatus,
-    tasks.map((task) => ({ status: task.status, folder: task.folder })),
-    runnableFolders,
+    tasks.map((task) => ({ status: task.status, folder: task.id })),
+    runnableIds,
   );
 
   const dcpCfg = resolveDcpConfig(settings.dcp);
@@ -128,7 +128,7 @@ export async function checkStatus(
       ...counts,
       items: tasks,
     },
-    runnable: runnableFolders,
+    runnable: runnableIds,
     blocked,
     expiredClaims,
     context: {

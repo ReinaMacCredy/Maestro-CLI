@@ -35,18 +35,18 @@ function buildMermaid(data: PlanGraphData): string {
   lines.push('  classDef review fill:#8b5cf620,stroke:#8b5cf6');
   lines.push('  classDef revision fill:#f59e0b20,stroke:#f59e0b');
 
-  const taskIds = new Set(data.tasks.map(t => t.folder));
+  const taskIds = new Set(data.tasks.map(t => t.id));
 
   for (const task of data.tasks) {
-    const nodeId = sanitizeMermaidLabel(task.folder);
-    const label = sanitizeMermaidLabel(task.name || task.folder);
+    const nodeId = sanitizeMermaidLabel(task.id);
+    const label = sanitizeMermaidLabel(task.name || task.id);
     const shapeFn = STATUS_SHAPES[task.status] ?? STATUS_SHAPES.pending;
     const cls = STATUS_CLASSES[task.status] ?? '';
     lines.push(`  ${shapeFn(nodeId, label)}${cls}`);
   }
 
   for (const task of data.tasks) {
-    const nodeId = sanitizeMermaidLabel(task.folder);
+    const nodeId = sanitizeMermaidLabel(task.id);
     for (const dep of task.dependsOn) {
       if (!taskIds.has(dep)) continue;
       lines.push(`  ${sanitizeMermaidLabel(dep)} --> ${nodeId}`);
@@ -61,8 +61,8 @@ function buildStatusTable(data: PlanGraphData): string {
 
   const rows = data.tasks.map((t, i) => `
     <tr class="animate" style="--i: ${i + data.tasks.length}">
-      <td><code>${escapeHtml(t.folder)}</code></td>
-      <td>${escapeHtml(t.name || t.folder)}</td>
+      <td><code>${escapeHtml(t.id)}</code></td>
+      <td>${escapeHtml(t.name || t.id)}</td>
       <td><span class="badge badge--${t.status}">${t.status}</span></td>
       <td>${t.claimedBy ? escapeHtml(t.claimedBy) : '<span style="color:var(--text-dim)">--</span>'}</td>
       <td>${t.summary ? escapeHtml(t.summary) : '<span style="color:var(--text-dim)">--</span>'}</td>

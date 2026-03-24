@@ -29,8 +29,8 @@ async function gatherPlanGraph(feature: string, services: MaestroServices): Prom
 
   return {
     tasks: tasks.map(t => ({
-      folder: t.folder,
-      name: t.name ?? t.folder,
+      id: t.id,
+      name: t.name ?? t.id,
       status: t.status,
       dependsOn: t.dependsOn ?? [],
       claimedBy: t.claimedBy,

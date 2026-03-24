@@ -45,7 +45,7 @@ export async function completeFeature(
   }
 
   if (incomplete.length > 0) {
-    const incompleteList = incomplete.map(t => `${t.folder} (${t.status})`).join(', ');
+    const incompleteList = incomplete.map(t => `${t.id} (${t.status})`).join(', ');
     const hints = ['Complete all tasks before completing the feature'];
     if (incomplete.some(t => t.status === 'review')) {
       hints.push('Tasks in review need task_accept or task_reject before completion');

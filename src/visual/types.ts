@@ -66,7 +66,7 @@ export interface VisualResult {
 // ============================================================================
 
 export interface PlanGraphTask {
-  folder: string;
+  id: string;
   name: string;
   status: TaskStatusType;
   dependsOn: string[];

@@ -49,7 +49,7 @@ export default defineCommand({
 
       output(tasks, (list) => {
         if (list.length === 0) return 'No tasks found.';
-        return renderTaskTable(list as { folder: string; name: string; status: string; origin: string }[]);
+        return renderTaskTable(list as { id: string; name: string; status: string; origin: string }[]);
       });
     } catch (err) {
       handleCommandError('task-list', err);

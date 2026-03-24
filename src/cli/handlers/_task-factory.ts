@@ -13,7 +13,7 @@ export function makeInfoCommand() {
     meta: { name: 'task-info', description: 'Show task details' },
     args: {
       feature: { type: 'string' as const, description: 'Feature name', required: true },
-      task: { type: 'string' as const, description: 'Task ID (folder name)', required: true },
+      task: { type: 'string' as const, description: 'Task ID', required: true },
     },
     async run({ args }) {
       try {
@@ -24,7 +24,7 @@ export function makeInfoCommand() {
         }
         output(info, (t: TaskInfo) =>
           [
-            renderStatusLine('Folder', t.folder),
+            renderStatusLine('ID', t.id),
             renderStatusLine('Name', t.name),
             renderStatusLine('Status', t.status),
             renderStatusLine('Origin', t.origin),
@@ -46,7 +46,7 @@ export function makeDocReadCommand(docType: 'spec' | 'report') {
     meta: { name: `task-${docType}-read`, description: `Read task ${docType}` },
     args: {
       feature: { type: 'string' as const, description: 'Feature name', required: true },
-      task: { type: 'string' as const, description: 'Task ID (folder name)', required: true },
+      task: { type: 'string' as const, description: 'Task ID', required: true },
     },
     async run({ args }) {
       try {
@@ -69,7 +69,7 @@ export function makeDocWriteCommand(docType: 'spec' | 'report') {
     meta: { name: `task-${docType}-write`, description: `Write task ${docType}` },
     args: {
       feature: { type: 'string' as const, description: 'Feature name', required: true },
-      task: { type: 'string' as const, description: 'Task ID (folder name)', required: true },
+      task: { type: 'string' as const, description: 'Task ID', required: true },
       content: { type: 'string' as const, description: `Task ${docType} content`, required: true },
     },
     async run({ args }) {

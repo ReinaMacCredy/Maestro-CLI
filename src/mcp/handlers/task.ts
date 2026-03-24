@@ -61,9 +61,9 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       const runnable = await services.taskPort.getRunnable(feature);
 
       // Metadata for all runnable tasks; compiled spec only for the recommended (first) task
-      const tasks = runnable.map(({ folder, name, status, dependsOn }) => ({ folder, name, status, dependsOn }));
+      const tasks = runnable.map(({ id, name, status, dependsOn }) => ({ id, name, status, dependsOn }));
       const recommendedSpec = runnable.length > 0
-        ? await services.taskPort.readSpec(feature, runnable[0].folder)
+        ? await services.taskPort.readSpec(feature, runnable[0].id)
         : undefined;
 
       return respond({ feature, tasks, ...(recommendedSpec !== undefined && { recommendedSpec }) });
@@ -289,8 +289,8 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
       if (input.includeAll !== undefined) opts.includeAll = input.includeAll;
       const tasks = await services.taskPort.list(feature, opts);
       if (input.brief) {
-        const compact = tasks.map(({ folder, name, status, origin, dependsOn }) => ({
-          folder, name, status, origin, dependsOn,
+        const compact = tasks.map(({ id, name, status, origin, dependsOn }) => ({
+          id, name, status, origin, dependsOn,
         }));
         return respond({ feature, tasks: compact });
       }

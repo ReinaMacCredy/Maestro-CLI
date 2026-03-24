@@ -107,7 +107,7 @@ async function main(): Promise<void> {
 function generateSessionHandoff(
   projectDir: string,
   featureName: string,
-  status: { tasks: { items: Array<{ folder: string; name: string; status: string }> }; runnable: string[] },
+  status: { tasks: { items: Array<{ id: string; folder: string; name: string; status: string }> }; runnable: string[] },
   timestamp: string,
 ): void {
   try {
@@ -124,7 +124,7 @@ function generateSessionHandoff(
       '',
       `**Goal:** ${goal}`,
       `**Feature:** ${featureName}`,
-      `**Last task:** ${recentTask.folder} (${recentTask.status})`,
+      `**Last task:** ${recentTask.id} (${recentTask.status})`,
       '',
     ];
 
@@ -136,7 +136,7 @@ function generateSessionHandoff(
 
     sections.push('### Handoff Context');
     sections.push(`1. Call \`maestro_status\` to get current state.`);
-    sections.push(`2. Review task \`${recentTask.folder}\` for continuation.`);
+    sections.push(`2. Review task \`${recentTask.id}\` for continuation.`);
     sections.push('');
 
     const handoffsDir = getHandoffsPath(projectDir, featureName);

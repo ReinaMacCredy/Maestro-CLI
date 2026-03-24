@@ -125,7 +125,7 @@ export interface ProximityContext {
 
 /** Build task context once, pass to scoreRelevance for each memory. */
 export function buildTaskContext(task: TaskInfo, planSection: string | null): TaskContext {
-  const tagContext = [task.name, task.folder, planSection ?? ''].join(' ');
+  const tagContext = [task.name, task.id, planSection ?? ''].join(' ');
   const taskKeywords = extractKeywords(tagContext);
   return { tagContext, taskKeywords };
 }

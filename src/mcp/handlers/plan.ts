@@ -140,7 +140,7 @@ export function registerPlanTools(server: McpServer, thunk: ServicesThunk): void
         t.status === 'claimed' || t.status === 'review' || t.status === 'revision',
       );
       if (activeTasks.length > 0) {
-        const activeList = activeTasks.map(t => `${t.folder} [${t.status}]`).join(', ');
+        const activeList = activeTasks.map(t => `${t.id} [${t.status}]`).join(', ');
         throw new MaestroError(
           `Cannot revoke: ${activeTasks.length} task(s) are actively being worked`,
           [`Active tasks: ${activeList}`, 'Wait for active tasks to complete or block them first'],

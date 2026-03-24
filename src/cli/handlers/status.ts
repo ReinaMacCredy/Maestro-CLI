@@ -30,8 +30,8 @@ function formatStatus(result: StatusResult): string {
   const blockedSet = new Set(result.blocked);
   const taskLines = result.tasks.items.map(t => {
     const status = `[${t.status}]`.padEnd(12);
-    const suffix = blockedSet.has(t.folder) ? ' (blocked)' : '';
-    return `  ${status} ${t.folder}${suffix}`;
+    const suffix = blockedSet.has(t.id) ? ' (blocked)' : '';
+    return `  ${status} ${t.id}${suffix}`;
   });
   const { items: visibleTasks, truncated } = truncateList(taskLines, 20);
   lines.push(...visibleTasks);

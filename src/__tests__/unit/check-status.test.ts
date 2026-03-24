@@ -57,11 +57,11 @@ describe('checkStatus', () => {
     expect(typeof result.nextAction).toBe('string');
   });
 
-  test('blocked is a string array of blocked task folders', async () => {
-    taskPort.seed('feat', '02-blocked', { status: 'blocked' });
+  test('blocked is a string array of blocked task ids', async () => {
+    taskPort.seed('feat', '02-blocked', { id: 'setup-blocked', status: 'blocked' });
 
     const result = await checkStatus(services(), 'feat');
-    expect(result.blocked).toContain('02-blocked');
+    expect(result.blocked).toContain('setup-blocked');
     expect(Array.isArray(result.blocked)).toBe(true);
   });
 

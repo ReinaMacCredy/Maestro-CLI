@@ -36,7 +36,7 @@ export interface TaskBriefResult {
   task: string;
   spec: string;
   memories: Array<{ name: string; content: string; score: number; tags: string[]; category: string }>;
-  completedTasks: Array<{ folder: string; name: string; summary: string }>;
+  completedTasks: Array<{ id: string; name: string; summary: string }>;
   doctrine: Array<{ name: string; rule: string; rationale: string }>;
   graphContext?: { onCriticalPath: boolean; isBottleneck: boolean };
   revisionContext?: {
@@ -159,13 +159,13 @@ export async function taskBrief(
   }));
 
   // 9. Completed tasks (newest-first, budget-capped)
-  const completedTasks: Array<{ folder: string; name: string; summary: string }> = [];
+  const completedTasks: Array<{ id: string; name: string; summary: string }> = [];
   if (allTasksResult.status === 'fulfilled') {
     const doneTasks = allTasksResult.value
       .filter(t => t.status === 'done' && t.summary)
       .reverse(); // newest-first (list returns creation order)
     const budgetTokens = dcpConfig.completedTaskBudgetTokens ?? 512;
-    const entries = doneTasks.map(t => ({ folder: t.folder, name: t.name ?? t.folder, summary: t.summary! }));
+    const entries = doneTasks.map(t => ({ id: t.id, name: t.name ?? t.id, summary: t.summary! }));
     completedTasks.push(...fitWithinBudget(entries, e => estimateTokens(JSON.stringify(e)), budgetTokens));
   }
 

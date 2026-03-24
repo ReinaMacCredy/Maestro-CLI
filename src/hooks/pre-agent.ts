@@ -26,7 +26,7 @@ import type { RichTaskFields } from '../tasks/port.ts';
 
 export { WORKER_RULES };
 
-const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}|maestro-[a-z0-9]+)-[a-z0-9-]+)/i;
+const TASK_PATTERN = /(?:task[:\s_-]+|(?:^|\s))((?:\d{2}-|maestro-[a-z0-9]+-)?[a-z][a-z0-9-]+)/i;
 
 /** Subset of GraphInsights from tasks/graph/port.ts -- only the fields formatGraphContext needs. */
 type GraphInsightsSubset = { criticalPath: Array<{ id: string; title: string }>; bottlenecks: Array<{ id: string; title: string }> };
@@ -46,13 +46,13 @@ export function formatRichContext(
 /** Format graph context (critical path/bottleneck flags) from getInsights result. */
 export function formatGraphContext(
   insightsResult: PromiseSettledResult<GraphInsightsSubset | null>,
-  taskFolder: string,
+  taskId: string,
   task: TaskInfo,
 ): string {
   const insights = insightsResult.status === 'fulfilled' ? insightsResult.value : null;
   if (!insights) return '';
-  const onCriticalPath = insights.criticalPath.some(n => n.id === taskFolder || n.title === task.name);
-  const isBottleneck = insights.bottlenecks.some(n => n.id === taskFolder || n.title === task.name);
+  const onCriticalPath = insights.criticalPath.some(n => n.id === taskId || n.title === task.name);
+  const isBottleneck = insights.bottlenecks.some(n => n.id === taskId || n.title === task.name);
   if (!onCriticalPath && !isBottleneck) return '';
   const flags: string[] = [];
   if (onCriticalPath) flags.push('on critical path');
@@ -64,7 +64,7 @@ export function formatGraphContext(
 function logDcpMetrics(
   projectDir: string,
   featureName: string,
-  taskFolder: string,
+  taskId: string,
   metrics: PruneContextResult['metrics'] & { doctrineInjected?: boolean; doctrineNames?: string[] },
 ): void {
   try {
@@ -74,7 +74,7 @@ function logDcpMetrics(
     const entry = JSON.stringify({
       timestamp: new Date().toISOString(),
       feature: featureName,
-      task: taskFolder,
+      task: taskId,
       ...metrics,
     }) + '\n';
     fs.appendFileSync(logPath, entry);
@@ -101,14 +101,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Check if prompt references a task folder
+  // Check if prompt references a task id
   const match = prompt.match(TASK_PATTERN);
   if (!match) {
     writeOutput({});
     return;
   }
 
-  const taskFolder = match[1];
+  const taskId = match[1];
 
   try {
     const services = initServices(projectDir);
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
     }
 
     const featureName = activeFeature.name;
-    const task = await services.taskPort.get(featureName, taskFolder);
+    const task = await services.taskPort.get(featureName, taskId);
 
     // Accept claimed tasks (fresh or re-claimed from revision)
     if (!task || task.status !== 'claimed') {
@@ -128,7 +128,7 @@ async function main(): Promise<void> {
     }
 
     // Read compiled spec
-    const spec = await services.taskPort.readSpec(featureName, taskFolder);
+    const spec = await services.taskPort.readSpec(featureName, taskId);
     if (!spec) {
       writeOutput({});
       return;
@@ -137,7 +137,7 @@ async function main(): Promise<void> {
     // Build revision context if this is a re-claimed task from revision
     let revisionContext = '';
     if (task.revisionCount && task.revisionCount > 0) {
-      const verificationReport = await services.taskPort.readVerification(featureName, taskFolder);
+      const verificationReport = await services.taskPort.readVerification(featureName, taskId);
       const parts: string[] = [
         `\n## Revision Context (attempt ${task.revisionCount + 1})`,
         '',
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
 
     // Parallelize independent async reads
     const [richResult, insightsResult, allTasksResult] = await Promise.allSettled([
-      services.taskPort.getRichFields?.(featureName, taskFolder) ?? Promise.resolve(null),
+      services.taskPort.getRichFields?.(featureName, taskId) ?? Promise.resolve(null),
       services.graphPort?.getInsights() ?? Promise.resolve(null),
       services.taskPort.list(featureName, { includeAll: true }),
     ]);
@@ -174,7 +174,7 @@ async function main(): Promise<void> {
     const richContext = formatRichContext(richResult as PromiseSettledResult<RichTaskFields | null>);
     const graphContext = formatGraphContext(
       insightsResult as PromiseSettledResult<GraphInsightsSubset | null>,
-      taskFolder, task,
+      taskId, task,
     );
 
     const memories = services.memoryAdapter.listWithMeta(featureName);
@@ -182,7 +182,7 @@ async function main(): Promise<void> {
     let doctrineItems: DoctrineItem[] = [];
     try {
       if (services.doctrinePort) {
-        const derivedTags = deriveFolderTags(taskFolder);
+        const derivedTags = deriveFolderTags(taskId);
         const specKeywords = extractKeywords(spec);
         doctrineItems = services.doctrinePort.findRelevant(derivedTags, specKeywords);
       }
@@ -192,7 +192,7 @@ async function main(): Promise<void> {
 
     if (doctrineItems.length > 0) {
       appendDoctrineTrace(
-        projectDir, featureName, taskFolder,
+        projectDir, featureName, taskId,
         task.revisionCount ?? 0,
         doctrineItems.map(d => d.name),
       );
@@ -213,12 +213,12 @@ async function main(): Promise<void> {
 
     // Convert task list to TaskWithDeps for dependency-proximity scoring
     const taskDeps = allTasks.map(t => ({
-      folder: t.folder, status: t.status, dependsOn: t.dependsOn,
+      id: t.id, folder: t.folder, status: t.status, dependsOn: t.dependsOn,
     }));
 
     // Prune and assemble
     const { injection, metrics } = pruneContext({
-      featureName, taskFolder, task, spec,
+      featureName, taskFolder: taskId, task, spec,
       memories, completedTasks,
       richContext, graphContext, revisionContext,
       workerRules: WORKER_RULES,
@@ -238,7 +238,7 @@ async function main(): Promise<void> {
       fullInjection += `\n\n## Code Intelligence Tools\n\n${trimmed}`;
     }
 
-    logDcpMetrics(projectDir, featureName, taskFolder, {
+    logDcpMetrics(projectDir, featureName, taskId, {
       ...metrics,
       doctrineInjected: doctrineItems.length > 0,
       doctrineNames: doctrineItems.map(d => d.name),

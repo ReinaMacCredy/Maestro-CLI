@@ -63,8 +63,8 @@ export function renderList(items: string[]): string {
 }
 
 /** Render a task/subtask list as a table with standard columns. */
-export function renderTaskTable(tasks: { folder: string; name: string; status: string; origin: string }[]): string {
-  const headers = ["Folder", "Name", "Status", "Origin"];
-  const rows = tasks.map((t) => [t.folder, t.name, t.status, t.origin]);
+export function renderTaskTable(tasks: { id: string; name: string; status: string; origin: string }[]): string {
+  const headers = ["ID", "Name", "Status", "Origin"];
+  const rows = tasks.map((t) => [t.id, t.name, t.status, t.origin]);
   return renderTable(headers, rows);
 }
