@@ -4,6 +4,7 @@
  */
 
 import { VERIFICATION_DEFAULTS, type HiveConfig } from '../../core/types.ts';
+import type { VerificationSettings } from '../../core/settings.ts';
 
 export interface ResolvedVerificationConfig {
   enabled: boolean;
@@ -16,7 +17,7 @@ export interface ResolvedVerificationConfig {
 }
 
 export function resolveVerificationConfig(
-  override?: NonNullable<HiveConfig['verification']>,
+  override?: VerificationSettings | NonNullable<HiveConfig['verification']>,
 ): ResolvedVerificationConfig {
   const { buildCommand, ...rest } = override ?? {};
   return {

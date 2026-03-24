@@ -132,8 +132,7 @@ export function initServices(
   // Always built-in (not toolbox-driven)
   const memoryAdapter = new FsMemoryAdapter(directory);
   const configAdapter = new FsConfigAdapter();
-  const config = configAdapter.get();
-  const verificationConfig = resolveVerificationConfig(config.verification);
+  const verificationConfig = resolveVerificationConfig(settings.verification);
 
   // Phase 1: independent ports (no cross-port deps)
   const { port: taskPort, backend: taskBackend } = resolveTaskPort(tb, settings, directory);

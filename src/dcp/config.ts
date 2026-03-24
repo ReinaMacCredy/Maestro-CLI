@@ -4,8 +4,9 @@
  */
 
 import { DCP_DEFAULTS, type HiveConfig } from '../core/types.ts';
+import type { DcpSettings } from '../core/settings.ts';
 
-export function resolveDcpConfig(override?: NonNullable<HiveConfig['dcp']>) {
+export function resolveDcpConfig(override?: DcpSettings | NonNullable<HiveConfig['dcp']>) {
   const merged = { ...DCP_DEFAULTS, ...override };
 
   // Token precedence: user-set token fields win; otherwise derive from bytes/4
