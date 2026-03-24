@@ -61,6 +61,17 @@ export class FsSettingsAdapter implements SettingsPort {
     this.cached = null;
   }
 
+  /** Get agent-specific config with defaults merged and skill filtering. */
+  getAgentConfig(agentName: string): {
+    model?: string; temperature?: number; skills?: string[];
+    autoLoadSkills?: string[]; variant?: string;
+  } {
+    const settings = this.get();
+    const agentConfig = settings.agents[agentName] ?? {};
+    const defaultAutoLoad = agentConfig.autoLoadSkills ?? [];
+    return { ...agentConfig, autoLoadSkills: defaultAutoLoad };
+  }
+
   /** Paths exposed for CLI/diagnostics. */
   getGlobalPath(): string { return this.globalPath; }
   getProjectPath(): string { return this.projectPath; }
@@ -150,6 +161,15 @@ export function migrateFromConfig(config: Partial<HiveConfig>): Partial<MaestroS
       ...(dc.crossFeatureScanLimit !== undefined ? { crossFeatureScanLimit: dc.crossFeatureScanLimit } : {}),
       ...(dc.minSampleSize !== undefined ? { minSampleSize: dc.minSampleSize } : {}),
     };
+  }
+
+  // agents section
+  if (config.agents) {
+    const agents: Record<string, { model?: string; temperature?: number; skills?: string[]; autoLoadSkills?: string[]; variant?: string }> = {};
+    for (const [name, cfg] of Object.entries(config.agents)) {
+      if (cfg) agents[name] = { ...cfg };
+    }
+    result.agents = agents;
   }
 
   return result;

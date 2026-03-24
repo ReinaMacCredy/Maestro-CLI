@@ -52,6 +52,14 @@ export interface TasksSettings {
   backend: 'fs' | 'br' | 'auto';
 }
 
+export interface AgentModelSettings {
+  model?: string;
+  temperature?: number;
+  skills?: string[];
+  autoLoadSkills?: string[];
+  variant?: string;
+}
+
 export interface MaestroSettings {
   toolbox: ToolboxSettings;
   agentTools: AgentToolsSettings;
@@ -59,6 +67,7 @@ export interface MaestroSettings {
   verification: VerificationSettings;
   doctrine: DoctrineSettings;
   tasks: TasksSettings;
+  agents: Record<string, AgentModelSettings>;
 }
 
 // ============================================================================
@@ -94,6 +103,7 @@ export const DEFAULT_SETTINGS: MaestroSettings = {
     claimExpiresMinutes: 120,
     backend: 'auto',
   },
+  agents: {},
 };
 
 // ============================================================================

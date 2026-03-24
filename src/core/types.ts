@@ -133,8 +133,6 @@ export interface HiveConfig {
   enableToolsFor?: string[];
   disableSkills?: string[];
   disableMcps?: string[];
-  omoSlimEnabled?: boolean;
-  agentMode?: 'unified' | 'dedicated';
   agents?: {
     'hive-master'?: AgentModelConfig;
     'architect-planner'?: AgentModelConfig;
@@ -145,7 +143,6 @@ export interface HiveConfig {
   };
   claimExpiresMinutes: number;
   taskBackend?: 'fs' | 'br' | 'auto';
-  hook_cadence?: Record<string, number>;
   dcp?: {
     enabled?: boolean;                  // default true
     memoryBudgetBytes?: number;         // default 4096 (backward compat)
@@ -229,7 +226,6 @@ export const DEFAULT_HIVE_CONFIG: HiveConfig = {
   enableToolsFor: [],
   disableSkills: [],
   disableMcps: [],
-  agentMode: 'unified',
   claimExpiresMinutes: 120,
   taskBackend: 'auto',
   dcp: DCP_DEFAULTS,
