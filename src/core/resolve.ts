@@ -64,7 +64,7 @@ export function requireGraphPort(services: MaestroServices): GraphPort {
  */
 export function requireHandoffPort(services: MaestroServices): HandoffPort {
   if (!services.handoffPort) {
-    throw new MaestroError('Agent Mail not available', ['Start Agent Mail server or check AGENT_MAIL_URL']);
+    throw new MaestroError('Handoff port not available', ['Run maestro init to set up the project directory']);
   }
   return services.handoffPort;
 }

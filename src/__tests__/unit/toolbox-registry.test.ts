@@ -175,11 +175,14 @@ describe('buildToolbox', () => {
   it('builds from bundled manifests', () => {
     const toolbox = buildToolbox(DEFAULT_SETTINGS);
     const statuses = toolbox.getStatus();
-    expect(statuses.length).toBe(7);
+    expect(statuses.length).toBe(8);
     // fs-tasks is always available (built-in)
     expect(toolbox.isAvailable('fs-tasks')).toBe(true);
     // tasks port always resolves (at least fs-tasks)
     expect(toolbox.resolveProvider('tasks')).not.toBeNull();
+    // handoff port always resolves (fs-handoff built-in)
+    expect(toolbox.isAvailable('fs-handoff')).toBe(true);
+    expect(toolbox.resolveProvider('handoff')).not.toBeNull();
   });
 });
 
@@ -188,9 +191,9 @@ describe('buildToolbox', () => {
 // ============================================================================
 
 describe('ADAPTER_FACTORIES', () => {
-  it('has entries for all 5 tools', () => {
+  it('has entries for all known tools', () => {
     const names = Object.keys(ADAPTER_FACTORIES).sort();
-    expect(names).toEqual(['agent-mail', 'br', 'bv', 'cass', 'fs-tasks', 'mcp-graph', 'mcp-search']);
+    expect(names).toEqual(['agent-mail', 'br', 'bv', 'cass', 'fs-handoff', 'fs-tasks', 'mcp-graph', 'mcp-search']);
   });
 
   it('getAdapterFactory returns a function for known tools', () => {

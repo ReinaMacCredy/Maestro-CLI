@@ -118,11 +118,11 @@ describe('scanToolboxDir', () => {
 // ============================================================================
 
 describe('scanBuiltInManifests', () => {
-  it('finds the 7 bundled manifests', () => {
+  it('finds the 8 bundled manifests', () => {
     const manifests = scanBuiltInManifests();
-    expect(manifests.length).toBe(7);
+    expect(manifests.length).toBe(8);
     const names = manifests.map(m => m.name).sort();
-    expect(names).toEqual(['agent-mail', 'br', 'bv', 'cass', 'fs-tasks', 'mcp-graph', 'mcp-search']);
+    expect(names).toEqual(['agent-mail', 'br', 'bv', 'cass', 'fs-handoff', 'fs-tasks', 'mcp-graph', 'mcp-search']);
   });
 
   it('fs-tasks is built-in (no binary, no detect)', () => {

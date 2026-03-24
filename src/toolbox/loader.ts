@@ -143,6 +143,7 @@ import { createAdapter as cassFactory } from './tools/external/cass/adapter.ts';
 import { createAdapter as agentMailFactory } from './tools/external/agent-mail/adapter.ts';
 import { createAdapter as mcpSearchFactory } from './tools/external/mcp-search/adapter.ts';
 import { createAdapter as mcpGraphFactory } from './tools/external/mcp-graph/adapter.ts';
+import { createAdapter as fsHandoffFactory } from './tools/built-in/fs-handoff/adapter.ts';
 
 /**
  * Synchronous registry: tool name -> adapter factory function.
@@ -150,6 +151,7 @@ import { createAdapter as mcpGraphFactory } from './tools/external/mcp-graph/ada
  */
 export const ADAPTER_FACTORIES: Record<string, AdapterFactory> = {
   'fs-tasks': fsTasksFactory,
+  'fs-handoff': fsHandoffFactory,
   'br': brFactory,
   'bv': bvFactory,
   'cass': cassFactory,
