@@ -9,7 +9,7 @@ import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { verifyTask, type VerifyTaskOpts } from '../../tasks/verify-task.ts';
 import type { VerificationPort, VerificationReport, VerifyParams } from '../../tasks/verification/port.ts';
 import type { ResolvedVerificationConfig } from '../../tasks/verification/config.ts';
-import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
+import { DEFAULT_SETTINGS } from '../../core/settings.ts';
 
 const FEATURE = 'test-feature';
 const TASK = '01-setup-auth';
@@ -30,7 +30,7 @@ function makeVerificationPort(overrides: Partial<VerificationReport> = {}): Veri
 }
 
 function makeConfig(overrides: Partial<ResolvedVerificationConfig> = {}): ResolvedVerificationConfig {
-  return { ...VERIFICATION_DEFAULTS, ...overrides };
+  return { ...DEFAULT_SETTINGS.verification, ...overrides };
 }
 
 function makeMemoryAdapter() {

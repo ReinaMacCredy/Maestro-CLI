@@ -63,7 +63,7 @@ export interface StatusResult {
   };
   dcp?: {
     enabled: boolean;
-    memoryBudgetBytes: number;
+    memoryBudgetTokens: number;
   };
   nextAction: string;
 }
@@ -142,7 +142,7 @@ export async function checkStatus(
     },
     dcp: {
       enabled: dcpCfg.enabled,
-      memoryBudgetBytes: dcpCfg.memoryBudgetBytes,
+      memoryBudgetTokens: dcpCfg.memoryBudgetTokens,
     },
     nextAction,
   };

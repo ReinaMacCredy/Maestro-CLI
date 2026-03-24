@@ -68,7 +68,7 @@ export default defineCommand({
         lines.push(`# DCP Preview: ${args.task}`);
         lines.push(`  feature:  ${feature}`);
         lines.push(`  enabled:  ${resolvedDcp.enabled}`);
-        lines.push(`  budget:   ${resolvedDcp.memoryBudgetBytes} bytes`);
+        lines.push(`  budget:   ${resolvedDcp.memoryBudgetTokens} tokens`);
         lines.push(`  memories: ${m.memoriesIncluded}/${m.memoriesTotal} included, ${m.memoriesDropped} dropped`);
         lines.push('');
 

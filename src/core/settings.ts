@@ -37,6 +37,7 @@ export interface VerificationSettings {
   scoreThreshold: number;
   buildTimeoutMs: number;
   buildCommand?: string;
+  autoAcceptTypes: string[];
 }
 
 export interface DoctrineSettings {
@@ -91,6 +92,7 @@ export const DEFAULT_SETTINGS: MaestroSettings = {
     maxRevisions: 2,
     scoreThreshold: 0.7,
     buildTimeoutMs: 30000,
+    autoAcceptTypes: [],
   },
   doctrine: {
     enabled: true,

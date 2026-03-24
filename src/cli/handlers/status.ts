@@ -45,7 +45,7 @@ function formatStatus(result: StatusResult): string {
 
   if (result.dcp) {
     const dcpLabel = result.dcp.enabled
-      ? `on (budget: ${result.dcp.memoryBudgetBytes}B, current: ${result.context.totalBytes}B, ${result.context.count} files)`
+      ? `on (budget: ${result.dcp.memoryBudgetTokens}T, current: ${result.context.totalBytes}B, ${result.context.count} files)`
       : 'off';
     lines.push(renderStatusLine('dcp', dcpLabel));
   }

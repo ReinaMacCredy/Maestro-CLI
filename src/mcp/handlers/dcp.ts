@@ -65,7 +65,7 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         task: input.task,
         dcp: {
           enabled: resolvedDcp.enabled,
-          memoryBudgetBytes: resolvedDcp.memoryBudgetBytes,
+          memoryBudgetTokens: resolvedDcp.memoryBudgetTokens,
         },
         memories: {
           total: metrics.memoriesTotal,
