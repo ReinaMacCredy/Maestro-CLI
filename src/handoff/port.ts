@@ -20,6 +20,14 @@ export interface HandoffDocument {
   criticalContext: string;
   cassPointer?: string;
   agentMailThread?: string;
+  /** Optional goal for goal-based memory scoring in handoff context. */
+  goal?: string;
+  /** Session that generated this handoff. */
+  fromSession?: string;
+  /** Host that generated this handoff. */
+  fromHost?: string;
+  /** maestro version that generated this handoff. */
+  maestroVersion?: string;
 }
 
 export interface HandoffResult {

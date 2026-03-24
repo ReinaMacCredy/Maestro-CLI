@@ -11,6 +11,7 @@ import type { TaskPort, RichTaskFields } from '../../../../tasks/port.ts';
 import type { MemoryPort } from '../../../../memory/port.ts';
 import type { ConfigPort } from '../../../../core/config.ts';
 import { selectMemories } from '../../../../dcp/selector.ts';
+import { scoreByGoal } from '../../../../handoff/scorer.ts';
 import { resolveDcpConfig } from '../../../../dcp/config.ts';
 import { getHandoffPath, getHandoffsPath } from '../../../../core/paths.ts';
 import { ensureDir, writeText, readText } from '../../../../core/fs-io.ts';
@@ -61,7 +62,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
     });
   }
 
-  async buildHandoff(feature: string, taskId: string): Promise<HandoffDocument> {
+  async buildHandoff(feature: string, taskId: string, goal?: string): Promise<HandoffDocument> {
     const task = await this.taskPort.get(feature, taskId);
     const richFields: RichTaskFields | null = this.taskPort.getRichFields
       ? await this.taskPort.getRichFields(feature, taskId)
@@ -71,7 +72,16 @@ export class AgentMailHandoffAdapter implements HandoffPort {
 
     let decisions: Array<{ key: string; value: string }>;
 
-    if (cfg.enabled && task) {
+    if (goal && cfg.enabled) {
+      // Goal-based scoring: rank memories by relevance to the handoff goal
+      const allMemories = this.memoryAdapter.listWithMeta(feature);
+      const scored = scoreByGoal(allMemories, goal);
+      decisions = scored.map(s => ({
+        key: s.name,
+        value: s.memory.bodyContent.slice(0, 500),
+      }));
+    } else if (cfg.enabled && task) {
+      // DCP task-based scoring (default when no goal)
       const allMemories = this.memoryAdapter.listWithMeta(feature);
       const selected = selectMemories(
         allMemories, task, null, cfg.handoffDecisionBudgetTokens,
@@ -107,6 +117,7 @@ export class AgentMailHandoffAdapter implements HandoffPort {
       nextSteps: [],
       criticalContext: '',
       cassPointer: `Search prior sessions: maestro search-sessions --query "${task?.name ?? taskId}"`,
+      goal,
     };
   }
 
