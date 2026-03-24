@@ -3,6 +3,7 @@
  */
 
 import type { MaestroSettings } from '../core/settings.ts';
+import type { TransportType } from './sdk/types.ts';
 
 // ============================================================================
 // Manifest
@@ -28,6 +29,18 @@ export interface ToolManifest {
   inject?: string[];
   /** Other tool names that must be present for this tool to work. */
   requires?: string[];
+  /** Transport type. Inferred from binary/detect if absent. */
+  transport?: TransportType;
+  /** MCP stdio: command to launch server. */
+  command?: string;
+  /** MCP stdio: arguments for the command. */
+  args?: string[];
+  /** MCP stdio: environment variables. */
+  env?: Record<string, string>;
+  /** HTTP/MCP-HTTP: base URL or endpoint URL. */
+  url?: string;
+  /** HTTP: base URL for API calls. */
+  baseUrl?: string;
 }
 
 // ============================================================================

@@ -7,6 +7,7 @@ import * as path from 'path';
 import { execFileSync } from 'node:child_process';
 import { isToolAllowed } from '../core/settings.ts';
 import type { ToolManifest, ToolStatus } from './types.ts';
+import type { TransportType } from './sdk/types.ts';
 
 // ============================================================================
 // Manifest Loading
@@ -111,6 +112,23 @@ export function detectTool(
  */
 export function clearDetectCache(): void {
   detectCache.clear();
+}
+
+// ============================================================================
+// Transport Inference
+// ============================================================================
+
+/**
+ * Infer transport type from manifest fields.
+ * Explicit `transport` field takes precedence; otherwise inferred from binary/detect.
+ */
+export function inferTransport(manifest: ToolManifest): TransportType {
+  if (manifest.transport) return manifest.transport;
+  if (manifest.binary !== null) return 'cli';
+  if (manifest.command) return 'mcp-stdio';
+  if (manifest.url) return 'mcp-http';
+  if (manifest.baseUrl) return 'http';
+  return 'builtin';
 }
 
 // ============================================================================
