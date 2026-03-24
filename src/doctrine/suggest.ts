@@ -5,12 +5,12 @@
 
 import type { FeaturePort } from '../features/port.ts';
 import type { MemoryPort } from '../memory/port.ts';
-import type { DoctrineItem, DoctrineConditions } from '../doctrine/port.ts';
+import type { DoctrineItem, DoctrineConditions } from './port.ts';
 import { isExecutionMemory } from '../memory/execution/writer.ts';
 import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFeatures } from '../memory/execution/parser.ts';
 import { extractKeywords } from '../dcp/relevance.ts';
 import { titleToSlug } from '../core/slug.ts';
-import { resolveDoctrineConfig } from '../doctrine/config.ts';
+import { resolveDoctrineConfig } from './config.ts';
 import type { HiveConfig } from '../core/types.ts';
 
 export interface DoctrineSuggestion {

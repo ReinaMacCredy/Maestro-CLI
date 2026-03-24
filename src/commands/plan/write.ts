@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { writePlan } from '../../usecases/write-plan.ts';
+import { writePlan } from '../../plans/write-plan.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError, MaestroError } from '../../core/errors.ts';
 import * as fs from 'fs';

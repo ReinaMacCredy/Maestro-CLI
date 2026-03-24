@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { approvePlan } from '../../usecases/approve-plan.ts';
+import { approvePlan } from '../../plans/approve-plan.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 

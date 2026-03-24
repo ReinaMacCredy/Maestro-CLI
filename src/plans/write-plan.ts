@@ -1,10 +1,10 @@
-import type { PlanPort } from '../plans/port.ts';
+import type { PlanPort } from './port.ts';
 import type { FeaturePort } from '../features/port.ts';
 import type { TaskPort } from '../tasks/port.ts';
 import type { MemoryPort } from '../memory/port.ts';
 import { MaestroError } from '../core/errors.ts';
 import scaffoldTemplate from '../templates/plan-scaffold.md';
-import { queryHistoricalContext, type HistoricalPitfall } from './query-historical-context.ts';
+import { queryHistoricalContext, type HistoricalPitfall } from '../dcp/historical.ts';
 
 const TASK_HEADING_RE = /^###\s+\d+\.\s+.+$/gm;
 

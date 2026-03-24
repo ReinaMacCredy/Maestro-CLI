@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { completeFeature } from '../../usecases/complete-feature.ts';
+import { completeFeature } from '../../features/complete-feature.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 

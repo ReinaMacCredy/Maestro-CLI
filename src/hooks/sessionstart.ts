@@ -1,6 +1,6 @@
 import { readStdin, writeOutput, resolveProjectDir, logHookError, HOOK_EVENTS } from './_helpers.ts';
 import { initServices } from '../services.ts';
-import { checkStatus } from '../usecases/check-status.ts';
+import { checkStatus } from '../workflow/status.ts';
 import { detectResearchTools } from '../workflow/research-tools.ts';
 import { derivePipelineStage, type PipelineStage } from '../workflow/stages.ts';
 import { buildPlaybook, buildPlaybookWithExternalSkills } from '../workflow/playbook.ts';

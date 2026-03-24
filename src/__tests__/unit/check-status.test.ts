@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
-import { checkStatus } from '../../usecases/check-status.ts';
+import { checkStatus } from '../../workflow/status.ts';
 
 describe('checkStatus', () => {
   let tmpDir: string;

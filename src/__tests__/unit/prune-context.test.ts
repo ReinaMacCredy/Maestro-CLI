@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { pruneContext } from '../../usecases/prune-context.ts';
+import { pruneContext } from '../../dcp/prune-context.ts';
 import type { MemoryFileWithMeta, TaskInfo } from '../../core/types.ts';
 
 function makeMemory(name: string, bodyContent: string, overrides: Partial<MemoryFileWithMeta> = {}): MemoryFileWithMeta {

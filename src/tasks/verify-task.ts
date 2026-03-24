@@ -12,7 +12,7 @@
  *      (MCP handler decides the next step -- autoReject, maxRevisions, etc.)
  */
 
-import type { TaskPort } from '../tasks/port.ts';
+import type { TaskPort } from './port.ts';
 import type { VerificationPort, VerificationReport, VerificationCriterion } from '../tasks/verification/port.ts';
 import type { MemoryPort } from '../memory/port.ts';
 import type { ResolvedVerificationConfig } from '../tasks/verification/config.ts';

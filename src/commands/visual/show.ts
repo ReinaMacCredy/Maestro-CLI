@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { visualize } from '../../usecases/visualize.ts';
+import { visualize } from '../../visual/visualize.ts';
 import type { MaestroVisualType, VisualResult } from '../../visual/types.ts';
 import { MAESTRO_VISUAL_TYPES } from '../../visual/types.ts';
 import { output } from '../../core/output.ts';

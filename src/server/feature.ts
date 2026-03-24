@@ -5,7 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING, ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { completeFeature } from '../usecases/complete-feature.ts';
+import { completeFeature } from '../features/complete-feature.ts';
 import { buildTransitionHint } from '../workflow/playbook.ts';
 import { MaestroError } from '../core/errors.ts';
 

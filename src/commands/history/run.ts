@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { history } from '../../usecases/history.ts';
+import { history } from '../../workflow/history.ts';
 import { output, renderTable } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import type { FeatureStatusType } from '../../core/types.ts';

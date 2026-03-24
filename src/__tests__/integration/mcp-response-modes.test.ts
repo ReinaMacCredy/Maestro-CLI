@@ -15,7 +15,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { execSync } from 'child_process';
 import { initServices, type MaestroServices } from '../../services.ts';
-import { syncPlan } from '../../usecases/sync-plan.ts';
+import { syncPlan } from '../../tasks/sync-plan.ts';
 import { extractPlanOutline } from '../../plans/parser.ts';
 import type { MemoryFile } from '../../core/types.ts';
 

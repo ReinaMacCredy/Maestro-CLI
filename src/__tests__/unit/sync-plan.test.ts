@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/usecases/sync-plan.ts
+ * Unit tests for src/tasks/sync-plan.ts
  *
  * Validates task creation, idempotency, orphan removal, status preservation,
  * manual-origin preservation, dependency pass-through, and error conditions.
@@ -9,7 +9,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { syncPlan } from "../../usecases/sync-plan.ts";
+import { syncPlan } from "../../tasks/sync-plan.ts";
 import { FsPlanAdapter } from "../../plans/adapter.ts";
 import { InMemoryTaskPort } from "../mocks/in-memory-task-port.ts";
 import type { TaskStatusType, TaskOrigin } from '../../core/types.ts';

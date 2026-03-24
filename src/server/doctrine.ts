@@ -6,7 +6,7 @@ import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from './_utils/annotations
 import { requireDoctrinePort as requireDoctrinePortShared } from '../core/resolve.ts';
 import { buildDoctrineItem } from '../doctrine/factory.ts';
 import { MaestroError } from '../core/errors.ts';
-import { suggestDoctrine } from '../usecases/suggest-doctrine.ts';
+import { suggestDoctrine } from '../doctrine/suggest.ts';
 
 function requireDoctrinePort(thunk: ServicesThunk) {
   return requireDoctrinePortShared(thunk.get());

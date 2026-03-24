@@ -9,7 +9,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam, taskParam } from './_utils/params.ts';
-import { taskBrief } from '../usecases/task-brief.ts';
+import { taskBrief } from '../tasks/task-brief.ts';
 
 export function registerBriefTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

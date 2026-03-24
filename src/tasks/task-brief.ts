@@ -4,7 +4,7 @@
  * can call maestro_task_brief and get the same rich context.
  */
 
-import type { TaskPort, RichTaskFields } from '../tasks/port.ts';
+import type { TaskPort, RichTaskFields } from './port.ts';
 import type { GraphPort } from '../tasks/graph/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
 import type { ConfigPort } from '../core/config.ts';

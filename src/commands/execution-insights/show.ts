@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { executionInsights, type ExecutionInsightsResult } from '../../usecases/execution-insights.ts';
+import { executionInsights, type ExecutionInsightsResult } from '../../workflow/insights.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';

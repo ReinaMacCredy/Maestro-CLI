@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { writePlan, type WritePlanServices } from '../../usecases/write-plan.ts';
+import { writePlan, type WritePlanServices } from '../../plans/write-plan.ts';
 import type { PlanPort } from '../../plans/port.ts';
 import type { FeaturePort } from '../../features/port.ts';
 import type { MemoryPort } from '../../memory/port.ts';

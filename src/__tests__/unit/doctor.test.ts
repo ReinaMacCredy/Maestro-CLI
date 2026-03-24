@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { doctor, type DoctorServices } from '../../usecases/doctor';
+import { doctor, type DoctorServices } from '../../workflow/doctor.ts';
 
 function makeMockServices(overrides: Partial<DoctorServices> = {}): DoctorServices {
   return {

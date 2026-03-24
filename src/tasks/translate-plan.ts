@@ -8,8 +8,8 @@
  * Used when taskBackend === 'br'. Falls back to sync-plan for fs backend.
  */
 
-import type { TaskPort } from '../tasks/port.ts';
-import { isActiveTask } from '../tasks/transitions.ts';
+import type { TaskPort } from './port.ts';
+import { isActiveTask } from './transitions.ts';
 import type { PlanPort } from '../plans/port.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../plans/parser.ts';
 import { buildBeadOpts } from '../tasks/bead-builder.ts';

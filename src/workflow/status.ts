@@ -10,7 +10,7 @@ import type { MemoryPort } from '../memory/port.ts';
 import type { GraphPort } from '../tasks/graph/port.ts';
 import type { SearchPort } from '../search/port.ts';
 import type { HandoffPort } from '../handoff/port.ts';
-import { countTaskStatuses, getNextAction } from '../workflow/stages.ts';
+import { countTaskStatuses, getNextAction } from './stages.ts';
 import { computeRunnableAndBlocked } from '../tasks/graph/dependency.ts';
 import { MaestroError } from '../core/errors.ts';
 import type { ConfigPort } from '../core/config.ts';

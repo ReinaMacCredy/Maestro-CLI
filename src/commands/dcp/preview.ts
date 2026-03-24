@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { output, renderTable } from '../../core/output.ts';
 import { MaestroError, handleCommandError } from '../../core/errors.ts';
 import { requireFeature, FEATURE_HINT } from '../../core/resolve.ts';
-import { pruneContext } from '../../usecases/prune-context.ts';
+import { pruneContext } from '../../dcp/prune-context.ts';
 import { resolveDcpConfig } from '../../dcp/config.ts';
 import { WORKER_RULES } from '../../tasks/worker-rules.ts';
 

@@ -1,10 +1,10 @@
 import type { TaskPort } from '../tasks/port.ts';
-import type { FeaturePort } from '../features/port.ts';
+import type { FeaturePort } from './port.ts';
 import type { MemoryPort } from '../memory/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
 import { MaestroError } from '../core/errors.ts';
 import type { FeatureJson, HiveConfig } from '../core/types.ts';
-import { suggestDoctrine, type DoctrineSuggestion } from './suggest-doctrine.ts';
+import { suggestDoctrine, type DoctrineSuggestion } from '../doctrine/suggest.ts';
 
 export interface CompleteFeatureServices {
   taskPort: TaskPort;

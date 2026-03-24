@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import type { DebugVisualType, VisualResult, TemplateRenderer } from '../visual/types.ts';
-import { renderPage, writeVisual } from '../visual/renderer.ts';
-import { renderComponentTree } from '../visual/templates/component-tree.ts';
-import { renderStateFlow } from '../visual/templates/state-flow.ts';
-import { renderErrorCascade } from '../visual/templates/error-cascade.ts';
-import { renderNetworkWaterfall } from '../visual/templates/network-waterfall.ts';
-import { renderDomDiff } from '../visual/templates/dom-diff.ts';
-import { renderConsoleTimeline } from '../visual/templates/console-timeline.ts';
+import type { DebugVisualType, VisualResult, TemplateRenderer } from './types.ts';
+import { renderPage, writeVisual } from './renderer.ts';
+import { renderComponentTree } from './templates/component-tree.ts';
+import { renderStateFlow } from './templates/state-flow.ts';
+import { renderErrorCascade } from './templates/error-cascade.ts';
+import { renderNetworkWaterfall } from './templates/network-waterfall.ts';
+import { renderDomDiff } from './templates/dom-diff.ts';
+import { renderConsoleTimeline } from './templates/console-timeline.ts';
 import { MaestroError } from '../core/errors.ts';
 
 // ============================================================================

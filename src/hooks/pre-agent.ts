@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import { readStdin, writeOutput, resolveProjectDir, logHookError, getSessionsDir } from './_helpers.ts';
 import { ensureDir } from '../core/fs-io.ts';
 import { initServices } from '../services.ts';
-import { pruneContext, type PruneContextResult } from '../usecases/prune-context.ts';
+import { pruneContext, type PruneContextResult } from '../dcp/prune-context.ts';
 import { WORKER_RULES } from '../tasks/worker-rules.ts';
 import { deriveFolderTags } from '../memory/execution/writer.ts';
 import { extractKeywords } from '../dcp/relevance.ts';

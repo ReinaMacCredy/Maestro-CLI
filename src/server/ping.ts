@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from './_utils/services-thunk.ts';
 import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
-import { ping } from '../usecases/ping.ts';
+import { ping } from '../workflow/ping.ts';
 
 export function registerPingTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

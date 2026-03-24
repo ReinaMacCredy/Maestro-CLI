@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { queryHistoricalContext, type HistoricalContextResult } from '../../usecases/query-historical-context.ts';
+import { queryHistoricalContext, type HistoricalContextResult } from '../../dcp/historical.ts';
 import { buildExecutionMemory } from '../../memory/execution/writer.ts';
 import type { FeaturePort } from '../../features/port.ts';
 import type { MemoryPort } from '../../memory/port.ts';

@@ -7,7 +7,7 @@ import { getServices } from '../../services.ts';
 import { output } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 import { requireDoctrinePort } from '../../core/resolve.ts';
-import { suggestDoctrine } from '../../usecases/suggest-doctrine.ts';
+import { suggestDoctrine } from '../../doctrine/suggest.ts';
 
 export default defineCommand({
   meta: { name: 'doctrine-suggest', description: 'Suggest doctrine from cross-feature execution patterns' },

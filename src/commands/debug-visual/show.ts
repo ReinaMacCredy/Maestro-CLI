@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { defineCommand } from 'citty';
-import { debugVisualize } from '../../usecases/debug-visualize.ts';
+import { debugVisualize } from '../../visual/debug-visualize.ts';
 import type { DebugVisualType, VisualResult } from '../../visual/types.ts';
 import { DEBUG_VISUAL_TYPES } from '../../visual/types.ts';
 import { output } from '../../core/output.ts';

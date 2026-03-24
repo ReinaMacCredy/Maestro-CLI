@@ -5,8 +5,8 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_MUTATING } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { visualize } from '../usecases/visualize.ts';
-import { debugVisualize } from '../usecases/debug-visualize.ts';
+import { visualize } from '../visual/visualize.ts';
+import { debugVisualize } from '../visual/debug-visualize.ts';
 
 export function registerVisualTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(

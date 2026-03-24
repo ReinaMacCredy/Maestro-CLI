@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { doctor, type DoctorReport } from '../../usecases/doctor.ts';
+import { doctor, type DoctorReport } from '../../workflow/doctor.ts';
 import { output, renderTable } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 

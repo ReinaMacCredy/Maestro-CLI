@@ -5,7 +5,7 @@ import { respond, withErrorHandling } from './_utils/respond.ts';
 import { ANNOTATIONS_READONLY } from './_utils/annotations.ts';
 import { requireFeature } from './_utils/resolve.ts';
 import { featureParam } from './_utils/params.ts';
-import { checkStatus } from '../usecases/check-status.ts';
+import { checkStatus } from '../workflow/status.ts';
 import { detectResearchTools } from '../workflow/research-tools.ts';
 import { derivePipelineStage } from '../workflow/stages.ts';
 import { buildPlaybookWithExternalSkills } from '../workflow/playbook.ts';

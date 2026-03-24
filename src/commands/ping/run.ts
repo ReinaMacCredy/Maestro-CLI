@@ -4,7 +4,7 @@
 
 import { defineCommand } from 'citty';
 import { getServices } from '../../services.ts';
-import { ping, type PingResult } from '../../usecases/ping.ts';
+import { ping, type PingResult } from '../../workflow/ping.ts';
 import { output, renderStatusLine } from '../../core/output.ts';
 import { handleCommandError } from '../../core/errors.ts';
 

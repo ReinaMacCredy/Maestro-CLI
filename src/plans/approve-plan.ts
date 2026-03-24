@@ -1,4 +1,4 @@
-import type { PlanPort } from '../plans/port.ts';
+import type { PlanPort } from './port.ts';
 import type { FeaturePort } from '../features/port.ts';
 import { MaestroError } from '../core/errors.ts';
 

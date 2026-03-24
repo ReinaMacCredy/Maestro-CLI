@@ -4,8 +4,8 @@
  * tasks in TaskPort, create/remove as needed.
  */
 
-import type { TaskPort } from '../tasks/port.ts';
-import { isActiveTask } from '../tasks/transitions.ts';
+import type { TaskPort } from './port.ts';
+import { isActiveTask } from './transitions.ts';
 import type { PlanPort } from '../plans/port.ts';
 import { parseTasksFromPlan, validateDependencyGraph, resolveDependencies } from '../plans/parser.ts';
 import { buildSpecContent } from '../tasks/spec-builder.ts';
