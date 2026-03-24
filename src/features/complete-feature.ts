@@ -3,7 +3,8 @@ import type { FeaturePort } from './port.ts';
 import type { MemoryPort } from '../memory/port.ts';
 import type { DoctrinePort } from '../doctrine/port.ts';
 import { MaestroError } from '../core/errors.ts';
-import type { FeatureJson, HiveConfig } from '../core/types.ts';
+import type { FeatureJson } from '../core/types.ts';
+import type { DoctrineSettings } from '../core/settings.ts';
 import { suggestDoctrine, type DoctrineSuggestion } from '../doctrine/suggest.ts';
 
 export interface CompleteFeatureServices {
@@ -11,7 +12,7 @@ export interface CompleteFeatureServices {
   featureAdapter: FeaturePort;
   memoryAdapter: MemoryPort;
   doctrinePort?: DoctrinePort;
-  doctrineConfig?: HiveConfig['doctrine'];
+  doctrineConfig?: DoctrineSettings;
 }
 
 export interface CompleteFeatureResult {

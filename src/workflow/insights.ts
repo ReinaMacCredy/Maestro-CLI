@@ -11,7 +11,7 @@ import type { TaskWithDeps } from '../tasks/graph/dependency.ts';
 import { isExecutionMemory } from '../memory/execution/writer.ts';
 import { parseExecMemory } from '../memory/execution/parser.ts';
 import { resolveDoctrineConfig } from '../doctrine/config.ts';
-import type { HiveConfig } from '../core/types.ts';
+import type { DoctrineSettings } from '../core/settings.ts';
 
 export interface ExecutionInsight {
   sourceTask: string;
@@ -50,7 +50,7 @@ export async function executionInsights(
   taskPort: TaskPort,
   memoryAdapter: MemoryPort,
   doctrinePort?: DoctrinePort,
-  doctrineConfig?: HiveConfig['doctrine'],
+  doctrineConfig?: DoctrineSettings,
 ): Promise<ExecutionInsightsResult> {
   const allMemories = memoryAdapter.listWithMeta(featureName);
   const execMemories = allMemories.filter(m => isExecutionMemory(m.name));

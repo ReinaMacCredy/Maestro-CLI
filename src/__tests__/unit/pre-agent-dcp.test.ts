@@ -141,7 +141,7 @@ describe('pre-agent hook integration with pruneContext', () => {
       richContext: formatRichContext({ status: 'fulfilled', value: { design: 'Use JWT' } }),
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(injection).toContain('Task Spec: 01-setup-auth');

@@ -55,7 +55,7 @@ describe('DCP preview metrics', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(metrics.memoriesTotal).toBe(3);
@@ -81,7 +81,7 @@ describe('DCP preview metrics', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 200 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 50 },
     });
 
     expect(metrics.memoriesTotal).toBe(8);
@@ -101,7 +101,7 @@ describe('DCP preview metrics', () => {
       richContext: '\n## Design\n\nDesign notes here.',
       graphContext: '\n## Graph\n\nCritical path.',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(metrics.sections.spec).toBeGreaterThan(0);

@@ -34,7 +34,7 @@ const BASE_PARAMS = {
   richContext: '',
   graphContext: '',
   workerRules: 'worker rules',
-  dcpConfig: { enabled: true, memoryBudgetBytes: 4096, relevanceThreshold: 0.0 },
+  dcpConfig: { enabled: true, memoryBudgetTokens: 1024, relevanceThreshold: 0.0 },
 };
 
 describe('pruneContext execution memory partitioning', () => {

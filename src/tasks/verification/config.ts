@@ -1,9 +1,8 @@
 /**
  * Resolve verification config with defaults from a single source of truth.
- * Follows the same pattern as dcp-config.ts.
  */
 
-import { VERIFICATION_DEFAULTS, type HiveConfig } from '../../core/types.ts';
+import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
 import type { VerificationSettings } from '../../core/settings.ts';
 
 export interface ResolvedVerificationConfig {
@@ -17,7 +16,7 @@ export interface ResolvedVerificationConfig {
 }
 
 export function resolveVerificationConfig(
-  override?: VerificationSettings | NonNullable<HiveConfig['verification']>,
+  override?: VerificationSettings,
 ): ResolvedVerificationConfig {
   const { buildCommand, ...rest } = override ?? {};
   return {

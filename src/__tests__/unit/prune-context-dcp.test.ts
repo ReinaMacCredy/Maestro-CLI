@@ -151,7 +151,7 @@ describe('prune-context: observationMasking fallback', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, observationMasking: true, completedTaskBudgetBytes: 40 },
+      dcpConfig: { enabled: true, observationMasking: true, completedTaskBudgetTokens: 10 },
     });
 
     // With 40-byte budget, should include only newest (reversed) that fits

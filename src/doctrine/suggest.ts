@@ -11,7 +11,7 @@ import { parseExecMemory, type ParsedExecMemory, groupByTagCluster, listRecentFe
 import { extractKeywords } from '../dcp/relevance.ts';
 import { titleToSlug } from '../core/slug.ts';
 import { resolveDoctrineConfig } from './config.ts';
-import type { HiveConfig } from '../core/types.ts';
+import type { DoctrineSettings } from '../core/settings.ts';
 
 export interface DoctrineSuggestion {
   name: string;
@@ -79,7 +79,7 @@ export function suggestDoctrine(
   featureAdapter: FeaturePort,
   memoryAdapter: MemoryPort,
   existingDoctrine: DoctrineItem[],
-  doctrineConfig?: HiveConfig['doctrine'],
+  doctrineConfig?: DoctrineSettings,
 ): SuggestDoctrineResult {
   const cfg = resolveDoctrineConfig(doctrineConfig);
   const { minSampleSize, maxSuggestionsPerFeature, crossFeatureScanLimit } = cfg;

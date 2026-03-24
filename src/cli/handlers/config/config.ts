@@ -24,8 +24,8 @@ export default defineCommand({
         throw new MaestroError(`unknown agent '${args.agent}'`, [`Valid agents: ${AGENT_NAMES.join(', ')}`]);
       }
 
-      const { configAdapter } = getServices();
-      const agentConfig = configAdapter.getAgentConfig(args.agent as AgentName);
+      const { settingsPort } = getServices();
+      const agentConfig = (settingsPort as any).getAgentConfig(args.agent);
       output(agentConfig, (c) => JSON.stringify(c, null, 2));
     } catch (err) {
       handleCommandError('config-agent', err);

@@ -48,7 +48,7 @@ describe('pruneContext', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(result.injection).toContain('Task Spec: 01-setup-auth');
@@ -75,7 +75,7 @@ describe('pruneContext', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(result.injection).toContain('Clean body content');
@@ -201,7 +201,7 @@ describe('pruneContext', () => {
       richContext: '\n## Design\n\nSome design.',
       graphContext: '\n## Graph\n\nOn critical path.',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 10000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 2500 },
     });
 
     expect(result.metrics.totalBytes).toBeGreaterThan(0);
@@ -226,7 +226,7 @@ describe('pruneContext', () => {
       richContext: '',
       graphContext: '',
       workerRules: WORKER_RULES,
-      dcpConfig: { enabled: true, memoryBudgetBytes: 3000 },
+      dcpConfig: { enabled: true, memoryBudgetTokens: 750 },
     });
 
     // Should include at most 3 (each is ~1000 bytes)

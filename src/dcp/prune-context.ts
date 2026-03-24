@@ -3,7 +3,8 @@
  * Assembles task-aware, budget-conscious context injection for worker agents.
  */
 
-import { type MemoryFileWithMeta, type TaskInfo, type HiveConfig } from '../core/types.ts';
+import { type MemoryFileWithMeta, type TaskInfo } from '../core/types.ts';
+import type { DcpSettings, DoctrineSettings } from '../core/settings.ts';
 import type { TaskWithDeps } from '../tasks/graph/dependency.ts';
 import type { DoctrineItem } from '../doctrine/port.ts';
 import { selectMemories } from './selector.ts';
@@ -23,8 +24,8 @@ export interface PruneContextParams {
   graphContext: string;
   revisionContext?: string;
   workerRules: string;
-  dcpConfig?: HiveConfig['dcp'];
-  doctrineConfig?: HiveConfig['doctrine'];
+  dcpConfig?: DcpSettings;
+  doctrineConfig?: DoctrineSettings;
   doctrineItems?: DoctrineItem[];
   featureCreatedAt?: string;
   allTasks?: TaskWithDeps[];
