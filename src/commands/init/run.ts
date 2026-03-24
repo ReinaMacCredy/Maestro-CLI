@@ -9,7 +9,7 @@ import { getMaestroPath } from '../../core/paths.ts';
 import { ensureDir } from '../../core/fs-io.ts';
 import { findProjectRoot } from '../../utils/detection.ts';
 import { resolveTaskBackend } from '../../core/resolve-backend.ts';
-import { FsConfigAdapter } from '../../adapters/fs/config.ts';
+import { FsConfigAdapter } from '../../core/config.ts';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -4,7 +4,7 @@
  */
 
 import type { DoctrineItem, DoctrineConditions, DoctrineStatus } from '../doctrine/port.ts';
-import { CURRENT_SCHEMA_VERSION } from '../adapters/fs/doctrine.ts';
+import { CURRENT_SCHEMA_VERSION } from '../doctrine/adapter.ts';
 
 export interface BuildDoctrineItemOpts {
   name: string;

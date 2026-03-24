@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { FsVerificationAdapter } from '../../adapters/verification.ts';
+import { FsVerificationAdapter } from '../../tasks/verification/adapter.ts';
 import { VERIFICATION_DEFAULTS } from '../../core/types.ts';
 import type { ResolvedVerificationConfig } from '../../utils/verification-config.ts';
 

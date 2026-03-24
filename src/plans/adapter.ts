@@ -7,10 +7,10 @@ import {
   getPlanPath,
   getCommentsPath,
   getApprovedPath,
-} from '../../core/paths.ts';
-import { readJson, writeJsonAtomic, readText, writeText, fileExists } from '../../core/fs-io.ts';
-import type { CommentsJson, PlanComment, PlanReadResult } from '../../core/types.ts';
-import type { PlanPort } from '../../plans/port.ts';
+} from '../core/paths.ts';
+import { readJson, writeJsonAtomic, readText, writeText, fileExists } from '../core/fs-io.ts';
+import type { CommentsJson, PlanComment, PlanReadResult } from '../core/types.ts';
+import type { PlanPort } from './port.ts';
 import * as fs from 'fs';
 
 export class FsPlanAdapter implements PlanPort {

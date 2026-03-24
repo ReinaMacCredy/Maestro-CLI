@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { FsTaskAdapter } from '../../adapters/fs-tasks.ts';
+import { FsTaskAdapter } from '../../tasks/adapter.ts';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

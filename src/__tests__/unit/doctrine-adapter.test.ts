@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { FsDoctrineAdapter } from '../../adapters/fs/doctrine.ts';
+import { FsDoctrineAdapter } from '../../doctrine/adapter.ts';
 import type { DoctrineItem } from '../../doctrine/port.ts';
 
 let tmpDir: string;

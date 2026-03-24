@@ -10,7 +10,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { syncPlan } from "../../usecases/sync-plan.ts";
-import { FsPlanAdapter } from "../../adapters/fs/plan.ts";
+import { FsPlanAdapter } from "../../plans/adapter.ts";
 import { InMemoryTaskPort } from "../mocks/in-memory-task-port.ts";
 import type { TaskStatusType, TaskOrigin } from '../../core/types.ts';
 

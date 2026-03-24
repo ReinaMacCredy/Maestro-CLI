@@ -7,21 +7,21 @@
  * calls getServices().
  */
 
-import { FsTaskAdapter } from './adapters/fs-tasks.ts';
+import { FsTaskAdapter } from './tasks/adapter.ts';
 import { BrTaskAdapter } from './adapters/br.ts';
 import { BvGraphAdapter } from './adapters/bv-graph.ts';
 import { CassSearchAdapter } from './adapters/cass-search.ts';
 import { AgentMailHandoffAdapter } from './adapters/agent-mail-handoff.ts';
-import { FsFeatureAdapter } from './adapters/fs/feature.ts';
-import { FsPlanAdapter } from './adapters/fs/plan.ts';
-import { FsMemoryAdapter } from './adapters/fs/memory.ts';
-import { FsConfigAdapter } from './adapters/fs/config.ts';
-import { AgentsMdAdapter } from './adapters/agents-md.ts';
+import { FsFeatureAdapter } from './features/adapter.ts';
+import { FsPlanAdapter } from './plans/adapter.ts';
+import { FsMemoryAdapter } from './memory/adapter.ts';
+import { FsConfigAdapter } from './core/config.ts';
+import { AgentsMdAdapter } from './features/agents-md.ts';
 import { MaestroError } from './core/errors.ts';
 import { checkCli } from './lib/cli-detect.ts';
 import { resolveTaskBackend } from './core/resolve-backend.ts';
 import type { ConfigBackend, ResolvedBackend } from './core/resolve-backend.ts';
-import { FsVerificationAdapter } from './adapters/verification.ts';
+import { FsVerificationAdapter } from './tasks/verification/adapter.ts';
 import { resolveVerificationConfig } from './utils/verification-config.ts';
 import type { TaskPort } from './tasks/port.ts';
 import type { VerificationPort } from './tasks/verification/port.ts';
@@ -33,7 +33,7 @@ import type { HandoffPort } from './handoff/port.ts';
 import type { SearchPort } from './search/port.ts';
 import type { DoctrinePort } from './doctrine/port.ts';
 import type { ConfigPort } from './core/config.ts';
-import { FsDoctrineAdapter } from './adapters/fs/doctrine.ts';
+import { FsDoctrineAdapter } from './doctrine/adapter.ts';
 
 export interface MaestroServices {
   taskPort: TaskPort;

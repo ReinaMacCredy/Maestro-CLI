@@ -10,7 +10,7 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import { AgentMailHandoffAdapter } from '../../adapters/agent-mail-handoff.ts';
 import { InMemoryTaskPort } from '../mocks/in-memory-task-port.ts';
 import { InMemoryMemoryPort } from '../mocks/in-memory-memory-port.ts';
-import type { FsConfigAdapter } from '../../adapters/fs/config.ts';
+import type { FsConfigAdapter } from '../../core/config.ts';
 import type { HiveConfig } from '../../core/types.ts';
 import { DEFAULT_HIVE_CONFIG } from '../../core/types.ts';
 
