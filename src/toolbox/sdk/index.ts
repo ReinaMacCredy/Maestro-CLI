@@ -5,7 +5,9 @@
 export { CliTransport } from './cli-transport.ts';
 export { HttpTransport } from './http-transport.ts';
 export { McpTransport } from './mcp-transport.ts';
-export { McpBridge } from './mcp-bridge.ts';
+export { McpBridge, extractText, extractJson } from './mcp-bridge.ts';
+export { createMcpPortAdapter } from './bridge-adapter.ts';
+export type { BridgeMapping } from './bridge-adapter.ts';
 export type { McpToolResult, McpResource } from './mcp-transport.ts';
 export {
   MockCliTransport,
