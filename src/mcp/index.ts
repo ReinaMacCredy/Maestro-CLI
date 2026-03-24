@@ -26,7 +26,8 @@ import { registerVisualTools } from './handlers/visual.ts';
 import { registerDoctorTools } from './handlers/doctor.ts';
 import { registerHistoryTools } from './handlers/history.ts';
 import { VERSION } from '../version.ts';
-import { checkCli } from '../lib/cli-detect.ts';
+import { FsSettingsAdapter } from '../core/settings-adapter.ts';
+import { buildToolbox } from '../toolbox/registry.ts';
 
 export function createMaestroServer(directory: string): McpServer {
   const server = new McpServer({
@@ -34,7 +35,10 @@ export function createMaestroServer(directory: string): McpServer {
     version: VERSION,
   });
 
-  const thunk = createServicesThunk(directory);
+  // Build toolbox eagerly for conditional tool registration
+  const settings = new FsSettingsAdapter(directory).get();
+  const toolbox = buildToolbox(settings);
+  const thunk = createServicesThunk(directory, toolbox);
 
   registerStatusTools(server, thunk);
   registerFeatureTools(server, thunk);
@@ -54,9 +58,9 @@ export function createMaestroServer(directory: string): McpServer {
   registerDoctorTools(server, thunk);
   registerHistoryTools(server, thunk);
 
-  // Conditional: only register graph/search tools when CLIs are available
-  if (checkCli('bv')) registerGraphTools(server, thunk);
-  if (checkCli('cass')) registerSearchTools(server, thunk);
+  // Conditional: only register graph/search tools when available + not denied
+  if (toolbox.isAvailable('bv')) registerGraphTools(server, thunk);
+  if (toolbox.isAvailable('cass')) registerSearchTools(server, thunk);
 
   return server;
 }

@@ -12,7 +12,6 @@ import { resolveVerificationConfig } from '../../tasks/verification/config.ts';
 import type { ListOpts, TaskPort } from '../../tasks/port.ts';
 import type { TaskStatusType } from '../../core/types.ts';
 import { writeExecutionMemory } from '../../memory/execution/writer.ts';
-import { resolveTaskBackend } from '../../core/resolve-backend.ts';
 import { buildTransitionHint, type TransitionHint } from '../../workflow/playbook.ts';
 
 async function maybeFinalTaskHint(
@@ -37,8 +36,7 @@ export function registerTaskTools(server: McpServer, thunk: ServicesThunk): void
     withErrorHandling(async (input) => {
       const services = thunk.get();
       const feature = requireFeature(services, input.feature);
-      const config = services.configAdapter.get();
-      const result = resolveTaskBackend(config.taskBackend, services.directory) === 'br'
+      const result = services.taskBackend === 'br'
         ? await translatePlan(services, feature)
         : await syncPlan(services, feature);
       const hint = buildTransitionHint('tasks_sync', { created: result.created.length });

@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { initServices, type MaestroServices } from '../services.ts';
 import { MaestroError } from '../core/errors.ts';
+import type { ToolboxRegistry } from '../toolbox/registry.ts';
 
 export interface ServicesThunk {
   /** Get or initialize services. Throws if .maestro/ is missing. */
@@ -18,7 +19,10 @@ export interface ServicesThunk {
   forceInit(): MaestroServices;
 }
 
-export function createServicesThunk(directory: string): ServicesThunk {
+export function createServicesThunk(
+  directory: string,
+  toolbox?: ToolboxRegistry,
+): ServicesThunk {
   let cached: MaestroServices | null = null;
 
   return {
@@ -33,7 +37,7 @@ export function createServicesThunk(directory: string): ServicesThunk {
         );
       }
 
-      cached = initServices(directory);
+      cached = initServices(directory, toolbox);
       return cached;
     },
 
@@ -42,7 +46,7 @@ export function createServicesThunk(directory: string): ServicesThunk {
     },
 
     forceInit(): MaestroServices {
-      cached = initServices(directory);
+      cached = initServices(directory, toolbox);
       return cached;
     },
   };
