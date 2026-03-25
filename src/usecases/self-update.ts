@@ -119,7 +119,6 @@ export async function selfUpdate(
   }
   const beforeSha = beforeResult.stdout.trim();
 
-  // Pull
   const pullResult = await exec(['git', 'pull', '--ff-only'], { cwd: repoPath });
   if (pullResult.exitCode !== 0) {
     throw new MaestroError(
@@ -128,19 +127,16 @@ export async function selfUpdate(
     );
   }
 
-  // Get new SHA
   const afterResult = await exec(['git', 'rev-parse', 'HEAD'], { cwd: repoPath });
   if (afterResult.exitCode !== 0) {
     throw new MaestroError('failed to read new commit SHA');
   }
   const afterSha = afterResult.stdout.trim();
 
-  // Already up to date?
   if (beforeSha === afterSha) {
     return { updated: false, beforeSha, afterSha, repoPath, binaryPath };
   }
 
-  // Rebuild
   const buildResult = await exec(['bun', 'run', 'build'], { cwd: repoPath });
   if (buildResult.exitCode !== 0) {
     throw new MaestroError(

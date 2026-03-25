@@ -47,7 +47,6 @@ export interface MaestroServices {
   memoryAdapter: MemoryPort;
   agentsMdAdapter: AgentsMdAdapter;
   directory: string;
-  // Optional ports -- initialized based on toolbox availability
   graphPort?: GraphPort;
   handoffPort?: HandoffPort;
   searchPort?: SearchPort;
@@ -64,10 +63,6 @@ export interface MaestroServices {
 }
 
 let _services: MaestroServices | undefined;
-
-// ============================================================================
-// Toolbox-driven port resolution via adapter factories
-// ============================================================================
 
 function buildContext(
   toolbox: ToolboxRegistry,
@@ -120,10 +115,6 @@ function resolveOptionalPort<T>(
   if (!factory) return undefined;
   return factory(makeCtx(provider.name)) as T;
 }
-
-// ============================================================================
-// Init / Get
-// ============================================================================
 
 export function initServices(
   directory: string,

@@ -54,7 +54,6 @@ export async function syncPlan(
     manual: [],
   };
 
-  // Handle existing tasks
   for (const existing of existingTasks) {
     if (existing.origin === 'manual') {
       result.manual.push(existing.folder);
@@ -75,7 +74,6 @@ export async function syncPlan(
     }
   }
 
-  // Create new tasks from plan
   for (const parsedTask of parsedTasks) {
     if (existingByFolder.has(parsedTask.folder) || existingById.has(parsedTask.id)) continue;
 

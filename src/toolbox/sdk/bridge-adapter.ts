@@ -31,7 +31,6 @@ export function createMcpPortAdapter<T>(
 ): T {
   const manifest = ctx.manifest;
 
-  // Create transport from manifest
   let transport: McpTransport;
   if (manifest.transport === 'mcp-stdio') {
     transport = McpTransport.fromStdio({
@@ -48,7 +47,6 @@ export function createMcpPortAdapter<T>(
     throw new Error(`Cannot create MCP bridge for transport: ${manifest.transport}`);
   }
 
-  // Build bridge with mappings
   const bridge = new McpBridge(transport);
   const argConverters = new Map<string, (...args: unknown[]) => Record<string, unknown>>();
 
@@ -59,7 +57,6 @@ export function createMcpPortAdapter<T>(
     }
   }
 
-  // Return proxy that routes method calls through bridge
   return new Proxy({} as T, {
     get(_target, prop: string) {
       if (prop === 'close' || prop === 'dispose') {
@@ -77,5 +74,4 @@ export function createMcpPortAdapter<T>(
   });
 }
 
-// Re-export helpers for convenience
 export { extractJson, extractText };

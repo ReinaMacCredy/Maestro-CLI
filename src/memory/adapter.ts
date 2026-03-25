@@ -233,8 +233,6 @@ export class FsMemoryAdapter implements MemoryPort {
       .filter((c): c is MemoryConnection => c !== null);
   }
 
-  // -- Shared helpers --
-
   private _write(dir: string, fileName: string, content: string): string {
     ensureDir(dir);
     const filePath = path.join(dir, this.normalizeFileName(fileName));
@@ -300,7 +298,6 @@ export class FsMemoryAdapter implements MemoryPort {
     const bodyContent = stripFrontmatter(file.content);
     const parsed = parseFrontmatterRich(file.content);
 
-    // Extract lifecycle fields from frontmatter (if present)
     const selectionCount = parsed && typeof parsed.selectionCount === 'number' ? parsed.selectionCount : undefined;
     const lastSelectedAt = parsed && typeof parsed.lastSelectedAt === 'string' ? parsed.lastSelectedAt : undefined;
 
