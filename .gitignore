@@ -30,4 +30,4 @@ tmp/
 # bv (beads viewer) local config and caches
 .bv/
 .collaborator
-docs/
+docs/docs/architecture-v2.md
