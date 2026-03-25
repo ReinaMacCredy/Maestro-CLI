@@ -3,14 +3,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
-import { requireDoctrinePort as requireDoctrinePortShared } from '../../core/resolve.ts';
+import { requireDoctrinePort } from '../../core/resolve.ts';
 import { buildDoctrineItem } from '../../doctrine/factory.ts';
 import { MaestroError } from '../../core/errors.ts';
 import { suggestDoctrine } from '../../doctrine/suggest.ts';
-
-function requireDoctrinePort(thunk: ServicesThunk) {
-  return requireDoctrinePortShared(thunk.get());
-}
 
 export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): void {
   // Mutating: write | approve | suggest | deprecate
@@ -40,7 +36,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
           if (!input.name) return respond({ error: 'name is required for action: write' });
           if (!input.rule) return respond({ error: 'rule is required for action: write' });
           if (!input.rationale) return respond({ error: 'rationale is required for action: write' });
-          const port = requireDoctrinePort(thunk);
+          const port = requireDoctrinePort(thunk.get());
           const existing = port.read(input.name) ?? undefined;
           const item = buildDoctrineItem({
             name: input.name,
@@ -61,7 +57,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
           if (!input.name) return respond({ error: 'name is required for action: approve' });
           if (!input.rule) return respond({ error: 'rule is required for action: approve' });
           if (!input.rationale) return respond({ error: 'rationale is required for action: approve' });
-          const port = requireDoctrinePort(thunk);
+          const port = requireDoctrinePort(thunk.get());
           const item = buildDoctrineItem({
             name: input.name,
             rule: input.rule,
@@ -76,7 +72,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
         }
         case 'suggest': {
           const services = thunk.get();
-          const port = requireDoctrinePort(thunk);
+          const port = requireDoctrinePort(thunk.get());
           const existing = port.list({ status: 'active' });
           const config = services.settingsPort.get().doctrine;
           const result = suggestDoctrine(services.featureAdapter, services.memoryAdapter, existing, config);
@@ -84,7 +80,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
         }
         case 'deprecate': {
           if (!input.name) return respond({ error: 'name is required for action: deprecate' });
-          const port = requireDoctrinePort(thunk);
+          const port = requireDoctrinePort(thunk.get());
           const item = port.deprecate(input.name);
           return respond({ name: item.name, status: item.status });
         }
@@ -107,7 +103,7 @@ export function registerDoctrineTools(server: McpServer, thunk: ServicesThunk): 
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
-      const port = requireDoctrinePort(thunk);
+      const port = requireDoctrinePort(thunk.get());
       switch (input.what) {
         case 'list': {
           const items = port.list(input.status ? { status: input.status } : undefined);

@@ -9,16 +9,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
-import { requireFeature, resolveFeature } from './_resolve.ts';
+import { requireFeature, resolveFeature, requireHandoffPort } from '../../core/resolve.ts';
 import { featureParam } from '../params.ts';
-import { requireHandoffPort as requireHandoffPortShared } from '../../core/resolve.ts';
 import { buildAndSendHandoff } from '../../handoff/usecases.ts';
 import { getHandoffsPath, getHandoffPath } from '../../core/paths.ts';
 import { readText, fileExists } from '../../core/fs-io.ts';
-
-function requireHandoffPort(thunk: ServicesThunk) {
-  return requireHandoffPortShared(thunk.get());
-}
 
 export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): void {
   // Mutating: send | ack
@@ -42,7 +37,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
       switch (input.action) {
         case 'send': {
           if (!input.task) return respond({ error: 'task is required for action: send' });
-          const port = requireHandoffPort(thunk);
+          const port = requireHandoffPort(thunk.get());
           const services = thunk.get();
           const feature = requireFeature(services, input.feature);
           const { result } = await buildAndSendHandoff(port, feature, input.task, {
@@ -53,7 +48,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
         }
         case 'ack': {
           if (!input.thread_id) return respond({ error: 'thread_id is required for action: ack' });
-          const port = requireHandoffPort(thunk);
+          const port = requireHandoffPort(thunk.get());
           await port.acknowledgeHandoff(input.thread_id);
           return respond({ threadId: input.thread_id });
         }
@@ -132,7 +127,7 @@ export function registerHandoffTools(server: McpServer, thunk: ServicesThunk): v
         }
         case 'receive': {
           if (!input.agent_id) return respond({ error: 'agent_id is required for what: receive' });
-          const port = requireHandoffPort(thunk);
+          const port = requireHandoffPort(thunk.get());
           const services = thunk.get();
           const feature = resolveFeature(services, input.feature);
           const handoffs = await port.receiveHandoffs(feature ?? undefined, input.agent_id);

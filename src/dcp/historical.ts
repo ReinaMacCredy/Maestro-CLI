@@ -28,7 +28,7 @@ export interface HistoricalContextResult {
   featuresScanned: number;
 }
 
-interface ScoredMemory {
+interface ScoredExecMemory {
   featureName: string;
   memoryName: string;
   parsed: ParsedExecMemory;
@@ -72,7 +72,7 @@ export function queryHistoricalContext(
   const scannedFeatures = listRecentFeatures(featureAdapter, scanLimit);
 
   // Collect and score exec memories across features
-  const scoredMemories: ScoredMemory[] = [];
+  const scoredMemories: ScoredExecMemory[] = [];
   let totalScanned = 0;
 
   for (const { name: featureName } of scannedFeatures) {

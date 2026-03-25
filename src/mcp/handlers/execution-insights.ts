@@ -6,7 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY } from '../annotations.ts';
-import { requireFeature } from './_resolve.ts';
+import { requireFeature } from '../../core/resolve.ts';
 import { featureParam } from '../params.ts';
 import { executionInsights } from '../../workflow/insights.ts';
 

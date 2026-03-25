@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
-import { requireFeature } from './_resolve.ts';
+import { requireFeature } from '../../core/resolve.ts';
 import { featureParam, taskParam } from '../params.ts';
 import { syncPlan } from '../../tasks/sync-plan.ts';
 import { translatePlan } from '../../tasks/translate-plan.ts';

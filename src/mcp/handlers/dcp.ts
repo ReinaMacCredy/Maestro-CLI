@@ -5,17 +5,43 @@
 
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { MaestroServices } from '../../services.ts';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY } from '../annotations.ts';
-import { requireFeature } from './_resolve.ts';
+import { requireFeature } from '../../core/resolve.ts';
 import { featureParam, taskParam } from '../params.ts';
 import { pruneContext } from '../../dcp/prune-context.ts';
-import { resolveDcpConfig } from '../../dcp/config.ts';
+import { resolveDcpConfig, type ResolvedDcpConfig } from '../../dcp/config.ts';
 import { WORKER_RULES } from '../../tasks/worker-rules.ts';
 import { collectMetrics, formatMetricsSummary } from '../../dcp/metrics.ts';
 import { COMPONENT_REGISTRY } from '../../dcp/components.ts';
 import { DEFAULT_SETTINGS } from '../../core/settings.ts';
+import type { TaskInfo, MemoryFileWithMeta } from '../../core/types.ts';
+
+interface DcpContext {
+  feature: string;
+  task: TaskInfo;
+  spec: string;
+  memories: MemoryFileWithMeta[];
+  resolvedDcp: ResolvedDcpConfig;
+  featureCreatedAt: string | undefined;
+  allTasks: Awaited<ReturnType<MaestroServices['taskPort']['list']>>;
+}
+
+async function prepareDcpContext(
+  services: MaestroServices, featureInput: string | undefined, taskFolder: string,
+): Promise<DcpContext | null> {
+  const feature = requireFeature(services, featureInput);
+  const task = await services.taskPort.get(feature, taskFolder);
+  if (!task) return null;
+  const spec = await services.taskPort.readSpec(feature, taskFolder) ?? '';
+  const memories = services.memoryAdapter.listWithMeta(feature);
+  const resolvedDcp = resolveDcpConfig(services.settingsPort.get().dcp);
+  const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
+  const allTasks = await services.taskPort.list(feature, { includeAll: true });
+  return { feature, task, spec, memories, resolvedDcp, featureCreatedAt, allTasks };
+}
 
 export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -37,22 +63,15 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
       switch (input.action) {
         case 'preview': {
           if (!input.task) return respond({ error: 'task is required for action: preview' });
-          const feature = requireFeature(services, input.feature);
-          const task = await services.taskPort.get(feature, input.task);
-          if (!task) {
-            return respond({ error: `Task '${input.task}' not found in feature '${feature}'` });
-          }
-          const spec = await services.taskPort.readSpec(feature, input.task) ?? '(no spec)';
-          const memories = services.memoryAdapter.listWithMeta(feature);
-          const resolvedDcp = resolveDcpConfig(services.settingsPort.get().dcp);
-          const featureCreatedAt = services.featureAdapter.get(feature)?.createdAt;
-          const allTasks = await services.taskPort.list(feature, { includeAll: true });
+          const ctx = await prepareDcpContext(services, input.feature, input.task);
+          if (!ctx) return respond({ error: `Task '${input.task}' not found in feature '${requireFeature(services, input.feature)}'` });
+          const { feature, task, memories, resolvedDcp, featureCreatedAt, allTasks } = ctx;
           const taskDeps = allTasks.map(t => ({ folder: t.folder, status: t.status, dependsOn: t.dependsOn }));
           const { metrics } = pruneContext({
             featureName: feature,
             taskFolder: input.task,
             task,
-            spec,
+            spec: ctx.spec || '(no spec)',
             memories,
             richContext: '',
             graphContext: '',
@@ -76,13 +95,9 @@ export function registerDcpTools(server: McpServer, thunk: ServicesThunk): void 
         }
         case 'stats': {
           if (!input.task) return respond({ error: 'task is required for action: stats' });
-          const feature = requireFeature(services, input.feature);
-          const task = await services.taskPort.get(feature, input.task);
-          if (!task) return respond({ error: `Task '${input.task}' not found` });
-          const spec = await services.taskPort.readSpec(feature, input.task) ?? '';
-          const memories = services.memoryAdapter.listWithMeta(feature);
-          const resolvedDcp = resolveDcpConfig(services.settingsPort.get().dcp);
-          const allTasks = await services.taskPort.list(feature, { includeAll: true });
+          const ctx = await prepareDcpContext(services, input.feature, input.task);
+          if (!ctx) return respond({ error: `Task '${input.task}' not found` });
+          const { feature, task, spec, memories, resolvedDcp, allTasks } = ctx;
           const taskDeps = allTasks.map(t => ({ folder: t.folder, id: t.id, status: t.status, dependsOn: t.dependsOn }));
           const result = pruneContext({
             featureName: feature,

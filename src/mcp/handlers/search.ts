@@ -8,11 +8,7 @@ import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY } from '../annotations.ts';
 import { limitParam } from '../params.ts';
-import { requireSearchPort as requireSearchPortShared } from '../../core/resolve.ts';
-
-function requireSearchPort(thunk: ServicesThunk) {
-  return requireSearchPortShared(thunk.get());
-}
+import { requireSearchPort } from '../../core/resolve.ts';
 
 export function registerSearchTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -33,7 +29,7 @@ export function registerSearchTools(server: McpServer, thunk: ServicesThunk): vo
       annotations: ANNOTATIONS_READONLY,
     },
     withErrorHandling(async (input) => {
-      const port = requireSearchPort(thunk);
+      const port = requireSearchPort(thunk.get());
       switch (input.action) {
         case 'sessions': {
           if (!input.query) return respond({ error: 'query is required for action: sessions' });

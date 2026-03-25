@@ -9,12 +9,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServicesThunk } from '../services-thunk.ts';
 import { respond, withErrorHandling } from '../respond.ts';
 import { ANNOTATIONS_READONLY, ANNOTATIONS_MUTATING } from '../annotations.ts';
-import { requireGraphPort as requireGraphPortShared, requireFeature } from '../../core/resolve.ts';
+import { requireGraphPort, requireFeature } from '../../core/resolve.ts';
 import { featureParam } from '../params.ts';
-
-function requireGraphPort(thunk: ServicesThunk) {
-  return requireGraphPortShared(thunk.get());
-}
 
 export function registerGraphTools(server: McpServer, thunk: ServicesThunk): void {
   server.registerTool(
@@ -39,12 +35,12 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
     withErrorHandling(async (input) => {
       switch (input.action) {
         case 'insights': {
-          const port = requireGraphPort(thunk);
+          const port = requireGraphPort(thunk.get());
           const insights = await port.getInsights();
           return respond({ ...insights });
         }
         case 'next': {
-          const port = requireGraphPort(thunk);
+          const port = requireGraphPort(thunk.get());
           const recommendation = await port.getNextRecommendation();
           if (!recommendation) {
             return respond({ message: 'No recommendations available (all beads may be closed)' });
@@ -52,7 +48,7 @@ export function registerGraphTools(server: McpServer, thunk: ServicesThunk): voi
           return respond({ ...recommendation });
         }
         case 'plan': {
-          const port = requireGraphPort(thunk);
+          const port = requireGraphPort(thunk.get());
           const plan = await port.getExecutionPlan(input.agents);
           return respond({ ...plan });
         }
